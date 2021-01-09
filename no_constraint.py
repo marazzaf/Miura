@@ -35,15 +35,27 @@ f = as_vector((2*ufl.atan(0.5*norm_phi_x), -4/norm_phi_y))
 
 
 #bilinear form
-#a = inner(f, as_vector((psi.dx(0), psi.dx(1)))) * dx
-#a = (2*ufl.atan(0.5*norm_phi_x) * psi.dx(0) - 4/norm_phi_y * psi.dx(1)) * dx
-#a = inner(phi, grad(psi)) * dx - psi*dx
 #a = inner(as_vector((2*ufl.atan(0.5*norm_phi_x),norm_phi_y)), grad(psi)) * dx - psi * dx
 a = (2*ufl.atan(0.5*norm_phi_x) * (psi[0].dx(0)+psi[1].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1))) * dx
 #solving problem
 solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
+#solution verifies constraints?
+ps = inner(phi.dx(0), phi.dx(1)) * dx
+ps = assemble(ps)
+print(ps) #should be 0
+cons = (1 - 0.25*norm_phi_x) * norm_phi_y * dx
+cons = assemble(cons)
+print(cons) #should be one
+
+#checking intervals
+U = FunctionSpace(mesh, 'CG', 1)
+interval_x = project(inner(phi.dx(0), phi.dx(0)), U)
+interval_y = project(inner(phi.dx(1), phi.dx(1)), U)
+
 # Save solution in VTK format
 file = File("test/no_constraint.pvd")
 file << phi
+file << interval_x
+file << interval_y
 
