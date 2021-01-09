@@ -5,14 +5,14 @@ import numpy as np
 import ufl
 import sys
 
-size_ref = 5 #debug
+size_ref = 20 #5 for debug
 L,l = 1,1
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), size_ref, size_ref, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
 
 V = VectorFunctionSpace(mesh, 'CG', 1)
-phi = Function(V)
+phi = Function(V, name="surface")
 psi = TestFunction(V)
 
 #Dirichlet BC
@@ -39,8 +39,11 @@ f = as_vector((2*ufl.atan(0.5*norm_phi_x), -4/norm_phi_y))
 #a = (2*ufl.atan(0.5*norm_phi_x) * psi.dx(0) - 4/norm_phi_y * psi.dx(1)) * dx
 #a = inner(phi, grad(psi)) * dx - psi*dx
 #a = inner(as_vector((2*ufl.atan(0.5*norm_phi_x),norm_phi_y)), grad(psi)) * dx - psi * dx
-a = (2*ufl.atan(0.5*norm_phi_x) * psi[0].dx(0) - 4/norm_phi_y * psi[0].dx(1)) * dx + (2*ufl.atan(0.5*norm_phi_x) * psi[1].dx(0) - 4/norm_phi_y * psi[1].dx(1)) * dx
-
+a = (2*ufl.atan(0.5*norm_phi_x) * (psi[0].dx(0)+psi[1].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1))) * dx
 #solving problem
 solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+
+# Save solution in VTK format
+file = File("test/no_constraint.pvd")
+file << phi
 
