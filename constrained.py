@@ -33,7 +33,7 @@ norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
 a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1))) * dx
-#pen = 10
+#pen = 1e3
 #a += pen * inner(phi.dx(0), phi.dx(1)) * (psi[0]+psi[1]) * dx + (1 - 0.25*norm_phi_x) * norm_phi_y * (psi[0]+psi[1]) * dx
 #solving problem
 solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
