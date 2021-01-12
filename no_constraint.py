@@ -1,9 +1,9 @@
 #coding: utf-8
 
 from fenics import *
-from fenics_adjoint import *
-from pyadjoint import Block
-from atanh_overloaded import atanh
+#from fenics_adjoint import *
+#from pyadjoint import Block
+#from atanh_overloaded import atanh
 import ufl
 import sys
 
@@ -29,11 +29,10 @@ bc = DirichletBC(V, phi_D, bnd, 0)
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
-print(type(norm_phi_x))
 
 
 #bilinear form
-a = (2*atanh(0.5*norm_phi_x) * (psi[0].dx(0)+psi[1].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1))) * dx
+a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1))) * dx
 #solving problem
 solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
