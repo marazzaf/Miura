@@ -38,8 +38,13 @@ a = inner(phi.dx(0), phi.dx(1)) * (psi[0]+psi[1]) * dx + ((1 - 0.25*norm_phi_x) 
 solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
 #Assemble Minimisation problem
+J = assemble(0.5 * inner(y - yd, y - yd) * dx + nu / 2 * inner(u, u) * dx)
 
-#Add the controls!
+# Formulate the reduced problem
+m = Control(u)  # Create a parameter from u, as it is the variable we want to optimise
+Jhat = ReducedFunctional(J, m)
+
+#Add the bounds for derivatives. Variational inequality?
 
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
