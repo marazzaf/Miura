@@ -47,17 +47,23 @@ The associated energy is then: \TODO{Modifier}
 \end{equation}
 A primitive of $\mathrm{Artanh}$ is \TODO{Write it after checking it...}
 
-The equality constraints write: \TODO{sûr??? Il faut pas les intégrer?}
+The equality constraints write:
 \begin{equation}
 \Lambda_1 \int_{\Omega} \left\langle \varphi_{,x} ; \varphi_{,y} \right\rangle + \Lambda_2 \int_{\Omega} \left( (1 - \frac14 |\varphi_{,x}|^2) |\varphi_{,y}|^2 - 1 \right)
 \end{equation}
 
 The inequality constraints write:
+%\begin{equation}
+%\label{eq:inequality constraints energy}
+%\lambda_1 \int_{\Omega} \left(\frac12 |\varphi_{,x}|^2 - \sqrt{3} |\varphi_{,x}| \right) + \lambda_2 \int_{\Omega} \left(\frac12 |\varphi_{,y}|^2 - 2 |\varphi_{,y}| \right) + \lambda_3 \int_{\Omega} \left(|\varphi_{,y}| - \frac12 |\varphi_{,y}|^2 \right)
+%\end{equation}
 \begin{equation}
 \label{eq:inequality constraints energy}
-\lambda_1 \int_{\Omega} \left(\frac12 |\varphi_{,x}|^2 - \sqrt{3} |\varphi_{,x}| \right) + \lambda_2 \int_{\Omega} \left(\frac12 |\varphi_{,y}|^2 - 2 |\varphi_{,y}| \right) + \lambda_3 \int_{\Omega} \left(|\varphi_{,y}| - \frac12 |\varphi_{,y}|^2 \right)
+\lambda_1 \int_{\Omega} \left(\sqrt{3} - |\varphi_{,x}| \right)^\oplus + \lambda_2 \int_{\Omega} \left(2 - |\varphi_{,y}| \right)^\oplus + \lambda_3 \int_{\Omega} \left(|\varphi_{,y}| - 1 \right)^\oplus,
 \end{equation}
-The first two terms in \eqref{eq:inequality constraints energy} are convex whereas the last term is concave. \TODO{Thus a problem! Are we going to have minimisers of the Lagrangian? At least a critical point?}
+with $\lambda_1,\lambda_2,\lambda_3$ penalties \TODO{or Lagrange mutlipliers.}
+
+\TODO{Or write a variational inequality due to that? Then we would have a minimisation of the Lagrangian with equality constraint under inequality constraint.}
 
 \bibliographystyle{plain}
 \bibliography{bib}
