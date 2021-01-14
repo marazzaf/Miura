@@ -7,8 +7,8 @@ from fenics import *
 import ufl
 import sys
 
-size_ref = 20 #5 for debug
-L,l = 1,1
+size_ref = 50 #5 for debug
+L,l = 10,10
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), size_ref, size_ref, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
@@ -33,8 +33,8 @@ norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
 a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1))) * dx
-#pen = 1e3
-#a += pen * inner(phi.dx(0), phi.dx(1)) * (psi[0]+psi[1]) * dx + (1 - 0.25*norm_phi_x) * norm_phi_y * (psi[0]+psi[1]) * dx
+pen = 1e3
+a += pen * inner(phi.dx(0), phi.dx(1)) * (psi[0]+psi[1]) * dx + (1 - 0.25*norm_phi_x) * norm_phi_y * (psi[0]+psi[1]) * dx
 #solving problem
 solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
@@ -49,7 +49,11 @@ print(cons) #should be one
 #checking intervals
 U = FunctionSpace(mesh, 'CG', 1)
 interval_x = project(inner(phi.dx(0), phi.dx(0)), U)
+vec_interval_x = interval_x.vector().get_local()
+print(min(vec_interval_x),max(vec_interval_x))
 interval_y = project(inner(phi.dx(1), phi.dx(1)), U)
+vec_interval_y = interval_y.vector().get_local()
+print(min(vec_interval_y),max(vec_interval_y))
 
 # Save solution in VTK format
 file = File("test/no_constraint.pvd")
