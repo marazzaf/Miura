@@ -49,8 +49,9 @@ A primitive of $\mathrm{Artanh}$ is \TODO{Write it after checking it...}
 
 The equality constraints write:
 \begin{equation}
-\Lambda_1 \int_{\Omega} \left\langle \varphi_{,x} ; \varphi_{,y} \right\rangle + \Lambda_2 \int_{\Omega} \left( (1 - \frac14 |\varphi_{,x}|^2) |\varphi_{,y}|^2 - 1 \right)
+\Lambda_1 \int_{\Omega} \left\langle \varphi_{,x} ; \varphi_{,y} \right\rangle + \Lambda_2 \int_{\Omega} \left( (1 - \frac14 |\varphi_{,x}|^2) |\varphi_{,y}|^2 - 1 \right),
 \end{equation}
+with $\Lambda_1$ and $\Lambda_2$ Lagrange multipliers.
 
 The inequality constraints write:
 %\begin{equation}
@@ -59,9 +60,9 @@ The inequality constraints write:
 %\end{equation}
 \begin{equation}
 \label{eq:inequality constraints energy}
-\lambda_1 \int_{\Omega} \left(\sqrt{3} - |\varphi_{,x}| \right)^\oplus + \lambda_2 \int_{\Omega} \left(2 - |\varphi_{,y}| \right)^\oplus + \lambda_3 \int_{\Omega} \left(|\varphi_{,y}| - 1 \right)^\oplus,
+\lambda_1 \int_{\Omega} \left(\sqrt{3} - |\varphi_{,x}| \right)^\oplus + \lambda_2 \int_{\Omega} \left(2 - |\varphi_{,y}| \right)^\oplus + \lambda_3 \int_{\Omega} \left(|\varphi_{,y}| - 1 \right)^\oplus + \lambda_4 \int_{\Omega} \left(|\varphi_{,x}| - \varepsilon \right)^\oplus,
 \end{equation}
-with $\lambda_1,\lambda_2,\lambda_3$ penalties \TODO{or Lagrange mutlipliers.}
+with $\lambda_1,\lambda_2,\lambda_3,\lambda_4$ penalties \TODO{or Lagrange mutlipliers?} and $\varepsilon = o(1)$.
 
 \TODO{Or write a variational inequality due to that? Then we would have a minimisation of the Lagrangian with equality constraint under inequality constraint.}
 
