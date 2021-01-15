@@ -8,7 +8,7 @@ import ufl
 import sys
 
 size_ref = 20 #5 for debug
-L,l = 1,1
+L,l = 10,2.pi
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), size_ref, size_ref, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)

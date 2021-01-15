@@ -19,9 +19,11 @@ psi = TestFunction(V)
 
 #Dirichlet BC
 R = 10 #radius of the outer circle
-x = SpatialCoordinate(mesh)
-theta = ufl.atan_2(x[0], x[1])
-phi_D = as_vector((R*cos(theta), R*sin(theta)))
+r = 1
+rho = Expression('r + (R-r)/R*x[0]', r=r, R=R, degree=1)
+alpha = 1
+#theta = ufl.atan_2(x[0], x[1])
+phi_D = rho * Expression(('cos(alpha*x[1])', 'sin(alpha*x[1])'), alpha=alpha, degree=3)
 
 #creating the bc object
 bc = DirichletBC(V, phi_D, bnd, 0)
