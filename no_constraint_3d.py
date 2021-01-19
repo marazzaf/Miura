@@ -7,21 +7,31 @@ from fenics import *
 import ufl
 import sys
 
-size_ref = 20 #5 for debug
-L,l = 10,2.pi
-mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), size_ref, size_ref, "crossed")
+L,l = 10,2*pi
+Nx,Ny = 5,10
+mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
 
-V = VectorFunctionSpace(mesh, 'CG', 1)
+V = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 phi = Function(V, name="surface")
 psi = TestFunction(V)
 
 #Dirichlet BC
-R = 10 #radius of the outer circle
-x = SpatialCoordinate(mesh)
-theta = ufl.atan_2(x[0], x[1])
-phi_D = as_vector((R*cos(theta), R*sin(theta)))
+#x = SpatialCoordinate(mesh)
+K = 1.9 #gaussian curvature of surface ?
+theta0 = pi/3
+#h_x = L // Nx
+#h_y = l // Ny
+#def R(i)
+#    return sqrt(((4-K*K)**2 * ((i-(Nx+1)/2)*h_x)**2+4)/(4-K**2))
+#end
+#z[i,j] = K*(i-(Nx+1)/2)*dx
+#x[i,j] = (R(i)+0.01*(i-1)*(Nx+1-i)*(j-1)*(Ny+1-j)*dx*dx*dy*dy)*cos(j*dy)
+#y[i,j] = (R(i)+0.01*(i-1)*(Nx+1-i)*(j-1)*(Ny+1-j)*dx*dx*dy*dy)*sin(j*dy)
+#phi_D = as_vector((x,y,z))
+phi_D = Constant((0,0,0))
+
 
 #creating the bc object
 bc = DirichletBC(V, phi_D, bnd, 0)
@@ -32,7 +42,7 @@ norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 
 #bilinear form
-a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1))) * dx
+a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
 #pen = 10
 #a += pen * inner(phi.dx(0), phi.dx(1)) * (psi[0]+psi[1]) * dx + (1 - 0.25*norm_phi_x) * norm_phi_y * (psi[0]+psi[1]) * dx
 #solving problem
