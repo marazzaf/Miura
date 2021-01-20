@@ -4,10 +4,12 @@ from fenics import *
 import ufl
 import sys
 from matplotlib import pyplot as plt
+from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 
 L,l = 10,2*pi
-Nx,Ny = 5,10
+size_ref = 100
+Nx,Ny = size_ref,int(size_ref*L/l)
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
@@ -63,14 +65,16 @@ file << interval_y
 vec_phi_ref = phi.vector().get_local()
 vec_phi = vec_phi_ref.reshape((3, len(vec_phi_ref) // 3))
 vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
-for i in vec_phi_aux:
-    print(i)
 
 #3d plot
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-for x,y,z in zip(vec_phi[0,:],vec_phi[1,:],vec_phi[2,:]):
-    ax.scatter(x, y, z)
+for i in vec_phi_aux:
+    ax.scatter(i[0], i[1], i[2], color='r')
 
-plt.show()
+#ax = fig.gca(projection='3d')
+#ax.plot_surface(vec_phi[0,:], vec_phi[1,:], vec_phi[2,:], cmap=cm.coolwarm,linewidth=0, antialiased=False)
+
+plt.savefig('plot.pdf')
+#plt.show()
 
