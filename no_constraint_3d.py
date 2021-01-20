@@ -1,11 +1,10 @@
 #coding: utf-8
 
 from fenics import *
-#from fenics_adjoint import *
-#from pyadjoint import Block
-#from atanh_overloaded import atanh
 import ufl
 import sys
+from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 L,l = 10,2*pi
 Nx,Ny = 5,10
@@ -20,17 +19,12 @@ psi = TestFunction(V)
 #Dirichlet BC
 #x = SpatialCoordinate(mesh)
 K = 1.9 #gaussian curvature of surface ?
-theta0 = pi/3
-#h_x = L // Nx
-#h_y = l // Ny
-#def R(i)
-#    return sqrt(((4-K*K)**2 * ((i-(Nx+1)/2)*h_x)**2+4)/(4-K**2))
-#end
-#z[i,j] = K*(i-(Nx+1)/2)*dx
-#x[i,j] = (R(i)+0.01*(i-1)*(Nx+1-i)*(j-1)*(Ny+1-j)*dx*dx*dy*dy)*cos(j*dy)
-#y[i,j] = (R(i)+0.01*(i-1)*(Nx+1-i)*(j-1)*(Ny+1-j)*dx*dx*dy*dy)*sin(j*dy)
-#phi_D = as_vector((x,y,z))
-phi_D = Constant((0,0,0))
+theta = pi/2
+z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
+x = SpatialCoordinate(mesh)
+rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
+phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
+#phi_D = Constant((0,0,0))
 
 
 #creating the bc object
@@ -40,11 +34,9 @@ bc = DirichletBC(V, phi_D, bnd, 0)
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
-
 #bilinear form
 a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
-#pen = 10
-#a += pen * inner(phi.dx(0), phi.dx(1)) * (psi[0]+psi[1]) * dx + (1 - 0.25*norm_phi_x) * norm_phi_y * (psi[0]+psi[1]) * dx
+
 #solving problem
 solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
@@ -66,4 +58,19 @@ file = File("test/no_constraint.pvd")
 file << phi
 file << interval_x
 file << interval_y
+
+#Plotting the function
+vec_phi_ref = phi.vector().get_local()
+vec_phi = vec_phi_ref.reshape((3, len(vec_phi_ref) // 3))
+vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
+for i in vec_phi_aux:
+    print(i)
+
+#3d plot
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+for x,y,z in zip(vec_phi[0,:],vec_phi[1,:],vec_phi[2,:]):
+    ax.scatter(x, y, z)
+
+plt.show()
 
