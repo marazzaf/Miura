@@ -14,13 +14,14 @@ mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
 
+#define other boundary for Neumann BC
+
 V = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 phi = Function(V, name="surface")
 psi = TestFunction(V)
 
 #Dirichlet BC
 #x = SpatialCoordinate(mesh)
-K = 1.9 #gaussian curvature of surface ?
 theta = pi/2
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
 x = SpatialCoordinate(mesh)
@@ -28,9 +29,8 @@ rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
 #phi_D = Constant((0,0,0))
 
-
 #creating the bc object
-bc = DirichletBC(V, phi_D, bnd, 0)
+bc = DirichletBC(V, phi_D, bnd, 0) #imposer que sur bords périodiques pour voir
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
@@ -78,6 +78,6 @@ for i in vec_phi_aux:
 #ax = fig.gca(projection='3d')
 #ax.plot_surface(vec_phi[0,:], vec_phi[1,:], vec_phi[2,:], cmap=cm.coolwarm,linewidth=0, antialiased=False)
 
-plt.savefig('plot.pdf')
+plt.savefig('plot_neumann.pdf')
 #plt.show()
 

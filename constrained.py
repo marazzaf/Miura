@@ -1,28 +1,28 @@
 #coding: utf-8
 
 from fenics import *
-#from fenics_adjoint import *
-#from pyadjoint import Block
+from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import ufl
 import sys
 
-size_ref = 50 #5 for debug
-L,l = Constant(10),Constant(2*pi)
-mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), size_ref, size_ref, "crossed")
+L,l = 10,2*pi
+size_ref = 100 #degub #100
+Nx,Ny = size_ref,int(size_ref*L/l)
+mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
 
-V = VectorFunctionSpace(mesh, 'CG', 1)
+V = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 phi = Function(V, name="surface")
 psi = TestFunction(V)
 
 #Dirichlet BC
-R = 10 #radius of the outer circle
-r = 1
-rho = Expression('r + (R-r)/R*x[0]', r=r, R=R, degree=1)
-alpha = 1
-#theta = ufl.atan_2(x[0], x[1])
-phi_D = rho * Expression(('cos(alpha*x[1])', 'sin(alpha*x[1])'), alpha=alpha, degree=3)
+theta = pi/2
+z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
+x = SpatialCoordinate(mesh)
+rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
+phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
 
 #creating the bc object
 bc = DirichletBC(V, phi_D, bnd, 0)
@@ -32,22 +32,32 @@ norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
-#a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1))) * dx
-#pen = 1e5
-a = inner(phi.dx(0), phi.dx(1)) * (psi[0]+psi[1]) * dx + ((1 - 0.25*norm_phi_x) * norm_phi_y - 1) * (psi[0]+psi[1]) * dx
-#solving problem
-solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
 
-#Assemble Minimisation problem
-J = assemble(0.5 * inner(y - yd, y - yd) * dx + nu / 2 * inner(u, u) * dx)
+#adding constraints with penalty
+pen = 1e5
+a += pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1) * (-inner(phi.dx(0),psi.dx(0))*norm_phi_y**2 + inner(phi.dx(1),psi.dx(1))*(4-norm_phi_x**2)) * dx
 
-# Formulate the reduced problem
-m = Control(u)  # Create a parameter from u, as it is the variable we want to optimise
-Jhat = ReducedFunctional(J, m)
-
-#Add the bounds for derivatives. Variational inequality?
+#To add the inequality constraints
 def ppos(x): #definition of positive part for inequality constraints
     return(x+abs(x))/2
+
+#solving problem
+#solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+
+#Other solver
+J = derivative(a, phi)
+problem = NonlinearVariationalProblem(a, phi, bc, J)
+solver  = NonlinearVariationalSolver(problem)
+
+#Parameters
+prm = solver.parameters
+#info(prm, True) #to get info on parameters
+prm["nonlinear_solver"] = "snes"
+
+#Solving
+solver.solve()
+
 
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
@@ -71,4 +81,20 @@ file = File("test/no_constraint.pvd")
 file << phi
 file << interval_x
 file << interval_y
+
+#Plotting the function
+vec_phi_ref = phi.vector().get_local()
+vec_phi = vec_phi_ref.reshape((3, len(vec_phi_ref) // 3))
+vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
+
+#3d plot
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+for i in vec_phi_aux:
+    ax.scatter(i[0], i[1], i[2], color='r')
+
+#ax = fig.gca(projection='3d')
+#ax.plot_surface(vec_phi[0,:], vec_phi[1,:], vec_phi[2,:], cmap=cm.coolwarm,linewidth=0, antialiased=False)
+
+plt.savefig('plot_constraint.pdf')
 
