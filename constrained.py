@@ -7,7 +7,7 @@ import ufl
 import sys
 
 L,l = 10,2*pi
-size_ref = 100 #degub #100
+size_ref = 10 #degub #100
 Nx,Ny = size_ref,int(size_ref*L/l)
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -36,18 +36,22 @@ a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+
 
 #adding constraints with penalty
 pen = 1e5
-a += pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1) * (-inner(phi.dx(0),psi.dx(0))*norm_phi_y**2 + inner(phi.dx(1),psi.dx(1))*(4-norm_phi_x**2)) * dx
+c = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalty on equality constraint
+b = derivative(c, phi)
+#b = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1) * (-inner(phi.dx(0),psi.dx(0))*norm_phi_y**2 + inner(phi.dx(1),psi.dx(1))*(4-norm_phi_x**2)) * dx
+
+tot = a + b
 
 #To add the inequality constraints
 def ppos(x): #definition of positive part for inequality constraints
     return(x+abs(x))/2
 
 #solving problem
-#solve(a == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+#solve(tot == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
 #Other solver
-J = derivative(a, phi)
-problem = NonlinearVariationalProblem(a, phi, bc, J)
+J = derivative(tot, phi)
+problem = NonlinearVariationalProblem(tot, phi, bc, J)
 solver  = NonlinearVariationalSolver(problem)
 
 #Parameters
@@ -58,6 +62,7 @@ prm["nonlinear_solver"] = "snes"
 #Solving
 solver.solve()
 
+print(assemble(action(a,phi)),assemble(action(b,phi))) #Pk a-t-on un nan?
 
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
