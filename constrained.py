@@ -72,12 +72,12 @@ norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 a = (ufl.ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
 
 #adding constraints with penalty
-pen = 1e2
+pen = 1e1
 c = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalty on equality constraint
 b = derivative(c, phi, psi)
 
-#tot = a + b
-tot = a #only minimal surface for now
+tot = a + b
+#tot = a #only minimal surface for now
 
 #To add the inequality constraints
 def ppos(x): #definition of positive part for inequality constraints
@@ -99,6 +99,8 @@ prm["nonlinear_solver"] = "newton" #"snes" #"newton"
 #prm["newton_solver"]['relative_tolerance'] = 1e-10
 
 #Solving
+#phi.vector().set_local(rand(phi.vector().size()))
+#phi.vector().apply("")
 solver.solve()
 
 #Tests
