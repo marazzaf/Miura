@@ -16,6 +16,7 @@ Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
+ds = ds(subdomain_data=bnd)
 
 #Approximation Space
 V = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
@@ -24,20 +25,35 @@ psi = TestFunction(V)
 
 #Defining the boundaries
 def top_down(x, on_boundary):
-    return (near(x[1], 0.) and on_boundary) or (near(x[1], l) and on_boundary)
+    tol = 1e-2
+    return (near(x[1], -l/2, tol) and on_boundary) or (near(x[1], l/2, tol) and on_boundary)
+
+def left(x, on_boundary):
+    tol = 1e-2
+    return (near(x[0], -L/2, tol) and on_boundary)
 
 mirror_boundary = AutoSubDomain(top_down)
 mirror_boundary.mark(bnd, 1)
+left_boundary = AutoSubDomain(left)
+left_boundary.mark(bnd, 2)
+
+#aux = assemble(psi[0] * ds(2)).get_local()
+#nz = aux.nonzero()
+#print(aux[nz])
+#sys.exit()
 
 #Dirichlet BC
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
-#phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
-phi_D = as_vector((rho, 0, z))
+phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
+#phi_D = as_vector((rho, 0, z))
 
 #creating the bc object
-bc = DirichletBC(V, phi_D, bnd, 1) #only Dirichlet on Mirror BC
+bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
+#bc1 = DirichletBC(V, phi_D, top_down)
+#bc2 = DirichletBC(V, phi_D, left)
+#bcs = [bc1,bc2]
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
@@ -52,20 +68,20 @@ pen = 1e2
 c = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalty on equality constraint
 b = derivative(c, phi, psi)
 
-tot = a + b
-#tot = a #only minimal surface for now
+#tot = a + b
+tot = a #only minimal surface for now
 
 #To add the inequality constraints
 def ppos(x): #definition of positive part for inequality constraints
     return(x+abs(x))/2
 
 #solving problem
-#solve(tot == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+#solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
 #Other solver
 dphi = TrialFunction(V)
 J = derivative(tot, phi, dphi)
-problem = NonlinearVariationalProblem(tot, phi, bc, J)
+problem = NonlinearVariationalProblem(tot, phi, bcs, J)
 solver  = NonlinearVariationalSolver(problem)
 
 #Parameters
