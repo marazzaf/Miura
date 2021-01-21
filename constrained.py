@@ -17,18 +17,27 @@ mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
 
+#Approximation Space
 V = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 phi = Function(V, name="surface")
 psi = TestFunction(V)
+
+#Defining the boundaries
+def top_down(x, on_boundary):
+    return (near(x[1], 0.) and on_boundary) or (near(x[1], l) and on_boundary)
+
+mirror_boundary = AutoSubDomain(top_down)
+mirror_boundary.mark(bnd, 1)
 
 #Dirichlet BC
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
-phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
+#phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
+phi_D = as_vector((rho, 0, z))
 
 #creating the bc object
-bc = DirichletBC(V, phi_D, bnd, 0)
+bc = DirichletBC(V, phi_D, bnd, 1) #only Dirichlet on Mirror BC
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
@@ -43,8 +52,8 @@ pen = 1e2
 c = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalty on equality constraint
 b = derivative(c, phi, psi)
 
-#tot = a + b
 tot = a + b
+#tot = a #only minimal surface for now
 
 #To add the inequality constraints
 def ppos(x): #definition of positive part for inequality constraints
