@@ -7,9 +7,12 @@ import numpy as np
 import ufl
 import sys
 
-L,l = 10,2*pi
+#To determine domain
+theta = pi/2
+L = Constant(2*sin(0.5*acos(0.5/cos(0.5*theta))))
+l = 2*pi
 size_ref = 10 #degub #100
-Nx,Ny = size_ref,int(size_ref*L/l)
+Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
@@ -19,7 +22,6 @@ phi = Function(V, name="surface")
 psi = TestFunction(V)
 
 #Dirichlet BC
-theta = pi/2
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
@@ -42,7 +44,7 @@ c = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalt
 b = derivative(c, phi, psi)
 
 #tot = a + b
-tot = a
+tot = a + b
 
 #To add the inequality constraints
 def ppos(x): #definition of positive part for inequality constraints
