@@ -53,15 +53,16 @@ z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
-#phi_D = as_vector((rho, 0, z))
+phi = project(phi_D, V) #test
+phi_D = as_vector((rho, 0, z))
 
 #creating the bc object
 bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-bcs.apply(phi.vector()) #just applying it to get a better initial guess?
+#bcs.apply(phi.vector()) #just applying it to get a better initial guess?
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, part_right)
-bcs = [bc1] #,bc2] #,bc3]
+bcs = [bc1] #,bc2,bc3]
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
@@ -85,7 +86,7 @@ def ppos(x): #definition of positive part for inequality constraints
 d = pen * (ppos(norm_phi_x - sqrt(3))**2 + ppos(norm_phi_y - 2)**2 + ppos(1 - norm_phi_y)**2) * dx
 e = derivative(d, phi)
 
-tot = a + c + e
+tot = a + c + e #a + c + e
 #tot = a #only minimal surface for now
 
 #solving problem
@@ -102,10 +103,9 @@ prm = solver.parameters
 #info(prm, True) #to get info on parameters
 prm["nonlinear_solver"] = "newton" #"snes" #"newton"
 prm["newton_solver"]['relative_tolerance'] = 1e-6
+prm['newton_solver']['maximum_iterations'] = 100
 
 #Solving
-#phi.vector().set_local(rand(phi.vector().size()))
-#phi.vector().apply("")
 solver.solve()
 
 #Tests
