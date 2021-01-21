@@ -7,7 +7,7 @@ import ufl
 import sys
 
 L,l = 10,2*pi
-size_ref = 10 #degub #100
+size_ref = 200 #degub #100
 Nx,Ny = size_ref,int(size_ref*L/l)
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -37,8 +37,7 @@ a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+
 #adding constraints with penalty
 pen = 1e5
 c = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalty on equality constraint
-b = derivative(c, phi)
-#b = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1) * (-inner(phi.dx(0),psi.dx(0))*norm_phi_y**2 + inner(phi.dx(1),psi.dx(1))*(4-norm_phi_x**2)) * dx
+b = derivative(c, phi, psi)
 
 tot = a + b
 
@@ -57,12 +56,17 @@ solver  = NonlinearVariationalSolver(problem)
 #Parameters
 prm = solver.parameters
 #info(prm, True) #to get info on parameters
-prm["nonlinear_solver"] = "snes"
+prm["nonlinear_solver"] = "newton" #"snes"
 
 #Solving
 solver.solve()
 
-print(assemble(action(a,phi)),assemble(action(b,phi))) #Pk a-t-on un nan?
+#Tests
+U = FunctionSpace(mesh, 'CG', 1)
+print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
+print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
+#print(assemble(a).get_local())
+print(assemble(action(a,phi)),assemble(c)) #Pk a-t-on un nan?
 
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
@@ -80,6 +84,7 @@ print(min(vec_interval_x),max(vec_interval_x))
 interval_y = project(inner(phi.dx(1), phi.dx(1)), U)
 vec_interval_y = interval_y.vector().get_local()
 print(min(vec_interval_y),max(vec_interval_y))
+sys.exit()
 
 # Save solution in VTK format
 file = File("test/no_constraint.pvd")
