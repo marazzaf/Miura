@@ -69,8 +69,8 @@ norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
-#a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
-a = (ufl.ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
+a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
+#a = (ufl.ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
 
 #adding equality constraint with penalty
 pen = 1e5
@@ -89,8 +89,15 @@ e = derivative(d, phi)
 tot = a + c + e #a + c + e
 #tot = a #only minimal surface for now
 
+#Tests
+U = FunctionSpace(mesh, 'CG', 1)
+print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
+print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
+print(assemble(action(a,phi)),assemble(action(c,phi)))
+
 #Testing bilinear forms
 phi = project(phi_D,V)
+print(assemble(a).get_local())
 print(assemble(action(a,phi)),assemble(b),assemble(d))
 sys.exit()
 
@@ -112,12 +119,6 @@ prm['newton_solver']['maximum_iterations'] = 100
 
 #Solving
 solver.solve()
-
-#Tests
-U = FunctionSpace(mesh, 'CG', 1)
-print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
-print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
-print(assemble(action(a,phi)),assemble(action(c,phi)))
 
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
