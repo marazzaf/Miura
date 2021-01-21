@@ -13,7 +13,7 @@ L = Constant(2*sin(0.5*acos(0.5/cos(0.5*theta))))
 l = 2*pi
 size_ref = 10 #degub #100
 Nx,Ny = int(size_ref*l/float(L)),size_ref
-mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
+mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
 bnd.set_all(0)
 ds = ds(subdomain_data=bnd)
@@ -26,18 +26,24 @@ psi = TestFunction(V)
 #Defining the boundaries
 def top_down(x, on_boundary):
     tol = 1e-2
-    return (near(x[1], -l/2, tol) and on_boundary) or (near(x[1], l/2, tol) and on_boundary)
+    return (near(x[1], 0, tol) and on_boundary) or (near(x[1], l, tol) and on_boundary)
 
 def left(x, on_boundary):
     tol = 1e-2
     return (near(x[0], -L/2, tol) and on_boundary)
 
-mirror_boundary = AutoSubDomain(top_down)
-mirror_boundary.mark(bnd, 1)
-left_boundary = AutoSubDomain(left)
-left_boundary.mark(bnd, 2)
+def part_right(x, on_boundary):
+    tol = 1e-2
+    return (near(x[0], L/2, tol) and x[1] > l/2 and on_boundary)
 
-#aux = assemble(psi[0] * ds(2)).get_local()
+#mirror_boundary = AutoSubDomain(top_down)
+#mirror_boundary.mark(bnd, 1)
+#left_boundary = AutoSubDomain(left)
+#left_boundary.mark(bnd, 2)
+#right_boundary = AutoSubDomain(part_right)
+#right_boundary.mark(bnd, 3)
+#
+#aux = assemble(psi[0] * ds(3)).get_local()
 #nz = aux.nonzero()
 #print(aux[nz])
 #sys.exit()
@@ -51,9 +57,11 @@ phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
 
 #creating the bc object
 bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-#bc1 = DirichletBC(V, phi_D, top_down)
-#bc2 = DirichletBC(V, phi_D, left)
-#bcs = [bc1,bc2]
+bcs.apply(phi.vector()) #just applying it to get a better initial guess?
+bc1 = DirichletBC(V, phi_D, top_down)
+bc2 = DirichletBC(V, phi_D, left)
+bc3 = DirichletBC(V, phi_D, part_right)
+bcs = [bc1,bc2,bc3]
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
