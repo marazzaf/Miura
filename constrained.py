@@ -53,12 +53,12 @@ z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
-phi = project(phi_D, V) #test
-phi_D = as_vector((rho, 0, z))
+#phi = project(phi_D, V) #test
+#phi_D = as_vector((rho, 0, z))
 
 #creating the bc object
 bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-#bcs.apply(phi.vector()) #just applying it to get a better initial guess?
+bcs.apply(phi.vector()) #just applying it to get a better initial guess?
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, part_right)
@@ -88,6 +88,11 @@ e = derivative(d, phi)
 
 tot = a + c + e #a + c + e
 #tot = a #only minimal surface for now
+
+#Testing bilinear forms
+phi = project(phi_D,V)
+print(assemble(action(a,phi)),assemble(b),assemble(d))
+sys.exit()
 
 #solving problem
 #solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
