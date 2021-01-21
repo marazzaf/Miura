@@ -3,11 +3,12 @@
 from fenics import *
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import numpy as np 
 import ufl
 import sys
 
 L,l = 10,2*pi
-size_ref = 200 #degub #100
+size_ref = 10 #degub #100
 Nx,Ny = size_ref,int(size_ref*L/l)
 mesh = RectangleMesh(Point(-L/2,-l/2), Point(L/2, l/2), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -32,14 +33,16 @@ norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
-a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
+#a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
+a = (ufl.ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
 
 #adding constraints with penalty
-pen = 1e5
+pen = 1e2
 c = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalty on equality constraint
 b = derivative(c, phi, psi)
 
-tot = a + b
+#tot = a + b
+tot = a
 
 #To add the inequality constraints
 def ppos(x): #definition of positive part for inequality constraints
@@ -49,14 +52,16 @@ def ppos(x): #definition of positive part for inequality constraints
 #solve(tot == 0, phi, bc, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
 #Other solver
-J = derivative(tot, phi)
+dphi = TrialFunction(V)
+J = derivative(tot, phi, dphi)
 problem = NonlinearVariationalProblem(tot, phi, bc, J)
 solver  = NonlinearVariationalSolver(problem)
 
 #Parameters
 prm = solver.parameters
 #info(prm, True) #to get info on parameters
-prm["nonlinear_solver"] = "newton" #"snes"
+prm["nonlinear_solver"] = "newton" #"snes" #"newton"
+#prm["newton_solver"]['relative_tolerance'] = 1e-10
 
 #Solving
 solver.solve()
@@ -66,7 +71,7 @@ U = FunctionSpace(mesh, 'CG', 1)
 print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
 print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
 #print(assemble(a).get_local())
-print(assemble(action(a,phi)),assemble(c)) #Pk a-t-on un nan?
+print(assemble(action(a,phi)),assemble(action(b,phi)))
 
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
@@ -84,7 +89,6 @@ print(min(vec_interval_x),max(vec_interval_x))
 interval_y = project(inner(phi.dx(1), phi.dx(1)), U)
 vec_interval_y = interval_y.vector().get_local()
 print(min(vec_interval_y),max(vec_interval_y))
-sys.exit()
 
 # Save solution in VTK format
 file = File("test/no_constraint.pvd")
