@@ -53,7 +53,7 @@ z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
-#phi = project(phi_D, V) #test
+phi = project(phi_D, V) #test
 #phi_D = as_vector((rho, 0, z))
 
 #creating the bc object
@@ -95,12 +95,18 @@ tot = a + c + e #a + c + e
 #Tests
 phi = project(phi_D,V)
 U = FunctionSpace(mesh, 'CG', 1)
-print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
-print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
-print(min(project(norm_phi_y, U).vector().get_local()))
+aux = project(norm_phi_x**2, U).vector().get_local()
+print(min(aux),max(aux))
+aux = project(norm_phi_y**2, U).vector().get_local()
+print(min(aux),max(aux))
+sys.exit()
+#print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
+#print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
+#print(min(project(norm_phi_y, U).vector().get_local())) #Okay
 print(assemble(a1).get_local())
-print(assemble(a2).get_local())
+#print(assemble(a2).get_local()) #Okay
 print(assemble(a).get_local())
+sys.exit()
 print(assemble(c).get_local())
 
 #Testing bilinear forms
