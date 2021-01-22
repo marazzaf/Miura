@@ -30,23 +30,18 @@ def top_down(x, on_boundary):
 
 def left(x, on_boundary):
     tol = 1e-2
-    return (near(x[0], -L/2, tol) and on_boundary)
+    return near(x[0], -L/2, tol) and on_boundary
 
-def part_right(x, on_boundary):
+def right(x, on_boundary):
     tol = 1e-2
-    return (near(x[0], L/2, tol) and x[1] > l/2 and on_boundary)
+    return near(x[0], L/2, tol) and on_boundary #and x[1] > l/2
 
-#mirror_boundary = AutoSubDomain(top_down)
-#mirror_boundary.mark(bnd, 1)
-#left_boundary = AutoSubDomain(left)
-#left_boundary.mark(bnd, 2)
-#right_boundary = AutoSubDomain(part_right)
-#right_boundary.mark(bnd, 3)
-#
-#aux = assemble(psi[0] * ds(3)).get_local()
-#nz = aux.nonzero()
-#print(aux[nz])
-#sys.exit()
+mirror_boundary = AutoSubDomain(top_down)
+mirror_boundary.mark(bnd, 1)
+left_boundary = AutoSubDomain(left)
+left_boundary.mark(bnd, 2)
+right_boundary = AutoSubDomain(right)
+right_boundary.mark(bnd, 3)
 
 #Dirichlet BC
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=1)
@@ -62,8 +57,8 @@ bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
 bcs.apply(phi.vector()) #just applying it to get a better initial guess?
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
-bc3 = DirichletBC(V, phi_D, part_right)
-bcs = [bc1,bc2,bc3]
+bc3 = DirichletBC(V, phi_D, right)
+bcs = [bc1] #,bc2,bc3]
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
@@ -89,11 +84,13 @@ def ppos(x): #definition of positive part for inequality constraints
 d = pen * (ppos(norm_phi_x - sqrt(3))**2 + ppos(norm_phi_y - 2)**2 + ppos(1 - norm_phi_y)**2) * dx
 e = derivative(d, phi)
 
-tot = a + c + e #a + c + e
-#tot = a #only minimal surface for now
+#Adding Neumann BC
+neumann_x = phi_D.dx(0)
+neumann_y = phi_D.dx(1)
+rhs = (inner(neumann_x, psi) + inner(neumann_y, psi)) * (ds(2) + ds(3))
 
-#solving problem
-#solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+tot = a + c + e - rhs
+#tot = a #only minimal surface for now
 
 #Other solver
 #dphi = TrialFunction(V)
