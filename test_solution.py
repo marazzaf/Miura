@@ -51,18 +51,19 @@ norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 U = FunctionSpace(mesh, 'CG', 1)
 interval_x = project(inner(phi.dx(0), phi.dx(0)), U)
 vec_interval_x = interval_x.vector().get_local()
-print(min(vec_interval_x),max(vec_interval_x))
+#print(min(vec_interval_x),max(vec_interval_x))
 interval_y = project(inner(phi.dx(1), phi.dx(1)), U)
 vec_interval_y = interval_y.vector().get_local()
-print(min(vec_interval_y),max(vec_interval_y))
+#print(min(vec_interval_y),max(vec_interval_y))
 
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
 ps = assemble(ps)
-print(ps) #should be 0
+#print(ps) #should be 0
+vol = CellVolume(mesh)
 cons = (1 - 0.25*norm_phi_x) * norm_phi_y * dx
 cons = assemble(cons)
-print(cons) #should be one
+print(cons / float(l) / float(L)) #should be one
 sys.exit()
 
 #bilinear form
