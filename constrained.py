@@ -49,36 +49,36 @@ def part_right(x, on_boundary):
 #sys.exit()
 
 #Dirichlet BC
-z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
+z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=1)
+alpha = sqrt(1 / (1 - sin(theta/2)**2))
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
-phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
-phi = project(phi_D, V) #test
+phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+#phi = project(phi_D, V) #test
 #phi_D = as_vector((rho, 0, z))
 
 #creating the bc object
 bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-#bcs.apply(phi.vector()) #just applying it to get a better initial guess?
+bcs.apply(phi.vector()) #just applying it to get a better initial guess?
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, part_right)
-bcs = [bc1] #,bc2,bc3]
+bcs = [bc1,bc2,bc3]
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
-a1 = ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx
+#a1 = ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #correct on
+a1 = ufl.ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #test
 a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
 a = a1 + a2
-#a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
-#a = (ufl.ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx #There should not be the abs
 
 #adding equality constraint with penalty
 pen = 1e5
 b = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalty on equality constraint
-c = derivative(b, phi, psi)
+c = derivative(b, phi)
 
 #To add the inequality constraints
 def ppos(x): #definition of positive part for inequality constraints
@@ -92,37 +92,12 @@ e = derivative(d, phi)
 tot = a + c + e #a + c + e
 #tot = a #only minimal surface for now
 
-#Tests
-phi = project(phi_D,V)
-U = FunctionSpace(mesh, 'CG', 1)
-aux = project(norm_phi_x**2, U).vector().get_local()
-print(min(aux),max(aux))
-aux = project(norm_phi_y**2, U).vector().get_local()
-print(min(aux),max(aux))
-sys.exit()
-#print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
-#print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
-#print(min(project(norm_phi_y, U).vector().get_local())) #Okay
-print(assemble(a1).get_local())
-#print(assemble(a2).get_local()) #Okay
-print(assemble(a).get_local())
-sys.exit()
-print(assemble(c).get_local())
-
-#Testing bilinear forms
-phi = project(phi_D,V)
-print(assemble(a).get_local())
-print(assemble(action(a,phi)),assemble(b),assemble(d))
-vol = CellVolume(mesh)
-print(assemble(((1 - 0.25*norm_phi_x) * norm_phi_y - 1) / vol * dx))
-sys.exit()
-
 #solving problem
 #solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
 #Other solver
-dphi = TrialFunction(V)
-J = derivative(tot, phi, dphi)
+#dphi = TrialFunction(V)
+J = derivative(tot, phi) #, dphi)
 problem = NonlinearVariationalProblem(tot, phi, bcs, J)
 solver  = NonlinearVariationalSolver(problem)
 
@@ -174,5 +149,5 @@ for i in vec_phi_aux:
 #ax.plot_surface(vec_phi[0,:], vec_phi[1,:], vec_phi[2,:], cmap=cm.coolwarm,linewidth=0, antialiased=False)
 
 plt.savefig('plot_constraint.pdf')
-#plt.show()
+plt.show()
 
