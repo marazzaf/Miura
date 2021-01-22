@@ -58,7 +58,7 @@ phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
 
 #creating the bc object
 bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-bcs.apply(phi.vector()) #just applying it to get a better initial guess?
+#bcs.apply(phi.vector()) #just applying it to get a better initial guess?
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, part_right)
@@ -69,8 +69,11 @@ norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
-a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
-#a = (ufl.ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
+a1 = ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx
+a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
+a = a1 + a2
+#a = (ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx
+#a = (ufl.ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) - 4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1))) * dx #There should not be the abs
 
 #adding equality constraint with penalty
 pen = 1e5
@@ -90,15 +93,22 @@ tot = a + c + e #a + c + e
 #tot = a #only minimal surface for now
 
 #Tests
+phi = project(phi_D,V)
 U = FunctionSpace(mesh, 'CG', 1)
 print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
 print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
-print(assemble(action(a,phi)),assemble(action(c,phi)))
+print(min(project(norm_phi_y, U).vector().get_local()))
+print(assemble(a1).get_local())
+print(assemble(a2).get_local())
+print(assemble(a).get_local())
+print(assemble(c).get_local())
 
 #Testing bilinear forms
 phi = project(phi_D,V)
 print(assemble(a).get_local())
 print(assemble(action(a,phi)),assemble(b),assemble(d))
+vol = CellVolume(mesh)
+print(assemble(((1 - 0.25*norm_phi_x) * norm_phi_y - 1) / vol * dx))
 sys.exit()
 
 #solving problem
@@ -158,4 +168,5 @@ for i in vec_phi_aux:
 #ax.plot_surface(vec_phi[0,:], vec_phi[1,:], vec_phi[2,:], cmap=cm.coolwarm,linewidth=0, antialiased=False)
 
 plt.savefig('plot_constraint.pdf')
+#plt.show()
 
