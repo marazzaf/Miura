@@ -11,7 +11,7 @@ import sys
 theta = pi/2
 L = Constant(2*sin(0.5*acos(0.5/cos(0.5*theta))))
 l = 2*pi
-size_ref = 200 #degub: 5
+size_ref = 250 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -38,9 +38,11 @@ def part_right(x, on_boundary):
 
 #Dirichlet BC
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=3)
+alpha = sqrt(1 / (1 - sin(theta/2)**2))
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
-phi_D = as_vector((rho*cos(x[1]), rho*sin(x[1]), z))
+#rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] - sin(theta/2)**2*x[0] + 1) #test
+phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 phi = project(phi_D, V) #test
 
 #Writing energy. No constraint for now...
@@ -63,18 +65,29 @@ ps = assemble(ps)
 vol = CellVolume(mesh)
 cons = (1 - 0.25*norm_phi_x) * norm_phi_y * dx
 cons = assemble(cons)
-print(cons / float(l) / float(L)) #should be one
-sys.exit()
+#print(cons / float(l) / float(L)) #should be one
+#sys.exit()
 
 #bilinear form
 a1 = ufl.ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx
 a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
 a = a1 + a2
 
+#Tests
+phi = project(phi_D,V)
+print(assemble(a1).get_local())
+#print(assemble(a2).get_local()) #Okay
+print(assemble(a).get_local())
+sys.exit()
+
 #adding equality constraint with penalty
 pen = 1e5
 b = pen * ((1 - 0.25*norm_phi_x) * norm_phi_y - 1)**2 * dx #least-squares penalty on equality constraint
 c = derivative(b, phi, psi)
+
+#To add the inequality constraints
+def ppos(x): #definition of positive part for inequality constraints
+    return(x+abs(x))/2
 
 #adding inequality constraint with penalty
 #d = pen * (ppos(norm_phi_x**2 - 3) + ppos(norm_phi_y**2 - 4) + ppos(1 - norm_phi_y**2)) * dx
@@ -84,21 +97,6 @@ e = derivative(d, phi)
 tot = a + c + e #a + c + e
 #tot = a #only minimal surface for now
 
-#Tests
-phi = project(phi_D,V)
-U = FunctionSpace(mesh, 'CG', 1)
-aux = project(norm_phi_x**2, U).vector().get_local()
-print(min(aux),max(aux))
-aux = project(norm_phi_y**2, U).vector().get_local()
-print(min(aux),max(aux))
-sys.exit()
-#print(min(project(1+0.5*norm_phi_x, U).vector().get_local()))
-#print(min(project(1-0.5*norm_phi_x, U).vector().get_local()))
-#print(min(project(norm_phi_y, U).vector().get_local())) #Okay
-print(assemble(a1).get_local())
-#print(assemble(a2).get_local()) #Okay
-print(assemble(a).get_local())
-sys.exit()
 print(assemble(c).get_local())
 
 #Testing bilinear forms
