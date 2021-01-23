@@ -10,7 +10,7 @@ import sys
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 10 #degub: 5
+size_ref = 100 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -53,7 +53,8 @@ phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 #creating the bc object
 bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-bcs.apply(phi.vector()) #just applying it to get a better initial guess?
+#bcs.apply(phi.vector()) #just applying it to get a better initial guess?
+phi = project(phi_D, V)
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, right)
@@ -64,8 +65,8 @@ norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
-a1 = ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #correct
-#a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #test
+#a1 = ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #correct
+a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #test
 a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
 a = a1 + a2
 
