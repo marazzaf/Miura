@@ -8,7 +8,7 @@ import sys
 
 #To determine domain
 theta = pi/2
-L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #Constant
+L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
 size_ref = 10 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
@@ -43,9 +43,9 @@ right_boundary = AutoSubDomain(right)
 right_boundary.mark(bnd, 3)
 
 #Dirichlet BC
-z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree=1)
-alpha = sqrt(1 / (1 - sin(theta/2)**2))
 x = SpatialCoordinate(mesh)
+z = 2*sin(theta/2)*x[0]
+alpha = sqrt(1 / (1 - sin(theta/2)**2))
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 #phi = project(phi_D, V) #test
@@ -95,10 +95,10 @@ neumann_y = phi_D.dx(1)
 #neumann_x = test[:,0]
 #print(neumann_x)
 #neumann_y = test[:,1]
-rhs = (dot(neumann_x, psi) + dot(neumann_y, psi)) * ds(2)# + ds(3))
-#rhs = (phi_D[0]*psi[0]) * ds(2)
+rhs_n = (dot(neumann_x, psi) + dot(neumann_y, psi)) * (ds(2) + ds(3))
+#rhs_n = (phi_D[0].dx(0)*psi[0] + phi_D[1].dx(0)*psi[1] + phi_D[0].dx(1)*psi[0] + phi_D[1].dx(1)*psi[1] + z.dx(0)*psi[2] + z.dx(1)*psi[2]) * (ds(2)+ds(3))
 
-tot = a + c + e - rhs
+tot = a + c + e - rhs_n
 #F = action(tot, phi)
 #tot = a #only minimal surface for now
 
