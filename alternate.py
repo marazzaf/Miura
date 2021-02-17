@@ -10,7 +10,7 @@ import sys
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 100 #degub: 5
+size_ref = 10 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -18,7 +18,7 @@ bnd.set_all(0)
 ds = ds(subdomain_data=bnd)
 
 #Approximation Space
-V = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
+V = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
 phi = Function(V, name="surface")
 psi = TestFunction(V)
 
@@ -65,9 +65,8 @@ norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
 
 #bilinear form
-#a1 = ln((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #correct
-a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #test
-a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
+a1 = (phi[0].dx(0).dx(0)*psi[0] + phi[1].dx(0).dx(0)*psi[1] + phi[2].dx(0).dx(0)*psi[2]) / (1 - 0.25*norm_phi_x**2) * dx
+a2 = 4/norm_phi_y**2 * (phi[0].dx(1).dx(1)*psi[0] + phi[1].dx(1).dx(1)*psi[1] + phi[2].dx(1).dx(1)*psi[2]) * dx
 a = a1 + a2
 
 #adding equality constraint with penalty
@@ -99,7 +98,7 @@ neumann_y = phi_D.dx(1)
 rhs_n = (dot(neumann_x, psi) + dot(neumann_y, psi)) * (ds(2) + ds(3))
 #rhs_n = (phi_D[0].dx(0)*psi[0] + phi_D[1].dx(0)*psi[1] + phi_D[0].dx(1)*psi[0] + phi_D[1].dx(1)*psi[1] + z.dx(0)*psi[2] + z.dx(1)*psi[2]) * (ds(2)+ds(3))
 
-tot = a + c + e - rhs_n
+tot = a# + c + e - rhs_n
 #F = action(tot, phi)
 #tot = a #only minimal surface for now
 
