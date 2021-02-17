@@ -17,6 +17,10 @@ print(np.amin(z))
 nz = np.where(abs(z) < 1.e-7)
 print(x[nz])
 print(y[nz])
+#sys.exit()
+
+plt.plot(x, np.sqrt(1 / (1 - 0.25*x*x)), 'x')
+plt.show()
 sys.exit()
 
 fig = plt.figure()

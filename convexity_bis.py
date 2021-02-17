@@ -23,21 +23,23 @@ det_P = det(hess_P)
 U = FunctionSpace(mesh, 'CG', 1)
 vec = project(Q, U).vector().get_local()
 print(min(vec), max(vec))
+vec = project(P, U).vector().get_local()
+print(min(vec), max(vec))
 grad_Q = grad(Q)
 hess_Q = grad(grad_Q)
 det_Q = det(hess_Q)
 vec = project(det_Q, U).vector().get_local()
-print(min(vec), max(vec))
+#print(min(vec), max(vec))
 sys.exit()
 
 #Study of the sign of det
 vec = project(det_P, U).vector().get_local()
 print(min(vec), max(vec))
-sys.exit()
-
-#Reference solution
-x = SpatialCoordinate(mesh)
-z = 2*sin(theta/2)*x[0]
-alpha = sqrt(1 / (1 - sin(theta/2)**2))
-rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
-phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+#sys.exit()
+#
+##Reference solution
+#x = SpatialCoordinate(mesh)
+#z = 2*sin(theta/2)*x[0]
+#alpha = sqrt(1 / (1 - sin(theta/2)**2))
+#rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
+#phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
