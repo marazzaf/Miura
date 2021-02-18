@@ -56,7 +56,7 @@ interval_x = project(inner(phi.dx(0), phi.dx(0)), U)
 interval_y = project(inner(phi.dx(1), phi.dx(1)), U)
 print(min(interval_x.vector().get_local()),max(interval_x.vector().get_local()))
 print(min(interval_y.vector().get_local()),max(interval_y.vector().get_local()))
-sys.exit()
+#sys.exit()
 
 # Save solution in VTK format
 file = File("test/no_constraint.pvd")

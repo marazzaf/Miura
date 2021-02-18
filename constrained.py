@@ -58,7 +58,7 @@ phi = project(phi_D, V)
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, right)
-bcs = [bc1] #,bc2,bc3]
+bcs = [bc1,bc2,bc3]
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
@@ -99,9 +99,9 @@ neumann_y = phi_D.dx(1)
 rhs_n = (dot(neumann_x, psi) + dot(neumann_y, psi)) * (ds(2) + ds(3))
 #rhs_n = (phi_D[0].dx(0)*psi[0] + phi_D[1].dx(0)*psi[1] + phi_D[0].dx(1)*psi[0] + phi_D[1].dx(1)*psi[1] + z.dx(0)*psi[2] + z.dx(1)*psi[2]) * (ds(2)+ds(3))
 
-tot = a + c + e - rhs_n
+#tot = a + c + e - rhs_n
 #F = action(tot, phi)
-#tot = a #only minimal surface for now
+tot = a #only minimal surface for now
 
 # Compute solution
 solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
