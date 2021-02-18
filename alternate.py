@@ -10,7 +10,7 @@ import sys
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 20 #degub: 5
+size_ref = 50 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -60,26 +60,19 @@ test_y = project(inner(i_phi_D.dx(1), i_phi_D.dx(1)), U)
 vec_y = test_y.vector().get_local()
 assert min(vec_y) > 1 and max(vec_y) < 4
 
-
 #creating the bc object
 #bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-phi = i_phi_D #initial guess is the solution
+#phi = i_phi_D #initial guess is the solution
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, right)
 bcs = [bc1,bc2,bc3]
 for bc in bcs:
-    bc.apply(phi.vector()) #just applying it to get a better initial guess?
+    bc.apply(phi.vector()) #just applying it to get a better initial guess. Not working. Do better.
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
 norm_phi_y = sqrt(inner(phi.dx(1), phi.dx(1)))
-
-##test
-#truc = assemble(inner(phi.dx(0), psi) * dx)
-#truc_bis = assemble((dphi[0].dx(0) * psi[0] + dphi[1].dx(0) * psi[1] + dphi[2].dx(0) * psi[2]) * dx)
-#print(as_backend_type(truc - truc_bis).array().nonzero())
-#sys.exit()
 
 #bilinear form
 a1 = inner(phi.dx(0).dx(0), psi) / (1 - 0.25*norm_phi_x**2) * dx
@@ -89,7 +82,15 @@ a = a1 + a2
 #test
 test = assemble(action(a,Constant((2,3,4))))
 print(test)
-print(assemble(a)[:].sum())
+print(assemble(a)[:].sum()) #not working as expected
+
+#Old
+a1 = (ln(1+0.5*norm_phi_x) - ln(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx
+a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
+a_aux = a1+a2
+#print(assemble(a_aux))
+print(assemble(a_aux)[:].sum())
+#print(assemble(action(a_aux, Constant((1,1,1)))))
 
 #adding equality constraint with penalty
 pen = 1e5
@@ -106,11 +107,11 @@ neumann_x = i_phi_D.dx(0)
 neumann_y = i_phi_D.dx(1)
 rhs_n = (dot(neumann_x, psi) + dot(neumann_y, psi)) * (ds(2) + ds(3))
 
-tot = a
+tot = a  #a #marche pas #a_aux #fonctionne plus
 #tot = a + e + c# - rhs_n 
 
 # Compute solution
-#solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
 ##Other solver
 ##dphi = TrialFunction(V)
@@ -128,32 +129,14 @@ tot = a
 ##Solving
 #solver.solve()
 
-#test
-#truc = project((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x), U)
-truc_1 = project(1+0.5*norm_phi_x, U)
-vec_1 = truc_1.vector().get_local()
-truc_2 = project(1-0.5*norm_phi_x, U)
-vec_2 = truc_2.vector().get_local()
-print(min(vec_1/vec_2), max(vec_1/vec_2))
-#sys.exit()
-
-#Old
-a1 = (ln(1+0.5*norm_phi_x) - ln(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx
-a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
-a_aux = a1+a2
-#print(assemble(a_aux))
-print(assemble(a_aux)[:].sum())
-print(assemble(action(a_aux, Constant((1,1,1)))))
-sys.exit()
-
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
 ps = assemble(ps)
 print(ps) #should be 0
-vol = CellVolume(mesh)
 cons = (1 - 0.25*norm_phi_x**2) * norm_phi_y**2 * dx
 cons = assemble(cons) / l / L
 print(cons) #should be one
+sys.exit()
 
 #checking intervals
 U = FunctionSpace(mesh, 'CG', 1)
