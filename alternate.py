@@ -10,7 +10,7 @@ import sys
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 2 #degub: 5
+size_ref = 20 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -19,6 +19,7 @@ ds = ds(subdomain_data=bnd)
 
 #Approximation Space
 V = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
+U = FunctionSpace(mesh, 'CG', 1)
 phi = Function(V, name="surface")
 psi = TestFunction(V)
 dphi = TrialFunction(V)
@@ -49,8 +50,16 @@ z = 2*sin(theta/2)*x[0]
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-#phi = project(phi_D, V) #test
-#phi_D = as_vector((rho, 0, z))
+
+#test
+test = project(phi_D, V) #test
+test_x = project(inner(test.dx(0), test.dx(0)), U)
+vec_x = test_x.vector().get_local()
+assert min(vec_x) > 0 and max(vec_x) < 3
+test_y = project(inner(test.dx(1), test.dx(1)), U)
+vec_y = test_y.vector().get_local()
+assert min(vec_y) > 1 and max(vec_y) < 4
+
 
 #creating the bc object
 #bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
@@ -78,8 +87,9 @@ a2 = 4/norm_phi_y**2 * inner(phi.dx(1).dx(1), psi) * dx
 a = a1 + a2
 
 #test
-test = assemble(a)
-print(test[:].sum())
+test = assemble(action(a,Constant((2,3,4))))
+print(test)
+print(assemble(a)[:].sum())
 
 #adding equality constraint with penalty
 pen = 1e5
@@ -126,13 +136,24 @@ tot = a
 #prm['newton_solver']['maximum_iterations'] = 100
 #
 ##Solving
-#solver.solve() 
+#solver.solve()
+
+#test
+#truc = project((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x), U)
+truc = project(1+0.5*norm_phi_x, U)
+#truc = project(1-0.5*norm_phi_x, U)
+vec = truc.vector().get_local()
+print(min(vec), max(vec))
+#print(vec)
+sys.exit()
 
 #Old
-a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #correct
+a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx
 a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
-a = a1+a2
-print(assemble(a)[:].sum())
+a_aux = a1+a2
+#print(assemble(a_aux))
+print(assemble(a_aux)[:].sum())
+print(assemble(action(a_aux, Constant((1,1,1)))))
 sys.exit()
 
 #solution verifies constraints?
