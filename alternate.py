@@ -45,17 +45,14 @@ right_boundary = AutoSubDomain(right)
 right_boundary.mark(bnd, 3)
 
 #Dirichlet BC
-x = SpatialCoordinate(mesh)
-z = 2*sin(theta/2)*x[0]
+#x = SpatialCoordinate(mesh)
+z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 3)
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
-#rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 3)
-phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', '2*sin(theta/2)*x[0]'), alpha=alpha, rho=rho, theta=theta, degree = 3)
-#phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=alpha, rho=rho, theta=theta, z=z, degree = 3)
 i_phi_D = interpolate(phi_D, V) #interpolation of Dirichlet BC
 
 #test
-
 test_x = project(inner(i_phi_D.dx(0), i_phi_D.dx(0)), U)
 vec_x = test_x.vector().get_local()
 assert min(vec_x) > 0 and max(vec_x) < 3
@@ -66,7 +63,7 @@ assert min(vec_y) > 1 and max(vec_y) < 4
 
 #creating the bc object
 #bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-phi = project(phi_D, V) #initial guess is the solution
+phi = i_phi_D #initial guess is the solution
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, right)
@@ -133,15 +130,15 @@ tot = a
 
 #test
 #truc = project((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x), U)
-truc = project(1+0.5*norm_phi_x, U)
-#truc = project(1-0.5*norm_phi_x, U)
-vec = truc.vector().get_local()
-print(min(vec), max(vec))
-#print(vec)
-sys.exit()
+truc_1 = project(1+0.5*norm_phi_x, U)
+vec_1 = truc_1.vector().get_local()
+truc_2 = project(1-0.5*norm_phi_x, U)
+vec_2 = truc_2.vector().get_local()
+print(min(vec_1/vec_2), max(vec_1/vec_2))
+#sys.exit()
 
 #Old
-a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx
+a1 = (ln(1+0.5*norm_phi_x) - ln(1-0.5*norm_phi_x)) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx
 a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
 a_aux = a1+a2
 #print(assemble(a_aux))
