@@ -10,7 +10,7 @@ import sys
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 50 #degub: 5
+size_ref = 5 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -120,7 +120,22 @@ tot = a
 #prm['newton_solver']['maximum_iterations'] = 100
 #
 ##Solving
-#solver.solve()
+#solver.solve() 
+
+##solution is okay?
+##test = action(a, Constant((1,1,1)))
+#test = assemble(a)
+#test = assemble( as_vector((phi[0].dx(0).dx(0), phi[1].dx(0).dx(0), phi[2].dx(0).dx(0))) / (1 - 0.25*norm_phi_x**2) * dx + 4/norm_phi_y**2 * as_vector((phi[0].dx(1).dx(1), phi[1].dx(1).dx(1), phi[2].dx(1).dx(1))) * dx )
+#print(test)
+##print(test)
+#sys.exit()
+
+#Old
+a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #correct
+a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
+a = a1+a2
+print(assemble(a)[:].sum())
+sys.exit()
 
 #solution verifies constraints?
 ps = inner(phi.dx(0), phi.dx(1)) * dx
