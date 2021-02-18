@@ -48,15 +48,18 @@ right_boundary.mark(bnd, 3)
 x = SpatialCoordinate(mesh)
 z = 2*sin(theta/2)*x[0]
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
-rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
-phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+#rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
+rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 3)
+phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', '2*sin(theta/2)*x[0]'), alpha=alpha, rho=rho, theta=theta, degree = 3)
+#phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+i_phi_D = interpolate(phi_D, V) #interpolation of Dirichlet BC
 
 #test
-test = project(phi_D, V) #test
-test_x = project(inner(test.dx(0), test.dx(0)), U)
+
+test_x = project(inner(i_phi_D.dx(0), i_phi_D.dx(0)), U)
 vec_x = test_x.vector().get_local()
 assert min(vec_x) > 0 and max(vec_x) < 3
-test_y = project(inner(test.dx(1), test.dx(1)), U)
+test_y = project(inner(i_phi_D.dx(1), i_phi_D.dx(1)), U)
 vec_y = test_y.vector().get_local()
 assert min(vec_y) > 1 and max(vec_y) < 4
 
@@ -102,19 +105,9 @@ d = inner(phi.dx(0), phi.dx(1))**2 * dx
 e = derivative(d, phi, psi)
 
 #Adding Neumann BC
-neumann_x = phi_D.dx(0)
-test = grad(phi_D)
-#print(test[0,0])
-#print(test[0,1])
-#print(test[2,0])
-#sys.exit()
-#neumann_x = as_vector((Dx(phi_D[0],0),Dx(phi_D[1],0),Dx(phi_D[2],0)))
-neumann_y = phi_D.dx(1)
-#neumann_x = test[:,0]
-#print(neumann_x)
-#neumann_y = test[:,1]
+neumann_x = i_phi_D.dx(0)
+neumann_y = i_phi_D.dx(1)
 rhs_n = (dot(neumann_x, psi) + dot(neumann_y, psi)) * (ds(2) + ds(3))
-#rhs_n = (phi_D[0].dx(0)*psi[0] + phi_D[1].dx(0)*psi[1] + phi_D[0].dx(1)*psi[0] + phi_D[1].dx(1)*psi[1] + z.dx(0)*psi[2] + z.dx(1)*psi[2]) * (ds(2)+ds(3))
 
 tot = a
 #tot = a + e + c# - rhs_n 
