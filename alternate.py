@@ -10,7 +10,7 @@ import sys
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 100 #degub: 5
+size_ref = 50 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -18,7 +18,7 @@ bnd.set_all(0)
 ds = ds(subdomain_data=bnd)
 
 #Approximation Space
-V = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
+V = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
 phi = Function(V, name="surface")
 psi = TestFunction(V)
 
@@ -53,7 +53,7 @@ phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 #creating the bc object
 #bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-phi = project(phi_D, V)
+phi = project(phi_D, V) #initial guess is the solution
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, right)
@@ -70,10 +70,10 @@ a1 = (phi[0].dx(0).dx(0)*psi[0] + phi[1].dx(0).dx(0)*psi[1] + phi[2].dx(0).dx(0)
 a2 = 4/norm_phi_y**2 * (phi[0].dx(1).dx(1)*psi[0] + phi[1].dx(1).dx(1)*psi[1] + phi[2].dx(1).dx(1)*psi[2]) * dx
 a = a1 + a2
 
-#old one
-a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #correct
-a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
-a = a1+a2
+##old one
+#a1 = ln(abs((1+0.5*norm_phi_x)/(1-0.5*norm_phi_x))) * (psi[0].dx(0)+psi[1].dx(0)+psi[2].dx(0)) * dx #correct
+#a2 = -4/norm_phi_y * (psi[0].dx(1)+psi[1].dx(1)+psi[2].dx(1)) * dx
+#a = a1+a2
 
 #adding equality constraint with penalty
 pen = 1e5
@@ -104,7 +104,7 @@ tot = a
 #tot = a + e + c# - rhs_n 
 
 # Compute solution
-solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
+#solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_tolerance":1e-6}})
 
 ##Other solver
 ##dphi = TrialFunction(V)
@@ -126,8 +126,9 @@ solve(tot == 0, phi, bcs, solver_parameters={"newton_solver":{"relative_toleranc
 ps = inner(phi.dx(0), phi.dx(1)) * dx
 ps = assemble(ps)
 print(ps) #should be 0
-cons = (1 - 0.25*norm_phi_x) * norm_phi_y * dx
-cons = assemble(cons)
+vol = CellVolume(mesh)
+cons = (1 - 0.25*norm_phi_x**2) * norm_phi_y**2 * dx
+cons = assemble(cons) / l / L
 print(cons) #should be one
 
 #checking intervals
@@ -144,6 +145,7 @@ file = File("test/no_constraint.pvd")
 file << phi
 file << interval_x
 file << interval_y
+sys.exit()
 
 #Plotting the function
 vec_phi_ref = phi.vector().get_local()
