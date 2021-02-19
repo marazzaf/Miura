@@ -11,10 +11,11 @@ def q(phi):
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 5 #degub: 5
+size_ref = 25 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3)
+U = FunctionSpace(mesh, 'Lagrange', 1)
 
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
 # (larger coefficient in front of the sin term makes the problem "more nonlinear")
@@ -27,6 +28,14 @@ phi_old = interpolate(phi_D, V)
 #plot(phi_old)
 #print('initial surface area:', assemble(sqrt(1+inner(grad(phi_old),grad(phi_old)))*dx))
 
+#test on phi_old
+test_x = project(inner(phi_old.dx(0), phi_old.dx(0)), U)
+vec_x = test_x.vector().get_local()
+#print(min(vec_x), max(vec_x))
+assert min(vec_x) > 0 and max(vec_x) < 3
+test_y = project(inner(phi_old.dx(1), phi_old.dx(1)), U)
+vec_y = test_y.vector().get_local()
+assert min(vec_y) > 1 and max(vec_y) < 4
 
 # Define variational problem for Picard iteration
 phi = TrialFunction(V)
@@ -40,6 +49,18 @@ tol = 1.0E-3
 maxiter = 50
 for iter in range(maxiter):
     solve(a == L, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate
+
+    #checking stuff
+    test_x = project(inner(phi.dx(0), phi.dx(0)), U)
+    vec_x = test_x.vector().get_local()
+    print(min(vec_x), max(vec_x))
+    test_y = project(inner(phi.dx(1), phi.dx(1)), U)
+    vec_y = test_y.vector().get_local()
+    print(min(vec_y), max(vec_y))
+    #assertions
+    assert min(vec_x) > 0 and max(vec_x) < 3
+    assert min(vec_y) > 1 and max(vec_y) < 4
+    
     eps = sqrt(abs(assemble(inner(grad(phi-phi_old),grad(phi-phi_old))*dx))) # check increment size as convergence test
     #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
     print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
