@@ -10,7 +10,7 @@ import sys
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 50 #degub: 5
+size_ref = 20 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 bnd = MeshFunction('size_t', mesh, 1)
@@ -60,15 +60,17 @@ test_y = project(inner(i_phi_D.dx(1), i_phi_D.dx(1)), U)
 vec_y = test_y.vector().get_local()
 assert min(vec_y) > 1 and max(vec_y) < 4
 
-#creating the bc object
-#bcs = DirichletBC(V, phi_D, bnd, 0) #only Dirichlet on Mirror BC
-#phi = i_phi_D #initial guess is the solution
+#Initial guess
+#phi = i_phi_D #Real solution
+phi = interpolate(Expression(('cos(alpha*x[1])', 'sin(alpha*x[1])', 'z'), alpha=alpha, theta=theta, z=z, degree = 3), V) #cylinder
+
+#BC
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, right)
 bcs = [bc1,bc2,bc3]
-for bc in bcs:
-    bc.apply(phi.vector()) #just applying it to get a better initial guess. Not working. Do better.
+#for bc in bcs:
+#    bc.apply(phi.vector()) #just applying it to get a better initial guess. Not working. Do better.
 
 #Writing energy. No constraint for now...
 norm_phi_x = sqrt(inner(phi.dx(0), phi.dx(0)))
@@ -107,7 +109,7 @@ neumann_x = i_phi_D.dx(0)
 neumann_y = i_phi_D.dx(1)
 rhs_n = (dot(neumann_x, psi) + dot(neumann_y, psi)) * (ds(2) + ds(3))
 
-tot = a  #a #marche pas #a_aux #fonctionne plus
+tot = a_aux  #a #marche pas #a_aux #fonctionne plus
 #tot = a + e + c# - rhs_n 
 
 # Compute solution
