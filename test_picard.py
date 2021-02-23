@@ -12,7 +12,7 @@ def q(phi):
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 25 #degub: 5
+size_ref = 50 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3)
@@ -41,20 +41,22 @@ assert min(vec_y) > 1 and max(vec_y) < 4
 # Define variational problem for Picard iteration
 phi = TrialFunction(V)
 psi = TestFunction(V)
-a = (p(phi_old) * inner(phi.dx(0).dx(0), psi) + q(phi_old) * inner(phi.dx(1).dx(1), psi)) * dx
+#a = (p(phi_old) * inner(phi.dx(0).dx(0), psi) + q(phi_old) * inner(phi.dx(1).dx(1), psi)) * dx
+a = (p(phi_old) * inner(psi.dx(0), phi.dx(0)) + q(phi_old) * inner(psi.dx(1), phi.dx(1))) * dx #test
 L = Constant(0.)*psi[0]*dx
 phi = Function(V)
 
-#Coercivity test
-f1 = Constant((1,2,10))
-f2 = Constant((1,0,1))
-t1 = interpolate(f1, V)
-t2 = interpolate(f2, V)
-value = assemble((p(phi_old) * inner(t1.dx(0).dx(0), t2) + q(phi_old) * inner(t1.dx(1).dx(1), t2)) * dx)
-n1 = sqrt(assemble(inner(t1, t1) * dx))
-n2 = sqrt(assemble(inner(t2, t2) * dx))
-print(value / n1 / n2)
-sys.exit()
+##Coercivity test
+#f1 = Constant((3,20,10))
+#f2 = f1
+##f2 = Constant((1,0,1))
+#t1 = interpolate(f1, V)
+#t2 = interpolate(f2, V)
+#value = assemble((p(phi_old) * inner(t1.dx(0), t2.dx(0)) + q(phi_old) * inner(t1.dx(1), t2.dx(1))) * dx)
+#n1 = sqrt(assemble(inner(t1, t1) * dx))
+#n2 = sqrt(assemble(inner(t2, t2) * dx))
+#print(value / n1 / n2)
+#sys.exit()
 
 # Picard iteration
 tol = 1.0E-3
