@@ -1,4 +1,7 @@
 from dolfin import *
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import pyplot as plt
+import sys
 
 # the coefficient functions
 def p(phi):
@@ -49,6 +52,19 @@ tol = 1.0E-3
 maxiter = 50
 for iter in range(maxiter):
     solve(a == L, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate
+
+    #plotting solution
+    vec_phi_ref = phi.vector().get_local()
+    vec_phi = vec_phi_ref.reshape((3, len(vec_phi_ref) // 3))
+    vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
+
+    #3d plot
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    for i in vec_phi_aux:
+      ax.scatter(i[0], i[1], i[2], color='r')
+    plt.show()
+    sys.exit()
 
     #checking stuff
     test_x = project(inner(phi.dx(0), phi.dx(0)), U)
