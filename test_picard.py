@@ -2,6 +2,7 @@ from dolfin import *
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
 import sys
+import ufl
 
 # the coefficient functions
 def p(phi):
@@ -17,7 +18,7 @@ l = 2*pi
 size_ref = 25 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
-V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3)
+V = VectorFunctionSpace(mesh, 'Lagrange', 1, dim=3)
 U = FunctionSpace(mesh, 'Lagrange', 1)
 
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
@@ -35,23 +36,50 @@ phi_old = interpolate(phi_D, V)
 test_x = project(inner(phi_old.dx(0), phi_old.dx(0)), U)
 vec_x = test_x.vector().get_local()
 #print(min(vec_x), max(vec_x))
-assert min(vec_x) > 0 and max(vec_x) < 3
+#assert min(vec_x) > 0 and max(vec_x) < 3
 test_y = project(inner(phi_old.dx(1), phi_old.dx(1)), U)
 vec_y = test_y.vector().get_local()
-assert min(vec_y) > 1 and max(vec_y) < 4
+#assert min(vec_y) > 1 and max(vec_y) < 4
 
 # Define variational problem for Picard iteration
-phi = TrialFunction(V)
-psi = TestFunction(V)
-a = (p(phi_old) * inner(phi.dx(0).dx(0), psi) + q(phi_old) * inner(phi.dx(1).dx(1), psi)) * dx
-L = Constant(0.)*psi[0]*dx
+#phi_t = TrialFunction(V)
 phi = Function(V)
+psi = TestFunction(V)
+#a = (p(phi_old) * inner(phi.dx(0).dx(0), psi) + q(phi_old) * inner(phi.dx(1).dx(1), psi)) * dx
+a = (p(phi_old) * inner(psi.dx(0), phi.dx(0)) + q(phi_old) * inner(psi.dx(1), phi.dx(1))) * dx #test
+
+#Adding pen
+#phi = Function(V)
+def ppos(x): #definition of positive part for inequality constraints
+    return(x+abs(x))/2
+pen = 1e5
+norm_phi_x = inner(phi.dx(0), phi.dx(0))
+norm_phi_y = inner(phi.dx(1), phi.dx(1))
+d = pen * (ppos(norm_phi_x - sqrt(3))**2 + ppos(norm_phi_y - 2)**2 + ppos(1 - norm_phi_y)**2) * dx
+e = derivative(d, phi, psi)
+#e = ufl.replace(e, {phi: phi_t})
+a = a + e
+
+L = Constant(0.)*psi[0]*dx
+
+
+##Coercivity test
+#f1 = Constant((3,20,10))
+#f2 = f1
+##f2 = Constant((1,0,1))
+#t1 = interpolate(f1, V)
+#t2 = interpolate(f2, V)
+#value = assemble((p(phi_old) * inner(t1.dx(0), t2.dx(0)) + q(phi_old) * inner(t1.dx(1), t2.dx(1))) * dx)
+#n1 = sqrt(assemble(inner(t1, t1) * dx))
+#n2 = sqrt(assemble(inner(t2, t2) * dx))
+#print(value / n1 / n2)
+#sys.exit()
 
 # Picard iteration
 tol = 1.0E-3
 maxiter = 50
 for iter in range(maxiter):
-    solve(a == L, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate
+    solve(a == 0, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate
 
     #plotting solution
     vec_phi_ref = phi.vector().get_local()
@@ -74,8 +102,8 @@ for iter in range(maxiter):
     vec_y = test_y.vector().get_local()
     print(min(vec_y), max(vec_y))
     #assertions
-    assert min(vec_x) > 0 and max(vec_x) < 3
-    assert min(vec_y) > 1 and max(vec_y) < 4
+    #assert min(vec_x) > 0 and max(vec_x) < 3
+    #assert min(vec_y) > 1 and max(vec_y) < 4
     
     eps = sqrt(abs(assemble(inner(grad(phi-phi_old),grad(phi-phi_old))*dx))) # check increment size as convergence test
     #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
