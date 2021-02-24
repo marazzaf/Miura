@@ -60,19 +60,6 @@ a = a + e
 
 L = Constant(0.)*psi[0]*dx
 
-
-##Coercivity test
-#f1 = Constant((3,20,10))
-#f2 = f1
-##f2 = Constant((1,0,1))
-#t1 = interpolate(f1, V)
-#t2 = interpolate(f2, V)
-#value = assemble((p(phi_old) * inner(t1.dx(0), t2.dx(0)) + q(phi_old) * inner(t1.dx(1), t2.dx(1))) * dx)
-#n1 = sqrt(assemble(inner(t1, t1) * dx))
-#n2 = sqrt(assemble(inner(t2, t2) * dx))
-#print(value / n1 / n2)
-#sys.exit()
-
 # Picard iteration
 tol = 1.0E-3
 maxiter = 50
