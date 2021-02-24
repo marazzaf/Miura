@@ -42,26 +42,27 @@ vec_y = test_y.vector().get_local()
 #assert min(vec_y) > 1 and max(vec_y) < 4
 
 # Define variational problem for Picard iteration
-#phi_t = TrialFunction(V)
-phi = Function(V)
+phi = TrialFunction(V)
+#phi = Function(V)
 psi = TestFunction(V)
 #a = (p(phi_old) * inner(phi.dx(0).dx(0), psi) + q(phi_old) * inner(phi.dx(1).dx(1), psi)) * dx
 a = (p(phi_old) * inner(psi.dx(0), phi.dx(0)) + q(phi_old) * inner(psi.dx(1), phi.dx(1))) * dx #test
 
 #Adding pen
-#phi = Function(V)
 def ppos(x): #definition of positive part for inequality constraints
     return(x+abs(x))/2
 pen = 1e5
-norm_phi_x = inner(phi.dx(0), phi.dx(0))
-norm_phi_y = inner(phi.dx(1), phi.dx(1))
-d = pen * (ppos(norm_phi_x - sqrt(3))**2 + ppos(norm_phi_y - 2)**2 + ppos(1 - norm_phi_y)**2) * dx
-e = derivative(d, phi, psi)
+#norm_phi_x = inner(phi.dx(0), phi.dx(0))
+#norm_phi_y = inner(phi.dx(1), phi.dx(1))
+#d = pen * (ppos(norm_phi_x - sqrt(3))**2 + ppos(norm_phi_y - 2)**2 + ppos(1 - norm_phi_y)**2) * dx
+#e = derivative(d, phi, psi)
+e = pen * ppos(inner(phi.dx(0), psi.dx(0))) * dx
 #e = ufl.replace(e, {phi: phi_t})
 a = a + e
 
 L = Constant(0.)*psi[0]*dx
 
+phi = Function(V)
 
 ##Coercivity test
 #f1 = Constant((3,20,10))
@@ -79,7 +80,7 @@ L = Constant(0.)*psi[0]*dx
 tol = 1.0E-3
 maxiter = 50
 for iter in range(maxiter):
-    solve(a == 0, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate
+    solve(a == L, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate
 
     #plotting solution
     vec_phi_ref = phi.vector().get_local()
