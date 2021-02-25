@@ -41,24 +41,33 @@ phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=al
 bc1 = DirichletBC(V, phi_D, top_down)
 bc2 = DirichletBC(V, phi_D, left)
 bc3 = DirichletBC(V, phi_D, right)
-bcs = [bc1,bc2,bc3]
-#bcs = bc1
+#bcs = [bc1,bc2,bc3]
+bcs = bc1
 
 #initial guess
 phi_old = interpolate(phi_D, V)
 
 # Define nonlinear weak formulation
-tol = 1.e-6
+tol = 1e-5
+atol = 1e-6
 phi = phi_old
 psi = TestFunction(V)
 F = (p(phi) * inner(psi.dx(0), phi.dx(0)) + q(phi) * inner(psi.dx(1), phi.dx(1))) * dx
 
 #Adding pen
-#Useful?
+def ppos(x): #definition of positive part for inequality constraints
+    return(x+abs(x))/2
+pen = 1e10
+norm_phi_x = inner(phi.dx(0), phi.dx(0))
+norm_phi_y = inner(phi.dx(1), phi.dx(1))
+G = pen * ppos(norm_phi_x - sqrt(3)) * inner(phi.dx(0), psi.dx(0)) / norm_phi_x * dx + pen * ppos(norm_phi_y - 2) * inner(phi.dx(0), psi.dx(0)) / norm_phi_y * dx + pen * ppos(1 - norm_phi_y) * inner(phi.dx(0), psi.dx(0)) / norm_phi_y * dx
+
+#Adding pen
+F = F + G
 
 # solve nonlinear problem using Newton's method.  Note that there
 # are numerous parameters that can be used to control the Newton iteration
-solve(F == 0, phi, bcs, solver_parameters={"newton_solver": {"absolute_tolerance": tol}})
+solve(F == 0, phi, bcs, solver_parameters={"newton_solver": {"absolute_tolerance": atol, "relative_tolerance": tol}})
 
 #plotting solution
 vec_phi_ref = phi.vector().get_local()
