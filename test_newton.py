@@ -16,14 +16,35 @@ l = 2*pi
 size_ref = 25 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
-V = VectorFunctionSpace(mesh, 'Lagrange', 1, dim=3)
+V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3)
 
-# initial guess (its boundary values specify the Dirichlet boundary conditions)
+#Defining the boundaries
+def top_down(x, on_boundary):
+    tol = 1e-2
+    return (near(x[1], 0, tol) and on_boundary) or (near(x[1], l, tol) and on_boundary)
+
+def left(x, on_boundary):
+    tol = 1e-2
+    return near(x[0], -L/2, tol) and on_boundary
+
+def right(x, on_boundary):
+    tol = 1e-2
+    return near(x[0], L/2, tol) and on_boundary
+
+# Dirichlet boundary conditions
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 5)
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 5)
 phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=alpha, rho=rho, theta=theta, z=z, degree = 5)
 
+#Dirichlet BC
+bc1 = DirichletBC(V, phi_D, top_down)
+bc2 = DirichletBC(V, phi_D, left)
+bc3 = DirichletBC(V, phi_D, right)
+bcs = [bc1,bc2,bc3]
+#bcs = bc1
+
+#initial guess
 phi_old = interpolate(phi_D, V)
 
 # Define nonlinear weak formulation
@@ -37,7 +58,7 @@ F = (p(phi) * inner(psi.dx(0), phi.dx(0)) + q(phi) * inner(psi.dx(1), phi.dx(1))
 
 # solve nonlinear problem using Newton's method.  Note that there
 # are numerous parameters that can be used to control the Newton iteration
-solve(F == 0, phi, DirichletBC(V, phi_D, DomainBoundary()), solver_parameters={"newton_solver": {"absolute_tolerance": tol}})
+solve(F == 0, phi, bcs, solver_parameters={"newton_solver": {"absolute_tolerance": tol}})
 
 #plotting solution
 vec_phi_ref = phi.vector().get_local()
