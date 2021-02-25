@@ -16,7 +16,7 @@ l = 2*pi
 size_ref = 20 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
-V = VectorFunctionSpace(mesh, 'Lagrange', 1, dim=6)
+V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=6)
 
 #Defining the boundaries
 def top_down(x, on_boundary):
@@ -73,12 +73,11 @@ G = psi[3] * ppos(norm_phi_x - sqrt(3)) * dx + psi[4] * ppos(norm_phi_y - 2) * d
 L = Constant(0)*psi[0]*dx
 phi = Function(V)
 solve(F == L, phi, bcs) #linear
-sys.exit()
+#sys.exit()
 
 #plotting solution
 vec_phi_ref = phi.vector().get_local()
-vec_phi = vec_phi_ref.reshape((3, len(vec_phi_ref) // 3))
-vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
+vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 6, 6))
 
 #3d plot
 fig = plt.figure()
