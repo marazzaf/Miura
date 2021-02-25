@@ -18,11 +18,10 @@ l = 2*pi
 size_ref = 25 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
-V = VectorFunctionSpace(mesh, 'Lagrange', 1, dim=3)
-U = FunctionSpace(mesh, 'Lagrange', 1)
+V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3) #degree 1
+U = FunctionSpace(mesh, 'Lagrange', 2) #degree 1
 
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
-# (larger coefficient in front of the sin term makes the problem "more nonlinear")
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 5)
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 5)

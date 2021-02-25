@@ -1,33 +1,31 @@
-"""
-Douglas N. Arnold, 2014-12-03
+from dolfin import *
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import pyplot as plt
 
-Solve the Dirichlet problem for the minimal surface equation.
+# the coefficient functions
+def p(phi):
+  return  1 / (1 - 0.25*inner(phi.dx(0), phi.dx(0)))
 
--div( q grad u) = 0,
-
-where q = q(grad u) = (1 + |grad u|^2)^{-1/2}
-
-using Newton's method as implemented in FEniCS with automatic differentiation
-to compute the Jacobian.
-"""
-
-from fenics import *
-import matplotlib.pyplot as plt
-
-# the coefficient function
-def q(u):
-  return (1+inner(grad(u),grad(u)))**(-.5)
+def q(phi):
+  return 4 / inner(phi.dx(1), phi.dx(1))
 
 # Create mesh and define function space
-mesh = UnitSquareMesh(100, 100)
-V = FunctionSpace(mesh, 'Lagrange', 2)
+theta = pi/2
+L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
+l = 2*pi
+size_ref = 25 #degub: 5
+Nx,Ny = int(size_ref*l/float(L)),size_ref
+mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
+V = VectorFunctionSpace(mesh, 'Lagrange', 1, dim=3)
+U = FunctionSpace(mesh, 'Lagrange', 1)
 
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
-# (larger coefficient in front of the sin term makes the problem "more nonlinear")
-u0exp = Expression('a*sin(2.5*pi*x[1])*x[0]', a=.2, degree=5)
-u0 = interpolate(u0exp, V)
-plot(u0)
-print('initial surface area:', assemble(sqrt(1+inner(grad(u0), grad(u0)))*dx))
+z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 5)
+alpha = sqrt(1 / (1 - sin(theta/2)**2))
+rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 5)
+phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=alpha, rho=rho, theta=theta, z=z, degree = 5)
+
+phi_old = interpolate(phi_D, V)
 
 # Define nonlinear weak formulation
 tol = 1.e-6
