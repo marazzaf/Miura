@@ -15,7 +15,7 @@ def q(phi):
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 25 #degub: 5
+size_ref = 5 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3) #degree 1
