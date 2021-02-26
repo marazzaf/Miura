@@ -13,7 +13,7 @@ def q(phi):
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 l = 2*pi
-size_ref = 20 #degub: 5
+size_ref = 25 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
 V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=6)
@@ -52,27 +52,35 @@ phi_old = interpolate(phi_D, V)
 # Define nonlinear weak formulation
 tol = 1e-5
 atol = 1e-6
-#phi = phi_old
-phi = TrialFunction(V)
+phi = phi_old
+#phi = TrialFunction(V)
+#phi = Function(V)
 psi = TestFunction(V)
-F = (p(phi_old) * (psi[0].dx(0) * phi[0].dx(0) + psi[1].dx(0) * phi[1].dx(0) + psi[2].dx(0) * phi[2].dx(0)) + q(phi_old) * (psi[0].dx(1) * phi[0].dx(1) + psi[1].dx(1) * phi[1].dx(1) + psi[2].dx(1) * phi[2].dx(1))) * dx
+F = (p(phi) * (psi[0].dx(0) * phi[0].dx(0) + psi[1].dx(0) * phi[1].dx(0) + psi[2].dx(0) * phi[2].dx(0)) + q(phi) * (psi[0].dx(1) * phi[0].dx(1) + psi[1].dx(1) * phi[1].dx(1) + psi[2].dx(1) * phi[2].dx(1))) * dx
 
 #Adding pen
 def ppos(x): #definition of positive part for inequality constraints
     return(x+abs(x))/2
+def H(x):
+  return ppos(x)/x
 norm_phi_x = (phi[0].dx(0) * phi[0].dx(0) + phi[1].dx(0) * phi[1].dx(0) + phi[2].dx(0) * phi[2].dx(0))
 norm_phi_y = (phi[0].dx(1) * phi[0].dx(1) + phi[1].dx(1) * phi[1].dx(1) + phi[2].dx(1) * phi[2].dx(1))
-G = psi[3] * ppos(norm_phi_x - sqrt(3)) * dx + psi[4] * ppos(norm_phi_y - 2) * dx + psi[5] * ppos(1 - norm_phi_y) * dx
+#U = FunctionSpace(mesh, 'CG', 1)
+#print(project(norm_phi_x, U).vector().get_local())
+G1 = phi[3] / norm_phi_x * H(norm_phi_x - sqrt(3)) * (phi[0].dx(0) * psi[0] + phi[1].dx(0) * psi[1] + phi[2].dx(0) * psi[2]) * dx
+G2 = phi[4] /norm_phi_y * H(norm_phi_y - 2) * (phi[0].dx(0) * psi[0] + phi[1].dx(0) * psi[1] + phi[2].dx(0) * psi[2]) * dx
+G3 = phi[5] / norm_phi_y * H(1 - norm_phi_y) * (phi[0].dx(0) * psi[0] + phi[1].dx(0) * psi[1] + phi[2].dx(0) * psi[2]) * dx
+G = G1 + G2 + G3
 
 #Adding pen
-#F = F + G
+F = F + G
 
 # solve nonlinear problem using Newton's method.  Note that there
 # are numerous parameters that can be used to control the Newton iteration
-#solve(F == 0, phi, bcs, solver_parameters={"newton_solver": {"absolute_tolerance": atol, "relative_tolerance": tol}}) #nonlinear
-L = Constant(0)*psi[0]*dx
-phi = Function(V)
-solve(F == L, phi, bcs) #linear
+solve(F == 0, phi, bcs, solver_parameters={"newton_solver": {"absolute_tolerance": atol, "relative_tolerance": tol}}) #nonlinear
+#L = Constant(0)*psi[0]*dx
+#phi = Function(V)
+#solve(F == L, phi, bcs) #linear
 #sys.exit()
 
 #plotting solution
