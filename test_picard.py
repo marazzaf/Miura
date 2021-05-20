@@ -14,16 +14,16 @@ def q(phi):
 # Create mesh and define function space
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
-l = 2*pi
-size_ref = 5 #degub: 5
+alpha = sqrt(1 / (1 - sin(theta/2)**2))
+l = 2*pi/alpha
+size_ref = 10#degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
-mesh = RectangleMesh(Point(-L/2,0), Point(L/2, l), Nx, Ny, "crossed")
+mesh = RectangleMesh(Point(0,0), Point(L, l), Nx, Ny, "crossed")
 V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3) #degree 1
 U = FunctionSpace(mesh, 'Lagrange', 2) #degree 1
 
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 5)
-alpha = sqrt(1 / (1 - sin(theta/2)**2))
 rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 5)
 phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=alpha, rho=rho, theta=theta, z=z, degree = 5)
 
