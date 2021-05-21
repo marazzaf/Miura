@@ -19,8 +19,8 @@ theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
-size_ref = 10 #degub: 5
-Nx,Ny = int(size_ref*l/float(L)),size_ref
+size_ref = 50 #degub: 5
+Nx,Ny = int(size_ref*l/float(L)/5),size_ref
 mesh = RectangleMesh(Point(0,0), Point(L, l), Nx, Ny, "crossed")
 V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3)
 U = FunctionSpace(mesh, 'Lagrange', 1)
@@ -76,7 +76,6 @@ for iter in range(maxiter):
   solve(a == L, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate #solving linear problem
 
   eps = sqrt(abs(assemble(inner(grad(phi-phi_old),grad(phi-phi_old))*dx))) # check increment size as convergence test
-  #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
   print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
   if eps < tol:
     break
@@ -101,13 +100,23 @@ if eps > tol:
 else:
   print('convergence after {} Picard iterations'.format(iter+1))
 
+area = assemble(sqrt(1+inner(grad(phi),grad(phi)))*dx)
+print('Computed area: %.5e' % area)
+phi_old = interpolate(phi_D, V)
+area = assemble(sqrt(1+inner(grad(phi_old),grad(phi_old)))*dx)
+print('Ref area: %.5e' % area)
+sys.exit()
+
 #plotting solution
-vec_phi_ref = phi.vector().get_local()
-vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
+vec_phi = phi.vector().get_local()
+vec_phi = vec_phi.reshape((len(vec_phi) // 3, 3))
+vec_phi_D = interpolate(phi_D, V).vector().get_local()
+vec_phi_D = vec_phi_D.reshape((len(vec_phi_D) // 3, 3))
 
 #3d plot
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-for i in vec_phi_aux:
+for i,j in zip(vec_phi,vec_phi_D):
   ax.scatter(i[0], i[1], i[2], color='r')
+  ax.scatter(j[0], j[1], j[2], color='b')
 plt.show()
