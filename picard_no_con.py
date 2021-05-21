@@ -19,11 +19,11 @@ theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
-size_ref = 50 #degub: 5
+size_ref = 100 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)/5),size_ref
 mesh = RectangleMesh(Point(0,0), Point(L, l), Nx, Ny, "crossed")
-V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3)
-U = FunctionSpace(mesh, 'Lagrange', 1)
+V = VectorFunctionSpace(mesh, 'Lagrange', 1, dim=3)
+U = FunctionSpace(mesh, 'DG', 0)
 
 # Reference solution
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 1)
@@ -69,8 +69,8 @@ L = Constant(0.)*psi[0]*dx
 #a = (p(phi_old) * inner(psi.dx(0), phi.dx(0)) + q(phi_old) * inner(psi.dx(1), phi.dx(1))) * dx
 
 # Picard iteration
-tol = 1.0E-3
-maxiter = 50
+tol = 1.0E-4
+maxiter = 100
 for iter in range(maxiter):
   #solve(a == 0, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate #solving non-linear problem
   solve(a == L, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate #solving linear problem
