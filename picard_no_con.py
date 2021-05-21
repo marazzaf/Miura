@@ -1,6 +1,7 @@
 from dolfin import *
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
+import numpy as np
 import sys
 import ufl
 
@@ -16,16 +17,16 @@ theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
-size_ref = 100 #degub: 5
+size_ref = 20 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(0,0), Point(L, l), Nx, Ny, "crossed")
-V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3)
-U = FunctionSpace(mesh, 'Lagrange', 2)
+V = VectorFunctionSpace(mesh, 'Lagrange', 5, dim=3)
+U = FunctionSpace(mesh, 'Lagrange', 4)
 
 # Reference solution
-z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 5)
-rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 5)
-phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=alpha, rho=rho, theta=theta, z=z, degree = 5)
+z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 1)
+rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 1)
+phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=alpha, rho=rho, theta=theta, z=z, degree = 2)
 
 #initial guess (its boundary values specify the Dirichlet boundary conditions)
 phi_old = interpolate(phi_D, V)
@@ -33,13 +34,24 @@ phi_old = interpolate(phi_D, V)
 #checking stuff
 test_x = project(inner(phi_old.dx(0), phi_old.dx(0)), U)
 vec_x = test_x.vector().get_local()
-print(min(vec_x), max(vec_x))
+pb_min = np.where(vec_x < 0)[0]
+print(pb_min)
+print(len(pb_min))
+pb_max = np.where(vec_x > 3)[0]
+print(len(pb_max))
+print(len(pb_max)/len(vec_x)*100)
+sys.exit()
+#print(vec_x[pb_min],vec_x[pb_max])
+#print(min(vec_x), max(vec_x))
 test_y = project(inner(phi_old.dx(1), phi_old.dx(1)), U)
 vec_y = test_y.vector().get_local()
-print(min(vec_y), max(vec_y))
-#assertions
-assert min(vec_x) > 0 and max(vec_x) < 3
-assert min(vec_y) > 1 and max(vec_y) < 4
+pb_min = np.where(vec_y < 1)
+pb_max = np.where(vec_y > 4)
+print(vec_y[pb_min],vec_y[pb_max])
+#print(min(vec_y), max(vec_y))
+##assertions
+#assert min(vec_x) > 0 and max(vec_x) < 3
+#assert min(vec_y) > 1 and max(vec_y) < 4
 
 # Define variational problem for Picard iteration
 phi = Function(V)
