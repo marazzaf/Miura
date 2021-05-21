@@ -8,18 +8,18 @@ import ufl
 # the coefficient functions
 def p(phi):
   #return  1 / (1 - 0.25*inner(phi.dx(0), phi.dx(0)))
-  return inner(phi.dx(1), phi.dx(1)) / 40 #test to integrate the equality constraint
+  return inner(phi.dx(1), phi.dx(1))**2 / 16 #test to integrate the equality constraint
 
 def q(phi):
   #return 4 / inner(phi.dx(1), phi.dx(1))
-  return 1 / (10 * inner(phi.dx(1), phi.dx(1))) #test to integrate the equality constraint
+  return 0.25 #test to integrate the equality constraint
 
 # Create mesh and define function space
 theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
-size_ref = 50 #degub: 5
+size_ref = 10 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Point(0,0), Point(L, l), Nx, Ny, "crossed")
 V = VectorFunctionSpace(mesh, 'Lagrange', 2, dim=3)
@@ -101,17 +101,13 @@ if eps > tol:
 else:
   print('convergence after {} Picard iterations'.format(iter+1))
 
-plot(phi, interactive=True)
+#plotting solution
+vec_phi_ref = phi.vector().get_local()
+vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
 
-  ##plotting solution
-  #vec_phi_ref = phi.vector().get_local()
-  #vec_phi = vec_phi_ref.reshape((3, len(vec_phi_ref) // 3))
-  #vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
-
-  ##3d plot
-  #fig = plt.figure()
-  #ax = fig.add_subplot(111, projection='3d')
-  #for i in vec_phi_aux:
-  #  ax.scatter(i[0], i[1], i[2], color='r')
-  #plt.show()
-  #sys.exit()
+#3d plot
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+for i in vec_phi_aux:
+  ax.scatter(i[0], i[1], i[2], color='r')
+plt.show()
