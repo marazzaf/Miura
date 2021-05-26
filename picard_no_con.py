@@ -19,19 +19,25 @@ theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
-size_ref = 100 #degub: 5
+size_ref = 5 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)/5),size_ref
 mesh = RectangleMesh(Point(0,0), Point(L, l), Nx, Ny, "crossed")
-V = VectorFunctionSpace(mesh, 'Lagrange', 1, dim=3)
+# Define finite elements spaces and build mixed space
+V = VectorElement("CG", mesh.ufl_cell(), 2, dim=3)
+W = TensorElement("CG", mesh.ufl_cell(), 1, shape=(3,3))
+Z = FunctionSpace(mesh, V * W)
+V,W = Z.split()
+#For projections
 U = FunctionSpace(mesh, 'DG', 0)
 
 # Reference solution
 z = Expression('2*sin(theta/2)*x[0]', theta=theta, degree = 1)
 rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 1)
 phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=alpha, rho=rho, theta=theta, z=z, degree = 5)
+i_phi_D = interpolate(phi_D, V.collapse())
 
 #initial guess (its boundary values specify the Dirichlet boundary conditions)
-phi_old = interpolate(phi_D, V)
+phi_old = interpolate(phi_D, V.collapse())
 
 ##checking stuff
 #test_x = project(inner(phi_old.dx(0), phi_old.dx(0)), U)
@@ -59,21 +65,26 @@ vec = test.vector().get_local()
 print(min(abs(vec)), max(abs(vec)))
 
 # Define variational problem for Picard iteration
-phi = Function(V)
-psi = TestFunction(V)
+n = FacetNormal(mesh)
+n = as_vector((n[0], n[1], 0))
+res = Function(Z)
+psi,tau = TestFunctions(Z)
 #Linear problem
-phi_ = TrialFunction(V)
-a = (p(phi_old) * inner(psi.dx(0), phi_.dx(0)) + q(phi_old) * inner(psi.dx(1), phi_.dx(1))) * dx
-L = Constant(0.)*psi[0]*dx
+phi_,sigma_ = TrialFunctions(Z)
+a1 = (p(phi_old) * inner(sigma_[0,:].dx(0), psi) + q(phi_old) * inner(sigma_[1,:].dx(1), psi)) *dx
+a2 = inner(phi_old,div(tau)) * dx
+a3 = inner(sigma_,tau) * dx
+a = a1 + a2 + a3
+L = dot(dot(tau, n), i_phi_D) * ds
 ##Nonlinear problem
 #a = (p(phi_old) * inner(psi.dx(0), phi.dx(0)) + q(phi_old) * inner(psi.dx(1), phi.dx(1))) * dx
 
 # Picard iteration
-tol = 1.0E-4
+tol = 1.0E-3
 maxiter = 100
 for iter in range(maxiter):
   #solve(a == 0, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate #solving non-linear problem
-  solve(a == L, phi, DirichletBC(V, phi_D, DomainBoundary())) # compute next Picard iterate #solving linear problem
+  solve(a == L, res, DirichletBC(V.collapse(), phi_D, DomainBoundary())) # compute next Picard iterate #solving linear problem
 
   eps = sqrt(abs(assemble(inner(grad(phi-phi_old),grad(phi-phi_old))*dx))) # check increment size as convergence test
   print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
