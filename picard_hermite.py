@@ -42,9 +42,9 @@ psi = TestFunction(V)
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx #test
 h = CellDiameter(mesh)
 F = FacetArea(mesh)
-pen = 1
-a += pen * inner(phi_t, psi) * (ds(1) + ds(2)) #/h*ds
-L = pen * inner(phi_D, psi)  * (ds(1) + ds(2)) #/h*ds
+pen = 1e1
+a += pen/F/F * inner(phi_t, psi) * (ds(1) + ds(2)) #/h*ds
+L = pen/F/F * inner(phi_D, psi)  * (ds(1) + ds(2)) #/h*ds
 
 # Picard iteration
 tol = 1.0E-3
@@ -52,19 +52,6 @@ maxiter = 50
 for iter in range(maxiter):
   #linear solve
   solve(a == L, phi) # compute next Picard iterate
-
-  ##plotting solution
-  #vec_phi_ref = phi.vector().get_local()
-  #vec_phi = vec_phi_ref.reshape((3, len(vec_phi_ref) // 3))
-  #vec_phi_aux = vec_phi_ref.reshape((len(vec_phi_ref) // 3, 3))
-  #
-  ##3d plot
-  #fig = plt.figure()
-  #ax = fig.add_subplot(111, projection='3d')
-  #for i in vec_phi_aux:
-  #  ax.scatter(i[0], i[1], i[2], color='r')
-  #plt.show()
-  #sys.exit()
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
