@@ -39,8 +39,8 @@ psi = TestFunction(V)
 a = inner(p(phi_old) * phi_t.dx(0).dx(0) + q(phi_old)*phi_t.dx(1).dx(1), div(grad(psi))) * dx #test
 h = CellDiameter(mesh)
 pen = 1
-a += pen/h * inner(phi_t, psi)  * ds
-L = pen/h * inner(phi_D, psi)  * ds
+a += pen * inner(phi_t, psi)  * ds #/h
+L = pen * inner(phi_D, psi)  * ds #/h
 
 # Picard iteration
 tol = 1.0E-3
@@ -74,4 +74,41 @@ if eps > tol:
 else:
   print('convergence after {} Picard iterations'.format(iter+1))
 
-plot(phi, interactive=True)
+
+#For projection
+U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
+projected = project(phi, U, name='surface')
+
+#Write 2d results
+file = File('res.pvd')
+file.write(projected)
+
+#plotting solution
+vec = projected.vector().get_local()
+vec_phi_aux = vec.reshape((len(vec) // 3, 3))
+
+#reference
+ref = project(phi_D, U, name='ref')
+vec_ref = ref.vector().get_local()
+vec_ref = vec.reshape((len(vec_ref) // 3, 3))
+
+#magnitude diff
+#img = plot(sqrt(dot(projected-ref, projected-ref)))
+#plt.colorbar(img)
+#plt.show()
+diff = Function(U, name='diff')
+diff.vector()[:] = projected.vector() - ref.vector()
+file_bis = File('diff.pvd')
+file_bis.write(diff)
+sys.exit()
+
+
+#3d plot
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+#for i,j in zip(vec_phi_aux,vec_ref):
+for i in vec_phi_aux:
+  ax.scatter(i[0], i[1], i[2], color='r')
+  #ax.scatter(j[0], j[1], j[2], color='b')
+plt.show()
+
