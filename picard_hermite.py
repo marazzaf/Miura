@@ -24,19 +24,18 @@ V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
 x = SpatialCoordinate(mesh)
 z = 2*sin(theta/2)*x[0]
-#rho = Expression('sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)', theta=theta, degree = 5)
 rho = sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)
-#phi_D = Expression(('rho*cos(alpha*x[1])', 'rho*sin(alpha*x[1])', 'z'), alpha=alpha, rho=rho, theta=theta, z=z, degree = 5)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 phi_old = Function(V)
-phi_old.project(phi_D)
+#phi_old.project(phi_D)
 
 # Define variational problem for Picard iteration
-phi = Function(V)
+phi = Function(V, name='solution')
+phi.project(phi_D)
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
-a = inner(p(phi_old) * phi_t.dx(0).dx(0) + q(phi_old)*phi_t.dx(1).dx(1), div(grad(psi))) * dx #test
+a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx #test
 h = CellDiameter(mesh)
 pen = 1
 a += pen * inner(phi_t, psi)  * ds #/h
