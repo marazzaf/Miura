@@ -37,14 +37,17 @@ phi = Function(V)
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 a = inner(p(phi_old) * phi_t.dx(0).dx(0) + q(phi_old)*phi_t.dx(1).dx(1), div(grad(psi))) * dx #test
-L = Constant(0.)*psi[0]*dx
+h = CellDiameter(mesh)
+pen = 1
+a += pen/h * inner(phi_t, psi)  * ds
+L = pen/h * inner(phi_D, psi)  * ds
 
 # Picard iteration
 tol = 1.0E-3
 maxiter = 50
 for iter in range(maxiter):
   #linear solve
-  solve(a == L, phi, bcs=[DirichletBC(V, phi_D, 1), DirichletBC(V, phi_D, 2)]) # compute next Picard iterate
+  solve(a == L, phi) # compute next Picard iterate
 
   ##plotting solution
   #vec_phi_ref = phi.vector().get_local()
