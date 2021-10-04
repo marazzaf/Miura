@@ -5,11 +5,19 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  #return  inner(phi.dx(0), phi.dx(0))**2
-  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  return  inner(phi.dx(0), phi.dx(0))**2
+  #return  inner(phi.dx(0), phi.dx(0))
+  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
-  return 4 / inner(phi.dx(1), phi.dx(1))
+  return 4
+  #return 4 / inner(phi.dx(1), phi.dx(1))
+
+def ppos(x):
+  return 0.5*(x+abs(x))
+
+def norm(f):
+  return sqrt(inner(f, f))
 
 # Create mesh and define function space
 theta = pi/2
@@ -40,11 +48,22 @@ phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z)))
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx #test
+
+#penalty for inequality constraints
+C = CellVolume(mesh)
+pen = 1
+pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
+pen_ineq = derivative(pen_ineq, phi, psi)
+pen_ineq = replace(pen_ineq, {phi:phi_t})
+#a += pen_ineq
+
+#penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
-F = FacetArea(mesh)
 pen = 1e1
-a += pen/F/F * inner(phi_t, psi) * (ds(1) + ds(2)) #/h*ds
-L = pen/F/F * inner(phi_D, psi)  * (ds(1) + ds(2)) #/h*ds
+pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
+
+a += pen_term
+L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
 
 # Picard iteration
 tol = 1.0E-3
