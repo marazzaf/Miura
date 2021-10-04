@@ -24,7 +24,7 @@ V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
 x = SpatialCoordinate(mesh)
 z = 2*sin(theta/2)*x[0]
-rho = sqrt(4*pow(cos(theta/2),2)*x[0]*x[0] + 1)
+rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 phi_old = Function(V)
@@ -32,14 +32,19 @@ phi_old = Function(V)
 
 # Define variational problem for Picard iteration
 phi = Function(V, name='solution')
-phi.project(phi_D)
+#phi.project(phi_D)
+lin_rho = (sqrt(4*cos(theta/2)**2*l*l + 1) - 1) / l * x[0] + 1
+phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z)))
+
+#bilinear form for linearization
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx #test
 h = CellDiameter(mesh)
+F = FacetArea(mesh)
 pen = 1
-a += pen * inner(phi_t, psi)  * ds #/h
-L = pen * inner(phi_D, psi)  * ds #/h
+a += pen * inner(phi_t, psi) * (ds(1) + ds(2)) #/h*ds
+L = pen * inner(phi_D, psi)  * (ds(1) + ds(2)) #/h*ds
 
 # Picard iteration
 tol = 1.0E-3
@@ -61,9 +66,9 @@ for iter in range(maxiter):
   #plt.show()
   #sys.exit()
     
-  eps = sqrt(assemble(inner(grad(phi-phi_old),grad(phi-phi_old))*dx)) # check increment size as convergence test
+  eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
-  print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
   if eps < tol:
     break
   phi_old.assign(phi)
