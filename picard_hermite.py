@@ -52,7 +52,8 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty for inequality constraints
 C = CellVolume(mesh)
 pen = 1
-pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
+#pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
+pen_ineq = (inner(phi.dx(0), phi.dx(0)) - 3) * dx
 pen_ineq = derivative(pen_ineq, phi, psi)
 pen_ineq = replace(pen_ineq, {phi:phi_t})
 #a += pen_ineq
