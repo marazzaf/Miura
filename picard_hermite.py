@@ -17,7 +17,7 @@ def ppos(x):
   return 0.5*(x+abs(x))
 
 def norm(f):
-  return sqrt(inner(f, f))
+  return inner(f, f)
 
 # Create mesh and define function space
 theta = pi/2
@@ -47,16 +47,23 @@ phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z)))
 #bilinear form for linearization
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
-a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx #test
+a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+
+
+##test
+#print(phi.at([0.5,0.5]))
+#sys.exit()
 
 #penalty for inequality constraints
 C = CellVolume(mesh)
 pen = 1
 #pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
-pen_ineq = (inner(phi.dx(0), phi.dx(0)) - 3) * dx
+pen_ineq = (norm(phi.dx(0)) - 3) * dx
 pen_ineq = derivative(pen_ineq, phi, psi)
 pen_ineq = replace(pen_ineq, {phi:phi_t})
 #a += pen_ineq
+#test = lambda x: 1 if norm(phi.dx(0))(x) > 3 else 0
+#pen_ineq = test(phi) * dx
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
@@ -89,6 +96,8 @@ else:
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 projected = project(phi, U, name='surface')
+print(projected.at([0.5,0.5]))
+sys.exit()
 
 #Write 2d results
 file = File('res.pvd')
