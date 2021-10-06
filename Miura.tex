@@ -28,36 +28,15 @@ $\varphi : \Omega \subset \mathbb{R}^2 \rightarrow \mathbb{R}^3$ is the position
 \left\{
 \begin{aligned}
 & \frac{\varphi_{,xx}}{1 - \frac14 |\varphi_{,x}|^2} + \frac{4\varphi_{,yy}}{|\varphi_{,y}|^2} = 0 \in \mathbb{R}^3,\\
-& \left\langle \varphi_{,x} ; \varphi_{,y} \right\rangle = 0, \\
+&  \varphi_{,x} \cdot \varphi_{,y}  = 0, \\
 & (1 - \frac14 |\varphi_{,x}|^2) |\varphi_{,y}|^2 = 1, \\
 & (|\varphi_{,x}|^2, |\varphi_{,x}|^2) \in ]0,3]\times ]1,4]. \\
 \end{aligned}
 \right.
 \end{equation}
 
-We consider a test function $\psi \in \left(H^1_0(\Omega) \right)^3$, the first equation writes in a weak form:
-\begin{equation}
-\label{eq:weak form}
-\int_{\Omega} 2\mathrm{Argtanh}(\frac12 |\varphi_{,x}|)\psi_{,x} - \frac{4\psi_{,y}}{|\varphi_{,y}|} = 0 \in \mathbb{R}^3, \quad \forall \psi \in \left(H^1_0(\Omega) \right)^3,
-\end{equation}
-where this last equation is vectorial.
-Consequently,
-\begin{equation}
-\label{eq:weak form 2}
-\int_{\Omega} 2\mathrm{Argtanh}(\frac12 |\varphi_{,x}|)(\psi_{x,x} + \psi_{y,x} + \psi_{z,x}) - \frac{4}{|\varphi_{,y}|} (\psi_{x,y} + \psi_{y,y} + \psi_{z,y}) = 0 \in \mathbb{R}, \quad \forall \psi \in \left(H^1_0(\Omega) \right)^3,
-\end{equation}
-The associated energy to be minimized is then:
-\begin{equation}
-\label{eq:energy}
-\int_{\Omega} 4\left( \int \mathrm{Argtanh} \right)(\frac12 |\varphi_{,x}|)- 4 \log |\varphi_{,y}| 
-\end{equation}
-A primitive of $\mathrm{Artanh}$ is \TODO{Write it after checking it...}
-
-The equality constraints write:
-\begin{equation}
-\Lambda_1 \int_{\Omega} \left\langle \varphi_{,x} ; \varphi_{,y} \right\rangle + \Lambda_2 \int_{\Omega} \left( (1 - \frac14 |\varphi_{,x}|^2) |\varphi_{,y}|^2 - 1 \right),
-\end{equation}
-with $\Lambda_1$ and $\Lambda_2$ Lagrange multipliers.
+We consider a test function $\psi \in \left(H^1_0(\Omega) \right)^3$, the first equation writes in a strong form:
+\TODO{Write it and explain Cordès condition.}
 
 The inequality constraints write:
 %\begin{equation}
@@ -66,11 +45,13 @@ The inequality constraints write:
 %\end{equation}
 \begin{equation}
 \label{eq:inequality constraints energy}
-\lambda_1 \int_{\Omega} \left(|\varphi_{,x}| - \sqrt{3} \right)^\oplus + \lambda_2 \int_{\Omega} \left(|\varphi_{,y}| - 2 \right)^\oplus + \lambda_3 \int_{\Omega} \left(1 - |\varphi_{,y}| \right)^\oplus + \lambda_4 \int_{\Omega} \left(\varepsilon - |\varphi_{,x}| \right)^\oplus,
+\lambda_1 \int_{\Omega} \left(|\varphi_{,x}|^2 - 3 \right)^\oplus + \lambda_2 \int_{\Omega} \left(|\varphi_{,y}|^2 - 4 \right)^\oplus + \lambda_3 \int_{\Omega} \left(1 - |\varphi_{,y}|^2 \right)^\oplus
 \end{equation}
-with $\lambda_1,\lambda_2,\lambda_3,\lambda_4$ penalties \TODO{or Lagrange mutlipliers?} and $\varepsilon = o(1)$.
+with $\lambda_1,\lambda_2,\lambda_3$ penalties %\TODO{or Lagrange mutlipliers?}
 
-\TODO{Or write a variational inequality due to that? Then we would have a minimisation of the Lagrangian with equality constraint under inequality constraint.}
+%\TODO{Or write a variational inequality due to that? Then we would have a minimisation of the Lagrangian with equality constraint under inequality constraint.}
+
+\TODO{To prove existence of continuous solution, write the problem as minimization of this convex penalty term with a PDE constraint that is the strong form of the PDE for the equation 1 and 3?}
 
 \bibliographystyle{plain}
 \bibliography{bib}

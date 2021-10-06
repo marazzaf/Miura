@@ -6,17 +6,13 @@ import sys
 # the coefficient functions
 def p(phi):
   return  inner(phi.dx(0), phi.dx(0))**2
-  #return  inner(phi.dx(0), phi.dx(0))
   #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
   return 4
   #return 4 / inner(phi.dx(1), phi.dx(1))
 
-def ppos(x):
-  return 0.5*(x+abs(x))
-
-def norm(f):
+def sq_norm(f):
   return inner(f, f)
 
 # Create mesh and define function space
@@ -49,29 +45,24 @@ phi_t = TrialFunction(V)
 psi = TestFunction(V)
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
-
-##test
-#print(phi.at([0.5,0.5]))
-#sys.exit()
-
-#penalty for inequality constraints
-C = CellVolume(mesh)
-pen = 1
-#pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
-pen_ineq = (norm(phi.dx(0)) - 3) * dx
-pen_ineq = derivative(pen_ineq, phi, psi)
-pen_ineq = replace(pen_ineq, {phi:phi_t})
-#a += pen_ineq
-#test = lambda x: 1 if norm(phi.dx(0))(x) > 3 else 0
-#pen_ineq = test(phi) * dx
-
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e1
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
-
 a += pen_term
 L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
+
+##penalty for inequality constraints
+#C = CellVolume(mesh)
+#pen = 1
+##pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
+##pen_ineq = pen * ppos(sq_norm(phi.dx(0)) - 3) * dx
+#pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * inner(phi_t.dx(0), psi.dx(0)) * dx
+#a += pen_ineq
+##pen_ineq = derivative(pen_ineq, phi, psi)
+##pen_ineq = replace(pen_ineq, {phi:phi_t})
+##a += lhs(pen_ineq)
+##L += rhs(pen_ineq)
 
 # Picard iteration
 tol = 1.0E-3
@@ -96,12 +87,22 @@ else:
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 projected = project(phi, U, name='surface')
-print(projected.at([0.5,0.5]))
-sys.exit()
 
 #Write 2d results
 file = File('res.pvd')
 file.write(projected)
+
+#check constraints
+U = FunctionSpace(mesh, 'CG', 2)
+ineq_1 = 0.5*(1+sign(sq_norm(phi.dx(0)) - 3))
+ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
+ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
+constraint = ineq_1 + ineq_2 + ineq_3
+constraint = project(constraint, U, name='constraint')
+file = File('constraint.pvd')
+file.write(constraint)
+sys.exit()
+
 
 #plotting solution
 vec = projected.vector().get_local()
