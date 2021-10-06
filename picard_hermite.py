@@ -20,7 +20,7 @@ theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
-size_ref = 20 #10 #degub: 5
+size_ref = 10 #10 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Nx, Ny, L, l, diagonal="crossed")
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
@@ -48,9 +48,16 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e1
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
+pen_term = pen/h**4 * inner(phi_t, psi) * ds(1) #(ds(1) + ds(2))
 a += pen_term
-L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
+L = pen/h**4 * inner(phi_D, psi)  * ds(1) #(ds(1) + ds(2))
+
+#penalty to impose Neumann BC
+n = FacetNormal(mesh)
+pen = 1e1
+pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
+a += pen_term
+L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
 
 ##penalty for inequality constraints
 #C = CellVolume(mesh)
@@ -74,7 +81,7 @@ for iter in range(maxiter):
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
   print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
-  print(assemble(pen * 0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * (sq_norm(phi.dx(0)) - 3) * dx))
+  print(assemble(0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * (sq_norm(phi.dx(0)) - 3) * dx))
   if eps < tol:
     break
   phi_old.assign(phi)
