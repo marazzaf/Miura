@@ -65,7 +65,7 @@ L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
 ##L += rhs(pen_ineq)
 
 # Picard iteration
-tol = 1.0E-4
+tol = 1e-5 #1e-9
 maxiter = 50
 for iter in range(maxiter):
   #linear solve
@@ -74,6 +74,7 @@ for iter in range(maxiter):
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
   print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  print(assemble(pen * 0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * (sq_norm(phi.dx(0)) - 3) * dx))
   if eps < tol:
     break
   phi_old.assign(phi)
