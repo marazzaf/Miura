@@ -20,7 +20,7 @@ theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
-size_ref = 10 #10 #degub: 5
+size_ref = 20 #10 #degub: 5
 Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = RectangleMesh(Nx, Ny, L, l, diagonal="crossed")
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
@@ -65,7 +65,7 @@ L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
 ##L += rhs(pen_ineq)
 
 # Picard iteration
-tol = 1.0E-3
+tol = 1.0E-4
 maxiter = 50
 for iter in range(maxiter):
   #linear solve
