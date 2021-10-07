@@ -59,8 +59,13 @@ pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds(1) #(ds(1)
 a += pen_term
 L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
 
-##penalty for inequality constraints
+##penalty to impose equality constraint
 #C = CellVolume(mesh)
+#pen = 1
+#pen_term = pen * inner(phi.dx(0), phi.dx(1)) * (inner(phi_t.dx(0), psi.dx(1)) + inner(psi.dx(0), phi_t.dx(1))) * dx
+#a += pen_term
+
+##penalty for inequality constraints
 #pen = 1
 ##pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
 ##pen_ineq = pen * ppos(sq_norm(phi.dx(0)) - 3) * dx
@@ -81,7 +86,7 @@ for iter in range(maxiter):
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
   print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
-  print(assemble(0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * (sq_norm(phi.dx(0)) - 3) * dx))
+  #print(assemble(0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * (sq_norm(phi.dx(0)) - 3) * dx))
   if eps < tol:
     break
   phi_old.assign(phi)
@@ -100,7 +105,7 @@ projected = project(phi, U, name='surface')
 file = File('res.pvd')
 file.write(projected)
 
-#check constraints
+#check ineq constraints
 U = FunctionSpace(mesh, 'CG', 2)
 ineq_1 = 0.5*(1+sign(sq_norm(phi.dx(0)) - 3))
 ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
@@ -109,6 +114,12 @@ constraint = ineq_1 + ineq_2 + ineq_3
 constraint = project(constraint, U, name='constraint')
 file = File('constraint.pvd')
 file.write(constraint)
+
+
+#check eq constraint
+C = CellVolume(mesh)
+value = inner(phi.dx(0), phi.dx(1)) / C * dx
+print(assemble(value))
 sys.exit()
 
 
