@@ -120,12 +120,23 @@ file.write(constraint)
 C = CellVolume(mesh)
 value = inner(phi.dx(0), phi.dx(1)) / C * dx
 print(assemble(value))
-sys.exit()
+#sys.exit()
 
 
 #plotting solution
 vec = projected.vector().get_local()
 vec_phi_aux = vec.reshape((len(vec) // 3, 3))
+
+#Nice 3d plot
+x = vec_phi_aux[:,0]
+y = vec_phi_aux[:,1]
+z = vec_phi_aux[:,2]
+ax = plt.figure().add_subplot(projection='3d')
+ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
+plt.title('Miura ori')
+plt.savefig('miura.pdf')
+plt.show()
+sys.exit()
 
 #reference
 ref = project(phi_D, U, name='ref')
