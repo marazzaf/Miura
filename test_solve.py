@@ -1,3 +1,6 @@
+#coding: utf-8
+#source firedrake/bin/activate
+
 from firedrake import *
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
