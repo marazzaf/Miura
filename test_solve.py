@@ -23,11 +23,14 @@ theta = pi/2
 ##check the sizes of the mesh. Might be the problem with some constraints.
 #L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
-#l = 2*pi/alpha
+l = 2*pi/alpha
 #size_ref = 10 #10 #degub: 5
 #Nx,Ny = int(size_ref*l/float(L)),size_ref
 mesh = Mesh('rectangle.msh') #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
+
+#define boundaries
+
 
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
 x = SpatialCoordinate(mesh)
@@ -41,8 +44,23 @@ phi_old = Function(V)
 # Define variational problem for Picard iteration
 phi = Function(V, name='solution')
 #phi.project(phi_D)
-lin_rho = (sqrt(4*cos(theta/2)**2*l*l + 1) - 1) / l * x[0] + 1
-phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z)))
+lin_rho = sqrt(4*cos(theta/2)**2*l*l + 1) - 1)
+phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #initial guess is a cylinder
+
+#plotting solution
+vec = projected.vector().get_local()
+vec_phi_aux = vec.reshape((len(vec) // 3, 3))
+
+#Nice 3d plot
+x = vec_phi_aux[:,0]
+y = vec_phi_aux[:,1]
+z = vec_phi_aux[:,2]
+ax = plt.figure().add_subplot(projection='3d')
+ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
+plt.title('Miura ori')
+plt.savefig('miura.pdf')
+plt.show()
+sys.exit()
 
 #bilinear form for linearization
 phi_t = TrialFunction(V)
