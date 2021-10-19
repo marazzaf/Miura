@@ -27,7 +27,10 @@ L = 2*np.sin(0.5*np.arccos(0.5/np.cos(0.5*theta))) #length of rectangle
 alpha = np.sqrt(1 / (1 - np.sin(theta/2)**2))
 H = 2*np.pi/alpha #height of rectangle
 #print(H)
-mesh = Mesh('rectangle.msh') #change mesh to not use the symmetry any longer
+
+#Loading mesh
+num_computation = 2
+mesh = Mesh('rectangle_%i.msh' % num_computation) #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
 #For projection
@@ -106,7 +109,7 @@ else:
 projected = project(phi, U, name='surface')
 
 #Write 2d results
-file = File('res.pvd')
+file = File('res_%i.pvd' % num_computation)
 file.write(projected)
 
 #check ineq constraints
@@ -116,7 +119,7 @@ ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
 ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
 constraint = ineq_1 + ineq_2 + ineq_3
 constraint = project(constraint, W, name='constraint')
-file = File('constraint.pvd')
+file = File('constraint_%i.pvd' % num_computation)
 file.write(constraint)
 
 
@@ -138,7 +141,7 @@ for i in vec_phi_aux:
   ax.scatter(i[0], i[1], i[2], color='r')
 #plt.show()
 plt.title('Miura ori')
-plt.savefig('miura_bis.pdf')
+plt.savefig('miura_bis_%i.pdf' % num_computation)
 
 ##Nice 3d plot
 #x = vec_phi_aux[:,0]
@@ -162,6 +165,6 @@ vec_ref = vec.reshape((len(vec_ref) // 3, 3))
 #plt.show()
 diff = Function(U, name='diff')
 diff.vector()[:] = projected.vector() - ref.vector()
-file_bis = File('diff.pvd')
+file_bis = File('diff_%i.pvd' % num_computation)
 file_bis.write(diff)
 

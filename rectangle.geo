@@ -1,7 +1,7 @@
 //Définition des valeurs physiques
 L = 0.76536; //Longeur selon x
 H = 4.442; //Longuer selon y
-h = 0.1; //Taille du maillage
+h = 0.1; //0.05; //0.1; //Taille du maillage
 
 Point(1) = {-L/2,H,0,h};
 Point(2) = {-L/2,0,0,h};
