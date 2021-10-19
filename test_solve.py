@@ -110,12 +110,12 @@ file = File('res.pvd')
 file.write(projected)
 
 #check ineq constraints
-U = FunctionSpace(mesh, 'CG', 2)
+W = FunctionSpace(mesh, 'CG', 2)
 ineq_1 = 0.5*(1+sign(sq_norm(phi.dx(0)) - 3))
 ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
 ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
 constraint = ineq_1 + ineq_2 + ineq_3
-constraint = project(constraint, U, name='constraint')
+constraint = project(constraint, W, name='constraint')
 file = File('constraint.pvd')
 file.write(constraint)
 
@@ -136,19 +136,20 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 for i in vec_phi_aux:
   ax.scatter(i[0], i[1], i[2], color='r')
-plt.show()
-sys.exit()
-
-#Nice 3d plot
-x = vec_phi_aux[:,0]
-y = vec_phi_aux[:,1]
-z = vec_phi_aux[:,2]
-ax = plt.figure().add_subplot(projection='3d')
-ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
+#plt.show()
 plt.title('Miura ori')
-plt.savefig('miura.pdf')
-plt.show()
-sys.exit()
+plt.savefig('miura_bis.pdf')
+
+##Nice 3d plot
+#x = vec_phi_aux[:,0]
+#y = vec_phi_aux[:,1]
+#z = vec_phi_aux[:,2]
+#ax = plt.figure().add_subplot(projection='3d')
+#ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
+#plt.title('Miura ori')
+#plt.savefig('miura.pdf')
+#plt.show()
+#sys.exit()
 
 #reference
 ref = project(phi_D, U, name='ref')
@@ -163,5 +164,4 @@ diff = Function(U, name='diff')
 diff.vector()[:] = projected.vector() - ref.vector()
 file_bis = File('diff.pvd')
 file_bis.write(diff)
-sys.exit()
 
