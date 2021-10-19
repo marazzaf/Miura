@@ -20,6 +20,7 @@ def sq_norm(f):
 
 # Create mesh and define function space
 theta = pi/2
+#check the sizes of the mesh. Might be the problem with some constraints.
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
