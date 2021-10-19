@@ -20,13 +20,13 @@ def sq_norm(f):
 
 # Create mesh and define function space
 theta = pi/2
-#check the sizes of the mesh. Might be the problem with some constraints.
-L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
+##check the sizes of the mesh. Might be the problem with some constraints.
+#L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
-l = 2*pi/alpha
-size_ref = 10 #10 #degub: 5
-Nx,Ny = int(size_ref*l/float(L)),size_ref
-mesh = RectangleMesh(Nx, Ny, L, l, diagonal="crossed") #change mesh to not use the symmetry any longer
+#l = 2*pi/alpha
+#size_ref = 10 #10 #degub: 5
+#Nx,Ny = int(size_ref*l/float(L)),size_ref
+mesh = Mesh('rectangle.msh') #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
 # initial guess (its boundary values specify the Dirichlet boundary conditions)
