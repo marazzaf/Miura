@@ -29,23 +29,22 @@ H = 2*np.pi/alpha #height of rectangle
 #print(H)
 
 #Loading mesh
-num_computation = 2
+num_computation = 1
 mesh = Mesh('rectangle_%i.msh' % num_computation) #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 
-# initial guess (its boundary values specify the Dirichlet boundary conditions)
+# Boundary conditions
 x = SpatialCoordinate(mesh)
 z = 2*sin(theta/2)*x[0]
 rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
-phi_old = Function(V)
-
-# Define variational problem for Picard iteration
+# Initial guess
 phi = Function(V, name='solution')
+phi_old = Function(V) #for iterations
 lin_rho = sqrt(4*cos(theta/2)**2*H*H + 1)
 phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #initial guess is a cylinder
 
@@ -61,6 +60,7 @@ phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #i
 #plt.show()
 #sys.exit()
 
+#Defining the bilinear forms
 #bilinear form for linearization
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
@@ -73,18 +73,12 @@ pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(3))
 a += pen_term
 L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(3))
 
-#penalty for inequality constraints
+#penalty for inequality constraint
 pen = 1
-##pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
-##pen_ineq = pen * ppos(sq_norm(phi.dx(0)) - 3) * dx
 pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(0)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
 a += pen_ineq
-##pen_ineq = derivative(pen_ineq, phi, psi)
-##pen_ineq = replace(pen_ineq, {phi:phi_t})
-##a += lhs(pen_ineq)
-##L += rhs(pen_ineq)
 
-# Picard iteration
+# Picard iterations
 tol = 1e-5 #1e-9
 maxiter = 50
 for iter in range(maxiter):
@@ -92,9 +86,7 @@ for iter in range(maxiter):
   solve(a == L, phi) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
-  #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
   print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
-  #print(assemble(0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * (sq_norm(phi.dx(0)) - 3) * dx))
   if eps < tol:
     break
   phi_old.assign(phi)
@@ -141,30 +133,6 @@ for i in vec_phi_aux:
   ax.scatter(i[0], i[1], i[2], color='r')
 #plt.show()
 plt.title('Miura ori')
-plt.savefig('miura_bis_%i.pdf' % num_computation)
+plt.savefig('new_shape_%i.pdf' % num_computation)
 
-##Nice 3d plot
-#x = vec_phi_aux[:,0]
-#y = vec_phi_aux[:,1]
-#z = vec_phi_aux[:,2]
-#ax = plt.figure().add_subplot(projection='3d')
-#ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
-#plt.title('Miura ori')
-#plt.savefig('miura.pdf')
-#plt.show()
-#sys.exit()
-
-#reference
-ref = project(phi_D, U, name='ref')
-vec_ref = ref.vector().get_local()
-vec_ref = vec.reshape((len(vec_ref) // 3, 3))
-
-#magnitude diff
-#img = plot(sqrt(dot(projected-ref, projected-ref)))
-#plt.colorbar(img)
-#plt.show()
-diff = Function(U, name='diff')
-diff.vector()[:] = projected.vector() - ref.vector()
-file_bis = File('diff_%i.pvd' % num_computation)
-file_bis.write(diff)
 
