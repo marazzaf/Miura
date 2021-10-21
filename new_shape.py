@@ -48,7 +48,7 @@ def z(x,y):
     return coeffs[0]*x*x + coeffs[1]*y*y + coeffs[2]*x*y + coeffs[3]*x + coeffs[4]*y + coeffs[5]
 
 #Loading mesh
-num_computation = 2
+num_computation = 1
 mesh = Mesh('rectangle_%i.msh' % num_computation) #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
@@ -143,6 +143,15 @@ print(assemble(value))
 #plotting solution
 vec = projected.vector().get_local()
 vec_phi_aux = vec.reshape((len(vec) // 3, 3))
+
+#Nice 3d plot
+x = vec_phi_aux[:,0]
+y = vec_phi_aux[:,1]
+z = vec_phi_aux[:,2]
+ax = plt.figure().add_subplot(projection='3d')
+ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
+plt.show()
+sys.exit()
 
 #3d plot
 fig = plt.figure()
