@@ -38,14 +38,14 @@ U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
-z = 2*sin(theta/2)*x[0]
-rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
+z = 2*np.sin(theta/2)*x[0]
+rho = sqrt(4*np.cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 # Initial guess
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-lin_rho = sqrt(4*cos(theta/2)**2*H*H + 1)
+lin_rho = np.sqrt(4*np.cos(theta/2)**2*H*H + 1)
 phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #initial guess is a cylinder
 
 ##plotting initial guess
