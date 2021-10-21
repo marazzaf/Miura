@@ -11,7 +11,7 @@ L = 2*np.sin(0.5*np.arccos(0.5/np.cos(0.5*theta))) #length of rectangle
 alpha = np.sqrt(1 / (1 - np.sin(theta/2)**2))
 H = 2*np.pi/alpha #height of rectangle
 l = np.sin(theta/2)*L #total height of cylindre
-alpha = 0.5 #0.02 #variation at the top
+modif = 0.02 #0.02 #variation at the top
 
 
 #writing the matrix of the system
@@ -25,7 +25,7 @@ A[4,:] = np.array([L**2/4, H**2, -L*H/2, -L/2, H, 1])
 A[5,:] = np.array([L**2/4, H**2, L*H/2, L/2, H, 1])
 
 #Corresponding right-hand side
-b = np.array([-l, l, l*(1+alpha), 0, -l, l*(1-alpha)])
+b = np.array([-l, l, l*(1+modif), 0, -l, l*(1-modif)])
 
 #solution
 coeffs = np.linalg.solve(A,b)

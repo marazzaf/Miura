@@ -38,7 +38,7 @@ U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
-z = 2*np.sin(theta/2)*x[0]
+z = -6.4e-3*x[0]*x[1] + 1.43*x[0] - 2.4e-3*x[1] + 5.4e-3
 rho = sqrt(4*np.cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
@@ -51,7 +51,6 @@ phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #i
 ##plotting initial guess
 #vec = project(phi, U).vector().get_local()
 #vec_phi_aux = vec.reshape((len(vec) // 3, 3))
-#
 ##3d plot
 #fig = plt.figure()
 #ax = fig.add_subplot(111, projection='3d')
@@ -74,7 +73,7 @@ a += pen_term
 L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(3))
 
 #penalty for inequality constraint
-pen = 1
+pen = 1e1
 pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(0)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
 a += pen_ineq
 
@@ -101,7 +100,7 @@ else:
 projected = project(phi, U, name='surface')
 
 #Write 2d results
-file = File('res_%i.pvd' % num_computation)
+file = File('new_%i.pvd' % num_computation)
 file.write(projected)
 
 #check ineq constraints
@@ -111,7 +110,7 @@ ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
 ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
 constraint = ineq_1 + ineq_2 + ineq_3
 constraint = project(constraint, W, name='constraint')
-file = File('constraint_%i.pvd' % num_computation)
+file = File('new_constraint_%i.pvd' % num_computation)
 file.write(constraint)
 
 
@@ -131,7 +130,7 @@ fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 for i in vec_phi_aux:
   ax.scatter(i[0], i[1], i[2], color='r')
-#plt.show()
+plt.show()
 plt.title('Miura ori')
 plt.savefig('new_shape_%i.pdf' % num_computation)
 
