@@ -39,7 +39,7 @@ A[4,:] = np.array([L**2/4, H**2, -L*H/2, -L/2, H, 1])
 A[5,:] = np.array([L**2/4, H**2, L*H/2, L/2, H, 1])
 
 #Corresponding right-hand side
-b = np.array([-l, l, l*(1+modif), 0, -l, l*(1-modif)])
+b = np.array([-l, l*(1+modif), l*(1-modif), 0, -l, l*(1-modif)])
 
 #solution
 coeffs = np.linalg.solve(A,b)
@@ -48,7 +48,7 @@ def z(x,y):
     return coeffs[0]*x*x + coeffs[1]*y*y + coeffs[2]*x*y + coeffs[3]*x + coeffs[4]*y + coeffs[5]
 
 #Loading mesh
-num_computation = 1
+num_computation = 2
 mesh = Mesh('rectangle_%i.msh' % num_computation) #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
@@ -87,9 +87,9 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e2
-pen_term = pen/h**4 * inner(phi_t, psi) * ds #(ds(1) + ds(3))
+pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(3))
 a += pen_term
-L = pen/h**4 * inner(phi_D, psi)  * ds #(ds(1) + ds(3))
+L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(3))
 
 #penalty for inequality constraint
 #pen = 1e1
@@ -144,14 +144,14 @@ print(assemble(value))
 vec = projected.vector().get_local()
 vec_phi_aux = vec.reshape((len(vec) // 3, 3))
 
-#Nice 3d plot
-x = vec_phi_aux[:,0]
-y = vec_phi_aux[:,1]
-z = vec_phi_aux[:,2]
-ax = plt.figure().add_subplot(projection='3d')
-ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
-plt.show()
-sys.exit()
+##Nice 3d plot
+#x = vec_phi_aux[:,0]
+#y = vec_phi_aux[:,1]
+#z = vec_phi_aux[:,2]
+#ax = plt.figure().add_subplot(projection='3d')
+#ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
+#plt.show()
+#sys.exit()
 
 #3d plot
 fig = plt.figure()
