@@ -34,12 +34,12 @@ A = np.zeros((6,6))
 A[0,:] = np.array([L**2/4, 0, 0, -L/2, 0, 1])
 A[1,:] = np.array([L**2/4, H**2/4, L*H/4, L/2, H/2, 1])
 A[2,:] = np.array([L**2/4, 0, 0, L/2, 0, 1])
-A[3,:] = np.array([0, H**2/4, 0, 0, H/2, 1])
+A[3,:] = np.array([L**2/4, H**2/4, -L*H/4, -L/2, H/2, 1])
 A[4,:] = np.array([L**2/4, H**2, -L*H/2, -L/2, H, 1])
 A[5,:] = np.array([L**2/4, H**2, L*H/2, L/2, H, 1])
 
 #Corresponding right-hand side
-b = np.array([-l, l, l*(1-modif), 0, -l, l*(1-modif)])
+b = np.array([-l, l*(1+modif), l*(1-modif), -l, -l, l*(1-modif)])
 
 #solution
 coeffs = np.linalg.solve(A,b)
