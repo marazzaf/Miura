@@ -39,7 +39,7 @@ A[4,:] = np.array([L**2/4, H**2, -L*H/2, -L/2, H, 1])
 A[5,:] = np.array([L**2/4, H**2, L*H/2, L/2, H, 1])
 
 #Corresponding right-hand side
-b = np.array([-l, l*(1+modif), l*(1-modif), 0, -l, l*(1-modif)])
+b = np.array([-l, l, l*(1-modif), 0, -l, l*(1-modif)])
 
 #solution
 coeffs = np.linalg.solve(A,b)
@@ -48,7 +48,7 @@ def z(x,y):
     return coeffs[0]*x*x + coeffs[1]*y*y + coeffs[2]*x*y + coeffs[3]*x + coeffs[4]*y + coeffs[5]
 
 #Loading mesh
-num_computation = 2
+num_computation = 1
 mesh = Mesh('rectangle_%i.msh' % num_computation) #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
@@ -87,8 +87,11 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e2
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(3))
+pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(3)) #Dirichlet BC top and bottom surfaces
 a += pen_term
+#pen_term = pen/h**4 * dot(phi_t,as_vector((-1,0,0)))* dot(psi,as_vector((-1,0,0))) * ds(2) + pen/h**4 * dot(phi_t,as_vector((1,0,0)))* dot(psi,as_vector((1,0,0))) * ds(4) #Mirror BC
+#a += pen_term
+
 L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(3))
 
 #penalty for inequality constraint
