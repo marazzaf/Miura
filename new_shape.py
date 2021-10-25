@@ -79,7 +79,7 @@ L = pen/h**4 * inner(phi_D_1, psi)  * ds(1) + pen/h**4 * inner(phi_D_3, psi)  * 
 
 #penalty for inequality constraint
 #pen = 1e1
-pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(0)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
+pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
 a += pen_ineq
 
 # Picard iterations

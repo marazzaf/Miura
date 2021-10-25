@@ -50,30 +50,28 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
-pen = 1e1
-pen_term = pen/h**4 * inner(phi_t, psi) * ds(1) #(ds(1) + ds(2))
+pen = 1e2
+pen_term = pen/h**4 * inner(phi_t, psi) * ds#(1) #(ds(1) + ds(2))
 a += pen_term
-L = pen/h**4 * inner(phi_D, psi)  * ds(1) #(ds(1) + ds(2))
+L = pen/h**4 * inner(phi_D, psi)  * ds#(1) #(ds(1) + ds(2))
 
-#penalty to impose Neumann BC
-n = FacetNormal(mesh)
-pen = 1e1
-pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
-a += pen_term
-L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
-
-##penalty to impose equality constraint
-#C = CellVolume(mesh)
-#pen = 1
-#pen_term = pen * inner(phi.dx(0), phi.dx(1)) * (inner(phi_t.dx(0), psi.dx(1)) + inner(psi.dx(0), phi_t.dx(1))) * dx
+##penalty to impose Neumann BC
+#n = FacetNormal(mesh)
+#pen = 1e1
+#pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
 #a += pen_term
+#L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
 
 #penalty for inequality constraints
-pen = 1
+pen = 1e2
 ##pen_ineq = ppos(norm(phi.dx(0)) - sqrt(3))**2 / C * dx
 ##pen_ineq = pen * ppos(sq_norm(phi.dx(0)) - 3) * dx
-pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(0)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
+pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
 a += pen_ineq
+#pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * inner(phi_t.dx(0), psi.dx(0)) * dx
+#a += pen_ineq
+#pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(1)) - 4)+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
+#a += pen_ineq
 ##pen_ineq = derivative(pen_ineq, phi, psi)
 ##pen_ineq = replace(pen_ineq, {phi:phi_t})
 ##a += lhs(pen_ineq)
