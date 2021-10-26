@@ -26,7 +26,7 @@ L = 2*np.sin(0.5*np.arccos(0.5/np.cos(0.5*theta))) #length of rectangle
 alpha = np.sqrt(1 / (1 - np.sin(theta/2)**2))
 H = 2*np.pi/alpha #height of rectangle
 l = np.sin(theta/2)*L #total height of cylindre
-modif = 0.02 #0.1 #0.02 #variation at the top
+modif = 0 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
 num_computation = 2
@@ -69,18 +69,28 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
-pen = 1e2
+pen = 1e1
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(3)) #Dirichlet BC top and bottom surfaces
 a += pen_term
-#pen_term = pen/h**4 * dot(phi_t,as_vector((-1,0,0)))* dot(psi,as_vector((-1,0,0))) * ds(2) + pen/h**4 * dot(phi_t,as_vector((1,0,0)))* dot(psi,as_vector((1,0,0))) * ds(4) #Mirror BC
+
+L = pen/h**4 * inner(phi_D_1, psi) * ds(1) + pen/h**4 * inner(phi_D_3, psi) * ds(3)
+
+#penalty to impose Neumann BC
+n = FacetNormal(mesh)
+pen = 1e2
+pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * (ds(1) + ds(2))
 #a += pen_term
 
-L = pen/h**4 * inner(phi_D_1, psi)  * ds(1) + pen/h**4 * inner(phi_D_3, psi)  * ds(3)
+#penalty for mirror BC
+pen = 1
+pen_term = pen * inner(phi.dx(1), phi_t) * inner(phi.dx(1), psi)  * (ds(2) + ds(4))
+#a += pen_term
+
 
 #penalty for inequality constraint
 #pen = 1e1
 pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
-a += pen_ineq
+#a += pen_ineq
 
 # Picard iterations
 tol = 1e-5 #1e-9
