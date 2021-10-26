@@ -69,7 +69,7 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
-pen = 1e1
+pen = 1e2
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(3)) #Dirichlet BC top and bottom surfaces
 a += pen_term
 
@@ -90,7 +90,7 @@ pen_term = pen * inner(phi.dx(1), phi_t) * inner(phi.dx(1), psi)  * (ds(2) + ds(
 #penalty for inequality constraint
 #pen = 1e1
 pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
-#a += pen_ineq
+a += pen_ineq
 
 # Picard iterations
 tol = 1e-5 #1e-9

@@ -51,9 +51,9 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e2
-pen_term = pen/h**4 * inner(phi_t, psi) * ds#(1) #(ds(1) + ds(2))
+pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2)) #ds
 a += pen_term
-L = pen/h**4 * inner(phi_D, psi)  * ds#(1) #(ds(1) + ds(2))
+L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2)) #ds
 
 ##penalty to impose Neumann BC
 #n = FacetNormal(mesh)
