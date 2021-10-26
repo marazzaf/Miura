@@ -29,7 +29,7 @@ l = sin(theta/2)*L #total height of cylindre
 modif = 0 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
-num_computation = 1
+num_computation = 2
 mesh = Mesh('rectangle_%i.msh' % num_computation) #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
@@ -38,7 +38,7 @@ U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
-rho = sqrt(4*np.cos(theta/2)**2*x[0]*x[0] + 1)
+rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
 phi_D_1 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), -l))
 z = -4*modif*(x[1]/H)**2 + 4*modif*l/H*x[1] + l
 phi_D_3 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
@@ -46,7 +46,7 @@ phi_D_3 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 # Initial guess
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-lin_rho = np.sqrt(4*np.cos(theta/2)**2*H*H + 1)
+lin_rho = sqrt(4*cos(theta/2)**2*H*H + 1)
 z = 2*sin(theta/2)*x[0]
 phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #initial guess is a normal cylinder
 
@@ -76,7 +76,7 @@ a += pen_term
 #rhs
 #L = pen/h**4 * inner(phi_D_1, psi) * ds(1) + pen/h**4 * inner(phi_D_3, psi) * ds(3)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-L = pen/h**4 * inner(phi_D, psi) * ds
+L = pen/h**4 * inner(phi_D, psi) * ds #(ds(1) + ds(3))
 #penalty for inequality constraint
 #pen = 1e1
 pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
