@@ -20,16 +20,16 @@ def sq_norm(f):
   return inner(f, f)
 
 # Create mesh and define function space
-theta = np.pi/2
+theta = pi/2
 ##check the sizes of the mesh. Might be the problem with some constraints.
-L = 2*np.sin(0.5*np.arccos(0.5/np.cos(0.5*theta))) #length of rectangle
-alpha = np.sqrt(1 / (1 - np.sin(theta/2)**2))
-H = 2*np.pi/alpha #height of rectangle
-l = np.sin(theta/2)*L #total height of cylindre
+L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
+alpha = sqrt(1 / (1 - sin(theta/2)**2))
+H = 2*pi/alpha #height of rectangle
+l = sin(theta/2)*L #total height of cylindre
 modif = 0 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
-num_computation = 2
+num_computation = 1
 mesh = Mesh('rectangle_%i.msh' % num_computation) #change mesh to not use the symmetry any longer
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
@@ -70,11 +70,19 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e2
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(3)) #Dirichlet BC top and bottom surfaces
+#lhs
+pen_term = pen/h**4 * inner(phi_t, psi) * ds #(ds(1) + ds(3)) #Dirichlet BC top and bottom surfaces
 a += pen_term
+#rhs
+#L = pen/h**4 * inner(phi_D_1, psi) * ds(1) + pen/h**4 * inner(phi_D_3, psi) * ds(3)
+phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+L = pen/h**4 * inner(phi_D, psi) * ds
+#penalty for inequality constraint
+#pen = 1e1
+pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
+a += pen_ineq
 
-L = pen/h**4 * inner(phi_D_1, psi) * ds(1) + pen/h**4 * inner(phi_D_3, psi) * ds(3)
-
+#Experimental
 #penalty to impose Neumann BC
 n = FacetNormal(mesh)
 pen = 1e2
@@ -87,10 +95,7 @@ pen_term = pen * inner(phi.dx(1), phi_t) * inner(phi.dx(1), psi)  * (ds(2) + ds(
 #a += pen_term
 
 
-#penalty for inequality constraint
-#pen = 1e1
-pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
-a += pen_ineq
+
 
 # Picard iterations
 tol = 1e-5 #1e-9
