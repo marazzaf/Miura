@@ -78,8 +78,8 @@ a += pen_ineq
 ##L += rhs(pen_ineq)
 
 ##penalty to impose local basis
-#pen = 1e2
-#pen_ineq = pen * abs(sign(inner(phi.dx(0), phi.dx(1)))) * (inner(phi_t.dx(0), psi.dx(1)) + inner(phi_t.dx(1), psi.dx(0))) * dx
+#pen = 1
+#pen_ineq = pen * sign(inner(phi.dx(0), phi.dx(1))) * (inner(phi_t.dx(0), psi.dx(1)) + inner(phi_t.dx(1), psi.dx(0))) * dx
 #a += pen_ineq
 
 
