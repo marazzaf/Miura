@@ -99,8 +99,6 @@ pen_term = pen * inner(phi.dx(1), phi_t) * inner(phi.dx(1), psi)  * (ds(2) + ds(
 #a += pen_term
 
 
-
-
 # Picard iterations
 tol = 1e-5 #1e-9
 maxiter = 50

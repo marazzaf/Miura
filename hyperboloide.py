@@ -8,12 +8,12 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  return  inner(phi.dx(0), phi.dx(0))**2
-  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  #return  inner(phi.dx(0), phi.dx(0))**2
+  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
-  return 4
-  #return 4 / inner(phi.dx(1), phi.dx(1))
+  #return 4
+  return 4 / inner(phi.dx(1), phi.dx(1))
 
 def sq_norm(f):
   return inner(f, f)
@@ -120,6 +120,12 @@ ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
 constraint = ineq_1 + ineq_2 + ineq_3
 constraint = project(constraint, U, name='constraint')
 file = File('constraint.pvd')
+file.write(constraint)
+
+#check other equation
+eq = (1 - 0.25*sq_norm(phi.dx(0))) * sq_norm(phi.dx(1))
+constraint = project(eq, U, name='second_eq')
+file = File('constraint_2.pvd')
 file.write(constraint)
 
 
