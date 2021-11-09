@@ -80,6 +80,12 @@ phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 #L = pen * inner(phi_D, psi) * ds
 L = pen/h**4 * inner(phi_D, psi) * ds #(ds(1) + ds(3))
 
+#Dirichlet on grad
+n = FacetNormal(mesh)
+pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds
+a += pen_term
+L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds
+
 #penalty for inequality constraint
 #pen = 1e1
 pen_ineq = pen/h**4 * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
