@@ -29,8 +29,9 @@ l = sin(theta/2)*L #total height of cylindre
 modif = 0 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
-num_computation = 2
-mesh = Mesh('rectangle_%i.msh' % num_computation) #change mesh to not use the symmetry any longer
+size_ref = 5 #10 #degub: 5
+nx,ny = int(size_ref*H/float(L)),size_ref
+mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
 
 #For projection
@@ -50,17 +51,6 @@ lin_rho = sqrt(4*cos(theta/2)**2*H*H + 1)
 z = 2*sin(theta/2)*x[0]
 phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #initial guess is a normal cylinder
 
-##plotting initial guess
-#vec = project(phi, U).vector().get_local()
-#vec_phi_aux = vec.reshape((len(vec) // 3, 3))
-##3d plot
-#fig = plt.figure()
-#ax = fig.add_subplot(111, projection='3d')
-#for i in vec_phi_aux:
-#  ax.scatter(i[0], i[1], i[2], color='r')
-#plt.show()
-#sys.exit()
-
 #Defining the bilinear forms
 #bilinear form for linearization
 phi_t = TrialFunction(V)
@@ -71,31 +61,23 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 h = CellDiameter(mesh)
 pen = 1e2
 #lhs
-#pen_term = pen * inner(phi_t, psi) * ds
-pen_term = pen/h**4 * inner(phi_t, psi) * ds #(ds(1) + ds(3)) #Dirichlet BC top and bottom surfaces
+pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2)) #Dirichlet BC top and bottom surfaces
 a += pen_term
 #rhs
-#L = pen/h**4 * inner(phi_D_1, psi) * ds(1) + pen/h**4 * inner(phi_D_3, psi) * ds(3)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-#L = pen * inner(phi_D, psi) * ds
-L = pen/h**4 * inner(phi_D, psi) * ds #(ds(1) + ds(3))
+L = pen/h**4 * inner(phi_D, psi) * (ds(1) + ds(2))
 
 #Dirichlet on grad
 n = FacetNormal(mesh)
-pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds
+pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * (ds(1) + ds(2)) #ds
 a += pen_term
-L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds
+L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * (ds(1) + ds(2)) #ds
 
 #penalty for inequality constraint
 #pen = 1e1
 pen_ineq = pen/h**4 * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
 #pen_ineq = pen/h**4 * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) / sqrt(sq_norm(phi.dx(1)))  * inner(phi_t.dx(1), psi.dx(1)) * dx #test
 a += pen_ineq
-
-#penalty for mirror BC
-pen = 1
-pen_term = pen * inner(phi.dx(1), phi_t) * inner(phi.dx(1), psi)  * (ds(2) + ds(4))
-#a += pen_term
 
 
 # Picard iterations
@@ -121,7 +103,7 @@ else:
 projected = project(phi, U, name='surface')
 
 #Write 2d results
-file = File('new_%i.pvd' % num_computation)
+file = File('new_%i.pvd' % size_ref)
 file.write(projected)
 
 #check ineq constraints
@@ -131,7 +113,7 @@ ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
 ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
 constraint = ineq_1 + ineq_2 + ineq_3
 constraint = project(constraint, W, name='constraint')
-file = File('new_constraint_%i.pvd' % num_computation)
+file = File('new_constraint_%i.pvd' % size_ref)
 file.write(constraint)
 
 
@@ -165,6 +147,6 @@ ax.set_ylabel('y')
 ax.set_zlabel('z')
 plt.show()
 plt.title('Miura ori')
-plt.savefig('new_shape_%i.pdf' % num_computation)
+plt.savefig('new_shape_%i.pdf' % size_ref)
 
 
