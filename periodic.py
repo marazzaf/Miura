@@ -29,7 +29,7 @@ l = sin(theta/2)*L #total height of cylindre
 modif = 0 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
-size_ref = 5 #10 #degub: 5
+size_ref = 20 #10 #degub: 5
 nx,ny = int(size_ref*H/float(L)),size_ref
 mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
@@ -55,10 +55,10 @@ psi = TestFunction(V)
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
-phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), -l))
-modif = 0.
-#z = l*modif*(x[1]-H/2)*2/H + l
-mod_phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), l))
+phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+modif = 0.1
+z = l*modif*(x[1]-H/2)*2/H + l
+mod_phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 h = CellDiameter(mesh)
 pen = 1e2
 #lhs
@@ -71,9 +71,9 @@ L = pen/h**4 * inner(phi_D, psi) * ds(1) + pen/h**4 * inner(mod_phi_D, psi) * ds
 n = FacetNormal(mesh)
 pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * (ds(1) + ds(2)) #ds
 a += pen_term
-phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-mod_phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) + pen/h/h * inner(dot(grad(mod_phi_D),n), dot(grad(psi),n)) * ds(2) #ds
+#grad(phi_D) has shape (3,2)
+grad_mod_phi_D = as_tensor(((rho.dx(0)*cos(alpha*x[1]), -alpha*rho*sin(alpha*x[1])), (rho.dx(0)*sin(alpha*x[1]), alpha*rho*cos(alpha*x[1])), (2*sin(theta/2), modif*l*2/H)))
+L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) + pen/h/h * inner(dot(grad_mod_phi_D,n), dot(grad(psi),n)) * ds(2) #ds
 
 #penalty for inequality constraint
 #pen = 1e1
