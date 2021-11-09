@@ -41,7 +41,6 @@ U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
 z = 2*sin(theta/2) * (x[0]-L/2)
-phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 # Initial guess
 phi = Function(V, name='solution')
@@ -56,19 +55,25 @@ psi = TestFunction(V)
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
+phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), -l))
+modif = 0.
+#z = l*modif*(x[1]-H/2)*2/H + l
+mod_phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), l))
 h = CellDiameter(mesh)
 pen = 1e2
 #lhs
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2)) #Dirichlet BC top and bottom surfaces
 a += pen_term
 #rhs
-L = pen/h**4 * inner(phi_D, psi) * (ds(1) + ds(2))
+L = pen/h**4 * inner(phi_D, psi) * ds(1) + pen/h**4 * inner(mod_phi_D, psi) * ds(2)
 
 #Dirichlet on grad
 n = FacetNormal(mesh)
 pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * (ds(1) + ds(2)) #ds
 a += pen_term
-L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * (ds(1) + ds(2)) #ds
+phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+mod_phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) + pen/h/h * inner(dot(grad(mod_phi_D),n), dot(grad(psi),n)) * ds(2) #ds
 
 #penalty for inequality constraint
 #pen = 1e1
