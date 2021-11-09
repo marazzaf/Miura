@@ -39,16 +39,14 @@ U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
-rho = sqrt(4*cos(theta/2)**2*x[0]*x[0] + 1)
-phi_D_1 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), -l))
-z = -4*modif*(x[1]/H)**2 + 4*modif*l/H*x[1] + l
-phi_D_3 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
+z = 2*sin(theta/2) * (x[0]-L/2)
+phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 # Initial guess
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-lin_rho = sqrt(4*cos(theta/2)**2*H*H + 1)
-z = 2*sin(theta/2)*x[0]
+lin_rho = sqrt(4*cos(theta/2)**2*L*L/4 + 1)
 phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #initial guess is a normal cylinder
 
 #Defining the bilinear forms
@@ -64,7 +62,6 @@ pen = 1e2
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2)) #Dirichlet BC top and bottom surfaces
 a += pen_term
 #rhs
-phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 L = pen/h**4 * inner(phi_D, psi) * (ds(1) + ds(2))
 
 #Dirichlet on grad

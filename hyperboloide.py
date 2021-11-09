@@ -20,7 +20,7 @@ def sq_norm(f):
 
 # Create mesh and define function space
 theta = pi/2
-L = 2*sin(0.5*acos(0.5/cos(0.5*theta)))
+L = sin(0.5*acos(0.5/cos(0.5*theta))) #*2
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 l = 2*pi/alpha
 size_ref = 10 #10 #degub: 5
@@ -40,7 +40,7 @@ phi_old = Function(V)
 # Define variational problem for Picard iteration
 phi = Function(V, name='solution')
 #phi.project(phi_D)
-lin_rho = (sqrt(4*cos(theta/2)**2*l*l + 1) - 1) / l * x[0] + 1
+lin_rho = (sqrt(4*cos(theta/2)**2*L*L + 1) - 1) / L * x[0] + 1
 phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z)))
 
 #bilinear form for linearization
@@ -51,16 +51,15 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e2
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2)) #ds
+pen_term = pen/h**4 * inner(phi_t, psi) * ds
 a += pen_term
-L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2)) #ds
+L = pen/h**4 * inner(phi_D, psi)  * ds
 
-##penalty to impose Neumann BC
-#n = FacetNormal(mesh)
-#pen = 1e1
-#pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
-#a += pen_term
-#L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) #(ds(1) + ds(2))
+#penalty to impose Dirichlet BC on grad
+n = FacetNormal(mesh)
+pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds
+a += pen_term
+L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds
 
 #penalty for inequality constraints
 pen = 1e2
@@ -68,10 +67,10 @@ pen = 1e2
 ##pen_ineq = pen * ppos(sq_norm(phi.dx(0)) - 3) * dx
 pen_ineq = pen * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
 a += pen_ineq
-#pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * inner(phi_t.dx(0), psi.dx(0)) * dx
-#a += pen_ineq
-#pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(1)) - 4)+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
-#a += pen_ineq
+pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * inner(phi_t.dx(0), psi.dx(0)) * dx
+a += pen_ineq
+pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(1)) - 4)+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
+a += pen_ineq
 ##pen_ineq = derivative(pen_ineq, phi, psi)
 ##pen_ineq = replace(pen_ineq, {phi:phi_t})
 ##a += lhs(pen_ineq)
