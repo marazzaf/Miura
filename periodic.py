@@ -57,11 +57,11 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 
 #penalty to impose Dirichlet BC
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-modif = 0.1
-z = l*modif*(x[1]-H/2)*2/H + l
+modif = 0.2
+z = -l*modif*(x[1]-H/2)**2*4/H/H + l*(1+modif)
 mod_phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 h = CellDiameter(mesh)
-pen = 1e2
+pen = 1e3
 #lhs
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2)) #Dirichlet BC top and bottom surfaces
 a += pen_term
@@ -73,8 +73,8 @@ n = FacetNormal(mesh)
 pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * (ds(1) + ds(2)) #ds
 a += pen_term
 #grad(phi_D) has shape (3,2)
-grad_mod_phi_D = as_tensor(((rho.dx(0)*cos(alpha*x[1]), -alpha*rho*sin(alpha*x[1])), (rho.dx(0)*sin(alpha*x[1]), alpha*rho*cos(alpha*x[1])), (2*sin(theta/2), modif*l*2/H)))
-L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * ds(1) + pen/h/h * inner(dot(grad_mod_phi_D,n), dot(grad(psi),n)) * ds(2) #ds
+#grad_mod_phi_D = as_tensor(((rho.dx(0)*cos(alpha*x[1]), -alpha*rho*sin(alpha*x[1])), (rho.dx(0)*sin(alpha*x[1]), alpha*rho*cos(alpha*x[1])), (2*sin(theta/2), -2*l*modif*(x[1]-H/2)*4/H/H)))
+L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * (ds(1)+ds(2)) # + pen/h/h * inner(dot(grad_mod_phi_D,n), dot(grad(psi),n)) * ds(2) #ds
 
 #penalty for inequality constraint
 #pen = 1e1
