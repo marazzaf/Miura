@@ -79,7 +79,10 @@ L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * (ds(1)+ds(2)) # + p
 #penalty for inequality constraint
 #pen = 1e1
 pen_ineq = pen/h**4 * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
-#pen_ineq = pen/h**4 * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) / sqrt(sq_norm(phi.dx(1)))  * inner(phi_t.dx(1), psi.dx(1)) * dx #test
+a += pen_ineq
+pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * inner(phi_t.dx(0), psi.dx(0)) * dx
+a += pen_ineq
+pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(1)) - 4)+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
 a += pen_ineq
 
 
