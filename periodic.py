@@ -32,7 +32,8 @@ modif = 0 #0.02 #0.1 #0.02 #variation at the top
 size_ref = 20 #10 #degub: 5
 nx,ny = int(size_ref*H/float(L)),size_ref
 mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
+#V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
+V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
@@ -130,6 +131,13 @@ print(assemble(value))
 vec = projected.vector().get_local()
 vec_phi_aux = vec.reshape((len(vec) // 3, 3))
 
+#writing a file with points
+points = open('points_%i.txt' % size_ref, 'w')
+for i in vec_phi_aux:
+  points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
+points.close()
+sys.exit()
+
 ##Nice 3d plot
 #x = vec_phi_aux[:,0]
 #y = vec_phi_aux[:,1]
@@ -139,16 +147,15 @@ vec_phi_aux = vec.reshape((len(vec) // 3, 3))
 #plt.show()
 #sys.exit()
 
-#3d plot
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-for i in vec_phi_aux:
-  ax.scatter(i[0], i[1], i[2], color='r')
-ax.set_xlabel('x')
-ax.set_ylabel('y')
-ax.set_zlabel('z')
-plt.show()
-plt.title('Miura ori')
-plt.savefig('new_shape_%i.pdf' % size_ref)
 
-
+##3d plot
+#fig = plt.figure()
+#ax = fig.add_subplot(111, projection='3d')
+#for i in vec_phi_aux:
+#  ax.scatter(i[0], i[1], i[2], color='r')
+#ax.set_xlabel('x')
+#ax.set_ylabel('y')
+#ax.set_zlabel('z')
+#plt.show()
+#plt.title('Miura ori')
+#plt.savefig('new_shape_%i.pdf' % size_ref)
