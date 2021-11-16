@@ -29,7 +29,7 @@ l = sin(theta/2)*L #total height of cylindre
 modif = 0 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
-size_ref = 20 #10 #degub: 5
+size_ref = 10 #20 #10 #degub: 5
 nx,ny = int(size_ref*H/float(L)),size_ref
 mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 #V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
@@ -85,6 +85,10 @@ a += pen_ineq
 pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(1)) - 4)+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
 a += pen_ineq
 
+#penalty for scalar product
+pen = 1e1
+pen_eq = pen * sign(inner(phi.dx(0), phi.dx(1))) * (inner(phi_t.dx(0), psi.dx(1)) + inner(phi_t.dx(0), psi.dx(1))) * dx
+#a += pen_eq
 
 # Picard iterations
 tol = 1e-5 #1e-9
