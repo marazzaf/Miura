@@ -2,7 +2,7 @@
 
 import numpy as np
 
-size_ref = 20
+size_ref = 10
 data = np.loadtxt('points_%i.txt' % size_ref)
 
 x = data[:,0]

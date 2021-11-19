@@ -9,12 +9,12 @@ import numpy as np
 
 # the coefficient functions
 def p(phi):
-  return  inner(phi.dx(0), phi.dx(0))**2
-  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  #return  inner(phi.dx(0), phi.dx(0))**2
+  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
-  return 4
-  #return 4 / inner(phi.dx(1), phi.dx(1))
+  #return 4
+  return 4 / inner(phi.dx(1), phi.dx(1))
 
 def sq_norm(f):
   return inner(f, f)
@@ -26,7 +26,7 @@ L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L #total height of cylindre
-modif = 0 #0.02 #0.1 #0.02 #variation at the top
+modif = 0.1 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
 size_ref = 10 #20 #10 #degub: 5
@@ -116,21 +116,21 @@ projected = project(phi, U, name='surface')
 file = File('new_%i.pvd' % size_ref)
 file.write(projected)
 
-#check ineq constraints
-W = FunctionSpace(mesh, 'CG', 2)
-ineq_1 = 0.5*(1+sign(sq_norm(phi.dx(0)) - 3))
-ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
-ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
-constraint = ineq_1 + ineq_2 + ineq_3
-constraint = project(constraint, W, name='constraint')
-file = File('new_constraint_%i.pvd' % size_ref)
-file.write(constraint)
-
-
-#check eq constraint
-C = CellVolume(mesh)
-value = inner(phi.dx(0), phi.dx(1)) / C * dx
-print(assemble(value))
+##check ineq constraints
+#W = FunctionSpace(mesh, 'CG', 2)
+#ineq_1 = 0.5*(1+sign(sq_norm(phi.dx(0)) - 3))
+#ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
+#ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
+#constraint = ineq_1 + ineq_2 + ineq_3
+#constraint = project(constraint, W, name='constraint')
+#file = File('new_constraint_%i.pvd' % size_ref)
+#file.write(constraint)
+#
+#
+##check eq constraint
+#C = CellVolume(mesh)
+#value = inner(phi.dx(0), phi.dx(1)) / C * dx
+#print(assemble(value))
 #sys.exit()
 
 
