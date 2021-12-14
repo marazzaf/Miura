@@ -32,7 +32,7 @@ modif = 0.1 #0.02 #0.1 #0.02 #variation at the top
 size_ref = 10 #20 #10 #degub: 5
 nx,ny = int(size_ref*H/float(L)),size_ref
 mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-#V = VectorFunctionSpace(mesh, "HER", 3, dim=3)
+#V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 
 #For projection
