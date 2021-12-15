@@ -136,5 +136,18 @@ points = open('hyperboloid_%i.txt' % size_ref, 'w')
 for i in vec_phi_aux:
   points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
 points.close()
+
+#computing normals and writing them
+normals = open('normals_%i.txt' % size_ref, 'w')
+phi_x = project(phi.dx(0), U).vector().get_local()
+phi_x = phi_x.reshape((len(vec) // 3, 3))
+phi_y = project(phi.dx(1), U).vector().get_local()
+phi_y = phi_y.reshape((len(vec) // 3, 3))
+import numpy as np
+for i,j in zip(phi_x,phi_y):
+  normal = np.cross(i,j)
+  normal /= np.linalg.norm(normal)
+  normals.write('%.5e %.5e %.5e\n' % (normal[0], normal[1], normal[2]))
+normals.close()
 sys.exit()
 
