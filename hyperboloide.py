@@ -145,7 +145,7 @@ phi_y = project(phi.dx(1), U).vector().get_local()
 phi_y = phi_y.reshape((len(vec) // 3, 3))
 import numpy as np
 for i,j in zip(phi_x,phi_y):
-  normal = np.cross(i,j)
+  normal = -np.cross(i,j)
   normal /= np.linalg.norm(normal)
   normals.write('%.5e %.5e %.5e\n' % (normal[0], normal[1], normal[2]))
 normals.close()

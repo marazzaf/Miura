@@ -26,15 +26,18 @@ pcd.points = o3d.utility.Vector3dVector(points)
 normals = np.loadtxt('normals_%i.txt' % size_ref)
 for n in normals:
     pcd.normals.append(n) #adding normals to the point cloud
+#o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+#sys.exit()
+
+#Constructing the mesh
 with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
     mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=9)
-#print(mesh)
-o3d.visualization.draw_geometries([mesh])
+#o3d.visualization.draw_geometries([mesh])
 sys.exit()
 
 #try to get triangular surface
 radii = [0.005, 0.01, 0.02, 0.04]
 rec_mesh = o3d.geometry.TriangleMesh.create_from_point_cloud_ball_pivoting(pcd, o3d.utility.DoubleVector(radii))
-#o3d.visualization.draw_geometries([pcd, rec_mesh])
+o3d.visualization.draw_geometries([pcd, rec_mesh])
 
 
