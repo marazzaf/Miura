@@ -21,14 +21,16 @@ pcd.points = o3d.utility.Vector3dVector(points)
 #msh = o3d.geometry.TriangleMesh()
 #for p in data:
 #    msh.vertices.append(p) #adding vertices to the mesh
+
+#add the normals now
+normals = np.loadtxt('normals_%i.txt' % size_ref)
+for n in normals:
+    pcd.normals.append(n) #adding normals to the point cloud
 with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
     mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=9)
-print(mesh)
-##add the normals now
-#normals = np.loadtxt('normals_%i.txt' % size_ref)
-#for n in normals:
-#    msh.vertex_normals.append(n) #adding vertices to the mesh
-#pcd = msh.sample_points_poisson_disk(3000)
+#print(mesh)
+o3d.visualization.draw_geometries([mesh])
+sys.exit()
 
 #try to get triangular surface
 radii = [0.005, 0.01, 0.02, 0.04]
