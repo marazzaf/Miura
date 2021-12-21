@@ -5,7 +5,8 @@ import sys
 import open3d as o3d
 
 size_ref = 5
-data = np.loadtxt('hyperboloid_%i.txt' % size_ref)
+#data = np.loadtxt('hyperboloid_%i.txt' % size_ref)
+data = np.loadtxt('points_%i.txt' % size_ref)
 
 x = data[:,0]
 y = data[:,1]
@@ -26,8 +27,8 @@ pcd.points = o3d.utility.Vector3dVector(points)
 normals = np.loadtxt('normals_%i.txt' % size_ref)
 for n in normals:
     pcd.normals.append(n) #adding normals to the point cloud
-#o3d.visualization.draw_geometries([pcd], point_show_normal=True)
-#sys.exit()
+o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+sys.exit()
 
 #Constructing the mesh
 with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:

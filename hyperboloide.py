@@ -66,9 +66,8 @@ for iter in range(maxiter):
   solve(a == L, phi) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
-  #area = assemble(sqrt(1+inner(grad(u),grad(u)))*dx)
   print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
-  #print(assemble(0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * (sq_norm(phi.dx(0)) - 3) * dx))
+
   if eps < tol:
     break
   phi_old.assign(phi)

@@ -29,14 +29,15 @@ l = sin(theta/2)*L #total height of cylindre
 modif = 0.1 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
-size_ref = 10 #20 #10 #degub: 5
+size_ref = 5 #20 #10 #degub: 5
 nx,ny = int(size_ref*H/float(L)),size_ref
 mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-#V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
-V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
+V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
+#V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
+UU = FunctionSpace(mesh, 'CG', 1)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
@@ -46,8 +47,8 @@ z = 2*sin(theta/2) * (x[0]-L/2)
 # Initial guess
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-lin_rho = sqrt(4*cos(theta/2)**2*L*L/4 + 1)
-phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #initial guess is a normal cylinder
+#lin_rho = sqrt(4*cos(theta/2)**2*L*L/4 + 1)
+#phi.project(as_vector((lin_rho*cos(alpha*x[1]), lin_rho*sin(alpha*x[1]), z))) #initial guess is a normal cylinder
 
 #Defining the bilinear forms
 #bilinear form for linearization
@@ -68,27 +69,9 @@ a += pen_term
 #rhs
 L = pen/h**4 * inner(phi_D, psi) * ds(1) + pen/h**4 * inner(mod_phi_D, psi) * ds(2)
 
-#Dirichlet on grad
-n = FacetNormal(mesh)
-pen_term = pen/h/h * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * (ds(1) + ds(2)) #ds
-a += pen_term
-#grad(phi_D) has shape (3,2)
-#grad_mod_phi_D = as_tensor(((rho.dx(0)*cos(alpha*x[1]), -alpha*rho*sin(alpha*x[1])), (rho.dx(0)*sin(alpha*x[1]), alpha*rho*cos(alpha*x[1])), (2*sin(theta/2), -2*l*modif*(x[1]-H/2)*4/H/H)))
-L += pen/h/h * inner(dot(grad(phi_D),n), dot(grad(psi),n)) * (ds(1)+ds(2)) # + pen/h/h * inner(dot(grad_mod_phi_D,n), dot(grad(psi),n)) * ds(2) #ds
-
-#penalty for inequality constraint
-#pen = 1e1
-pen_ineq = pen/h**4 * 0.5*(sign(1 - sq_norm(phi.dx(1)))+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
-#a += pen_ineq
-pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(0)) - 3)+1) * inner(phi_t.dx(0), psi.dx(0)) * dx
-#a += pen_ineq
-pen_ineq = pen * 0.5*(sign(sq_norm(phi.dx(1)) - 4)+1) * inner(phi_t.dx(1), psi.dx(1)) * dx
-#a += pen_ineq
-
-#penalty for scalar product
-pen = 1e1
-pen_eq = pen * sign(inner(phi.dx(0), phi.dx(1))) * (inner(phi_t.dx(0), psi.dx(1)) + inner(phi_t.dx(0), psi.dx(1))) * dx
-#a += pen_eq
+#Computing initial guess
+laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
+solve(laplace+pen_term == L, phi)
 
 # Picard iterations
 tol = 1e-5 #1e-9
@@ -116,22 +99,10 @@ projected = project(phi, U, name='surface')
 file = File('new_%i.pvd' % size_ref)
 file.write(projected)
 
-##check ineq constraints
-#W = FunctionSpace(mesh, 'CG', 2)
-#ineq_1 = 0.5*(1+sign(sq_norm(phi.dx(0)) - 3))
-#ineq_2 = 0.5*(1+sign(sq_norm(phi.dx(1)) - 4))
-#ineq_3 = 0.5*(1+sign(1 - sq_norm(phi.dx(1))))
-#constraint = ineq_1 + ineq_2 + ineq_3
-#constraint = project(constraint, W, name='constraint')
-#file = File('new_constraint_%i.pvd' % size_ref)
-#file.write(constraint)
-#
-#
-##check eq constraint
-#C = CellVolume(mesh)
-#value = inner(phi.dx(0), phi.dx(1)) / C * dx
-#print(assemble(value))
-#sys.exit()
+#check eq constraint
+res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
+res = res.vector()
+print(max(abs(max(res)), abs(min(res)))) #l-infinity
 
 
 #plotting solution
