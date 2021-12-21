@@ -8,9 +8,11 @@ import sys
 
 # the coefficient functions
 def p(phi):
+  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
   return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
+  #return 4
   return 4 / inner(phi.dx(1), phi.dx(1))
 
 # Size for the domain
@@ -21,7 +23,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 10 #10 #degub: 5
+size_ref = 5 #10 #degub: 5
 nx,ny = int(size_ref*H/float(L)),size_ref
 mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
@@ -85,9 +87,15 @@ projected = project(phi, U, name='surface')
 C = CellVolume(mesh)
 phi_x = project(phi.dx(0), U)
 phi_y = project(phi.dx(1), U)
-#res = (p(projected) * q(projected) - 4) / C * dx
 res = ((1 - 0.25 * inner(phi_x, phi_x)) * inner(phi_y, phi_y) - 1) / C * dx
-print(abs(assemble(res)))
+print(abs(assemble(res))) #l1
+UU = FunctionSpace(mesh, 'CG', 1)
+test = interpolate(Constant(1), UU)
+res = errornorm((1 - 0.25 * inner(phi_x, phi_x)) * inner(phi_y, phi_y), test, 'l2')
+print(res) #l2
+res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
+res = res.vector()
+print(max(abs(max(res)), abs(min(res)))) #l-infinity
 sys.exit()
 
 #Write 2d results
