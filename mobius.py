@@ -30,7 +30,7 @@ UU = FunctionSpace(mesh, 'CG', 1) #projection for scalars
 #  Dirichlet boundary conditions
 x = SpatialCoordinate(mesh)
 c = as_vector((cos(2*x[0]), sin(2*x[0]), 0))
-r = as_vector((cos(2*x[0])*cos(2*x[0]), cos(2*x[0])*sin(2*x[0]), sin(x[0])))
+r = as_vector((cos(x[0])*cos(2*x[0]), cos(x[0])*sin(2*x[0]), sin(x[0])))
 phi_D = c + x[1] * r
 
 #initial guess
