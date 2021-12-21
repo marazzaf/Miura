@@ -9,7 +9,7 @@ import numpy as np
 
 # the coefficient functions
 def p(phi):
-  #return  inner(phi.dx(0), phi.dx(0))**2
+  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
   return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
@@ -29,7 +29,7 @@ l = sin(theta/2)*L #total height of cylindre
 modif = 0.1 #0.02 #0.1 #0.02 #variation at the top
 
 #Loading mesh
-size_ref = 5 #20 #10 #degub: 5
+size_ref = 10 #20 #10 #degub: 5
 nx,ny = int(size_ref*H/float(L)),size_ref
 mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
@@ -62,7 +62,7 @@ modif = 0.2
 z = -l*modif*(x[1]-H/2)**2*4/H/H + l*(1+modif)
 mod_phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 h = CellDiameter(mesh)
-pen = 1e3
+pen = 1e2
 #lhs
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2)) #Dirichlet BC top and bottom surfaces
 a += pen_term
@@ -103,6 +103,9 @@ file.write(projected)
 res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
 res = res.vector()
 print(max(abs(max(res)), abs(min(res)))) #l-infinity
+test = interpolate(Constant(1), UU)
+res = errornorm((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)), test, 'l2')
+print(res) #l2
 
 
 #plotting solution
