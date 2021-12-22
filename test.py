@@ -5,7 +5,10 @@ from firedrake import *
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
 import sys
-import numpy as np
+import numpy as n
+
+#MPI
+rank = COMM_WORLD.rank
 
 # the coefficient functions
 def p(phi):
@@ -19,13 +22,22 @@ def q(phi):
 def sq_norm(f):
   return inner(f, f)
 
+#plot function
+def Plot(f):
+  fig, axes = plt.subplots()
+  #levels = np.linspace(0, 1, 51)
+  contours = tricontourf(f, axes=axes, cmap="inferno") #levels=levels
+  axes.set_aspect("equal")
+  fig.colorbar(contours)
+  plt.show()
+  return
+
 # Create mesh and define function space
 alpha = 20
 L = 20 #length of rectangle
 H = 2*pi*alpha #height of rectangle
-#size_ref = 10 #20 #10 #degub: 5
-#nx,ny = int(size_ref*H/L),size_ref
-nx = ny = 20
+size_ref = 60 #20 #10 #degub: 5
+nx,ny = int(size_ref*L/H),int(size_ref*H/L)
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 mesh = RectangleMesh(nx, ny, L, H, diagonal='crossed')
 V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
@@ -53,7 +65,7 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
-pen = 1e2
+pen = 5e1
 #lhs
 pen_term = pen/h**4 * inner(phi_t, psi) * ds
 a += pen_term
@@ -84,7 +96,9 @@ for iter in range(maxiter):
   try:
     assert value < 4 #not elliptic otherwise.
   except AssertionError:
-    print('Bounded slope error: %.2e' % value)
+    print('Bounded slope condition: %.2e' % value)
+    if rank == 0:
+      Plot(test)
     sys.exit()
   
   #convergence test 
