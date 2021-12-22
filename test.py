@@ -33,9 +33,9 @@ def Plot(f):
   return
 
 # Create mesh and define function space
-alpha = 20
-L = 20 #length of rectangle
-H = 2*pi*alpha #height of rectangle
+alpha = 1
+L = 1/alpha * 0.9 #length of rectangle
+H = 2*pi/alpha #height of rectangle
 size_ref = 60 #20 #10 #degub: 5
 nx,ny = int(size_ref*L/H),int(size_ref*H/L)
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
@@ -49,9 +49,9 @@ UU = FunctionSpace(mesh, 'CG', 1)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
-rho = 2*x[0]/L + 1
+rho = x[0]
 z = x[0]
-phi_D = as_vector((rho*cos(x[1]/alpha), rho*sin(x[1]/alpha), z))
+phi_D = as_vector((rho*cos(x[1]*alpha), rho*sin(x[1]*alpha), z))
 
 # Creating function to store solution
 phi = Function(V, name='solution')
@@ -65,12 +65,12 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
-pen = 5e1
+pen = 1e2
 #lhs
-pen_term = pen/h**4 * inner(phi_t, psi) * ds
+pen_term = pen/h**2 * inner(phi_t, psi) * ds #h**4
 a += pen_term
 #rhs
-L = pen/h**4 * inner(phi_D, psi) * ds
+L = pen/h**2 * inner(phi_D, psi) * ds #h**4
 
 #Computing initial guess
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
@@ -79,7 +79,8 @@ solve(laplace+pen_term == L, phi)
 #testing bounded slope condition of initial guess
 test = project(sq_norm(phi.dx(0)), UU)
 #print(test.vector().array())
-print(max(test.vector()))
+if rank == 0:
+  print(max(test.vector()))
 #sys.exit()
 assert max(test.vector()) < 4 #not elliptic otherwise.
 
@@ -96,10 +97,10 @@ for iter in range(maxiter):
   try:
     assert value < 4 #not elliptic otherwise.
   except AssertionError:
-    print('Bounded slope condition: %.2e' % value)
     if rank == 0:
+      print('Bounded slope condition: %.2e' % value)
       Plot(test)
-    sys.exit()
+    #sys.exit()
   
   #convergence test 
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
