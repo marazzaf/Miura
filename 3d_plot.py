@@ -4,7 +4,7 @@ import numpy as np
 import sys
 import open3d as o3d
 
-size_ref = 5
+size_ref = 40
 #data = np.loadtxt('hyperboloid_%i.txt' % size_ref)
 data = np.loadtxt('points_%i.txt' % size_ref)
 
@@ -16,7 +16,8 @@ z = data[:,2]
 points = np.vstack((x, y, z)).transpose()
 pcd = o3d.geometry.PointCloud()
 pcd.points = o3d.utility.Vector3dVector(points)
-#o3d.visualization.draw_geometries([pcd])
+o3d.visualization.draw_geometries([pcd])
+sys.exit()
 
 #creating a mesh
 #msh = o3d.geometry.TriangleMesh()

@@ -34,9 +34,9 @@ def Plot(f):
 
 # Create mesh and define function space
 alpha = 1
-L = 1/alpha * 0.9 #length of rectangle
-H = 2*pi/alpha #height of rectangle
-size_ref = 60 #20 #10 #degub: 5
+L = 1/alpha #length of rectangle
+H = pi/alpha #height of rectangle
+size_ref = 40 #60 #20 #10 #degub: 5
 nx,ny = int(size_ref*L/H),int(size_ref*H/L)
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 mesh = RectangleMesh(nx, ny, L, H, diagonal='crossed')
@@ -104,7 +104,8 @@ for iter in range(maxiter):
   
   #convergence test 
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
-  print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  if rank == 0:
+    print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
   if eps < tol:
     break
   phi_old.assign(phi)
