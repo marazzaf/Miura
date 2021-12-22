@@ -25,7 +25,7 @@ L = 100 #length of rectangle
 H = 2*pi*alpha #height of rectangle
 #size_ref = 10 #20 #10 #degub: 5
 #nx,ny = int(size_ref*H/L),size_ref
-nx = ny = 60
+nx = ny = 20
 mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 #V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
@@ -36,7 +36,7 @@ UU = FunctionSpace(mesh, 'CG', 1)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
-rho = 4*x[0]/L + 1
+rho = 2*x[0]/L + 1
 z = x[0]
 phi_D = as_vector((rho*cos(x[1]/alpha), rho*sin(x[1]/alpha), z))
 
