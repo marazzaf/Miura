@@ -21,12 +21,13 @@ def sq_norm(f):
 
 # Create mesh and define function space
 alpha = 20
-L = 100 #length of rectangle
+L = 20 #length of rectangle
 H = 2*pi*alpha #height of rectangle
 #size_ref = 10 #20 #10 #degub: 5
 #nx,ny = int(size_ref*H/L),size_ref
 nx = ny = 20
-mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
+#mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
+mesh = RectangleMesh(nx, ny, L, H, diagonal='crossed')
 V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 #V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 
@@ -54,10 +55,10 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 h = CellDiameter(mesh)
 pen = 1e2
 #lhs
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2)) #Dirichlet BC top and bottom surfaces
+pen_term = pen/h**4 * inner(phi_t, psi) * ds
 a += pen_term
 #rhs
-L = pen/h**4 * inner(phi_D, psi) * (ds(1) + ds(2))
+L = pen/h**4 * inner(phi_D, psi) * ds
 
 #Computing initial guess
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
@@ -66,7 +67,7 @@ solve(laplace+pen_term == L, phi)
 #testing bounded slope condition of initial guess
 test = project(sq_norm(phi.dx(0)), UU)
 #print(test.vector().array())
-#print(max(test.vector()))
+print(max(test.vector()))
 #sys.exit()
 assert max(test.vector()) < 4 #not elliptic otherwise.
 
