@@ -2,13 +2,10 @@
 #source firedrake/bin/activate
 
 from firedrake import *
+from firedrake.petsc import PETSc
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
 import sys
-import numpy as n
-
-#MPI
-rank = COMM_WORLD.rank
 
 # the coefficient functions
 def p(phi):
@@ -25,7 +22,6 @@ def sq_norm(f):
 #plot function
 def Plot(f):
   fig, axes = plt.subplots()
-  #levels = np.linspace(0, 1, 51)
   contours = tricontourf(f, axes=axes, cmap="inferno") #levels=levels
   axes.set_aspect("equal")
   fig.colorbar(contours)
@@ -79,8 +75,8 @@ solve(laplace+pen_term == L, phi)
 #testing bounded slope condition of initial guess
 test = project(sq_norm(phi.dx(0)), UU)
 #print(test.vector().array())
-if rank == 0:
-  print(max(test.vector()))
+value = max(test.vector())
+PETSc.Sys.Print('Bouned slope condition %.2e' % value)
 #sys.exit()
 assert max(test.vector()) < 4 #not elliptic otherwise.
 
@@ -97,23 +93,21 @@ for iter in range(maxiter):
   try:
     assert value < 4 #not elliptic otherwise.
   except AssertionError:
-    if rank == 0:
-      print('Bounded slope condition: %.2e' % value)
-      Plot(test)
+    PETSc.Sys.Print('Bouned slope condition %.2e' % value)
+    #Plot(test)
     #sys.exit()
   
   #convergence test 
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
-  if rank == 0:
-    print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
   if eps < tol:
     break
   phi_old.assign(phi)
 
 if eps > tol:
-  print('no convergence after {} Picard iterations'.format(iter+1))
+  PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
 else:
-  print('convergence after {} Picard iterations'.format(iter+1))
+  PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
 
 #For plot
@@ -126,10 +120,10 @@ file.write(projected)
 #check eq constraint
 res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
 res = res.vector()
-print(max(abs(max(res)), abs(min(res)))) #l-infinity
+PETSc.Sys.Print(max(abs(max(res)), abs(min(res)))) #l-infinity
 test = interpolate(Constant(1), UU)
 res = errornorm((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)), test, 'l2')
-print(res) #l2
+PETSc.Sys.Print(res) #l2
 
 
 #plotting solution
