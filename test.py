@@ -9,12 +9,12 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
-  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
+  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
-  return 4
-  #return 4 / inner(phi.dx(1), phi.dx(1))
+  #return 4
+  return 4 / inner(phi.dx(1), phi.dx(1))
 
 def sq_norm(f):
   return inner(f, f)
@@ -136,9 +136,9 @@ vec_phi_aux = vec.reshape((len(vec) // 3, 3))
 
 #writing a file with points
 points = open('points_%i.txt' % size_ref, 'w')
-if COMM_WORLD.rank == 0:
-  for i in vec_phi_aux:
-    points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
+#if COMM_WORLD.rank == 0:
+for i in vec_phi_aux:
+  points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
 points.close()
 #sys.exit()
 
