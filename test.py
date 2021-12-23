@@ -142,6 +142,21 @@ for i in vec_phi_aux:
 points.close()
 #sys.exit()
 
+#see if solves other equation
+p_aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
+q_aux = 4
+test = inner(p_aux * phi.dx(0).dx(0) + q_aux * phi.dx(1).dx(1), div(grad(psi))) * dx
+test = assemble(test)
+test = project(test, U)
+file = File('verif_%i.pvd' % size_ref)
+file.write(test)
+
+##other test
+#test = interpolate(p(phi) * q(phi), UU)
+#with test.dat.vec_ro as v:
+#    test = v.max()[1] / 4 * 100
+#PETSc.Sys.Print('Max error in percent: %.2e' % test) 
+
 #Citations.print_at_exit()
 
 ##Nice 3d plot
