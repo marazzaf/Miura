@@ -9,12 +9,12 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
-  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
+  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
-  #return 4
-  return 4 / inner(phi.dx(1), phi.dx(1))
+  return 4
+  #return 4 / inner(phi.dx(1), phi.dx(1))
 
 def sq_norm(f):
   return inner(f, f)
@@ -36,8 +36,8 @@ size_ref = 40 #60 #20 #10 #degub: 5
 nx,ny = int(size_ref*L/H),int(size_ref*H/L)
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 mesh = RectangleMesh(nx, ny, L, H, diagonal='crossed')
-V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
-#V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
+#V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
+V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
@@ -74,11 +74,14 @@ solve(laplace+pen_term == L, phi)
 
 #testing bounded slope condition of initial guess
 test = project(sq_norm(phi.dx(0)), UU)
-#print(test.vector().array())
-value = max(test.vector())
-PETSc.Sys.Print('Bouned slope condition %.2e' % value)
+with test.dat.vec_ro as v:
+    value = v.max()[1]
+#value = max(test.vector())
 #sys.exit()
-assert max(test.vector()) < 4 #not elliptic otherwise.
+try:
+  assert value < 4 #not elliptic otherwise.
+except AssertionError:
+  PETSc.Sys.Print('Bouned slope condition %.2e' % value)
 
 # Picard iterations
 tol = 1e-5 #1e-9
@@ -89,7 +92,8 @@ for iter in range(maxiter):
 
   #ellipticity test
   test = project(sq_norm(phi.dx(0)), UU)
-  value = max(test.vector())
+  with test.dat.vec_ro as v:
+    value = v.max()[1]
   try:
     assert value < 4 #not elliptic otherwise.
   except AssertionError:
@@ -132,10 +136,13 @@ vec_phi_aux = vec.reshape((len(vec) // 3, 3))
 
 #writing a file with points
 points = open('points_%i.txt' % size_ref, 'w')
-for i in vec_phi_aux:
-  points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
+if COMM_WORLD.rank == 0:
+  for i in vec_phi_aux:
+    points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
 points.close()
-sys.exit()
+#sys.exit()
+
+#Citations.print_at_exit()
 
 ##Nice 3d plot
 #x = vec_phi_aux[:,0]
