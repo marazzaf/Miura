@@ -13,6 +13,12 @@ x = data[:,0]
 y = data[:,1]
 z = data[:,2]
 
+
+from scipy.spatial import Delaunay
+tri = Delaunay(data)
+print(tri.simplices)
+sys.exit()
+
 #test new plot
 mlab.clf()
 phi, theta = np.mgrid[0:np.pi:11j, 0:2*np.pi:11j]

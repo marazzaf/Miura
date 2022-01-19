@@ -2,17 +2,16 @@
 #source firedrake/bin/activate
 
 from firedrake import *
+from firedrake.petsc import PETSc
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
 import sys
 
 # the coefficient functions
 def p(phi):
-  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
   return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
-  #return 4
   return 4 / inner(phi.dx(1), phi.dx(1))
 
 # Size for the domain
@@ -21,13 +20,16 @@ L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
+print(L,H)
+sys.exit()
 
 #Creating mesh
-size_ref = 5 #10 #degub: 5
-nx,ny = int(size_ref*H/float(L)),size_ref
-mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
-#V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
+#size_ref = 5 #10 #degub: 5
+#nx,ny = int(size_ref*H/float(L)),size_ref
+#mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
+mesh = Mesh('convergence_1.msh')
+#V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
+V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
 
 #  Dirichlet boundary conditions
 x = SpatialCoordinate(mesh)
@@ -44,8 +46,8 @@ laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #penalty term for Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e2
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
-L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
+pen_term = pen/h**4 * inner(phi_t, psi) * ds #(ds(1) + ds(2))
+L = pen/h**4 * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
 solve(laplace+pen_term == L, phi)
 
 #Writing our problem now
@@ -66,17 +68,24 @@ for iter in range(maxiter):
   solve(a == L, phi) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
-  print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
 
   if eps < tol:
     break
   phi_old.assign(phi)
 
 if eps > tol:
-  print('no convergence after {} Picard iterations'.format(iter+1))
+  PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
 else:
-  print('convergence after {} Picard iterations'.format(iter+1))
+  PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
+#Computing error
+X = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
+projected = project(phi, X, name='surface')
+ref = project(phi_D, X, name='ref surface')
+err = errornorm(projected, ref, 'l2')
+PETSc.Sys.Print('Error: %.3e' % err)
+sys.exit()
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)

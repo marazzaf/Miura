@@ -32,7 +32,7 @@ def Plot(f):
 alpha = 1
 L = 1/alpha #length of rectangle
 H = pi/alpha #height of rectangle
-size_ref = 20 #60 #20 #10 #degub: 5
+size_ref = 40 #60 #20 #10 #degub: 5
 nx,ny = int(size_ref*L/H),int(size_ref*H/L)
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 mesh = RectangleMesh(nx, ny, L, H, diagonal='crossed')
