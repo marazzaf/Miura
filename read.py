@@ -3,7 +3,7 @@
 from dolfin import *
 
 m = Mesh()
-with XDMFFile("convergence_1.xdmf") as infile:
+with XDMFFile("convergence_5.xdmf") as infile:
     infile.read(m)
 
 print(m.hmax())

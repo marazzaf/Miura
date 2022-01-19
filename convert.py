@@ -1,7 +1,7 @@
 #coding: utf-8
 
 import meshio
-mesh_from_file = meshio.read("convergence_3.msh")
+mesh_from_file = meshio.read("convergence_5.msh")
 
 def create_mesh(mesh, cell_type, prune_z=False):
     cells = mesh.get_cells_type(cell_type)
@@ -12,4 +12,4 @@ def create_mesh(mesh, cell_type, prune_z=False):
     return out_mesh
 
 triangle_mesh = create_mesh(mesh_from_file, "triangle", prune_z=True)
-meshio.write("convergence_3.xdmf", triangle_mesh)
+meshio.write("convergence_5.xdmf", triangle_mesh)

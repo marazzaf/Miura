@@ -20,16 +20,15 @@ L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
-print(L,H)
-sys.exit()
 
 #Creating mesh
 #size_ref = 5 #10 #degub: 5
 #nx,ny = int(size_ref*H/float(L)),size_ref
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-mesh = Mesh('convergence_1.msh')
+mesh = Mesh('convergence_3.msh')
 #V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
+PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Dirichlet boundary conditions
 x = SpatialCoordinate(mesh)
@@ -49,6 +48,7 @@ pen = 1e2
 pen_term = pen/h**4 * inner(phi_t, psi) * ds #(ds(1) + ds(2))
 L = pen/h**4 * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
 solve(laplace+pen_term == L, phi)
+PETSc.Sys.Print('Laplace equation ok')
 
 #Writing our problem now
 #bilinear form for linearization
@@ -65,7 +65,10 @@ maxiter = 50
 phi_old = Function(V) #for iterations
 for iter in range(maxiter):
   #linear solve
-  solve(a == L, phi) # compute next Picard iterate
+  A = assemble(a)
+  b = assemble(L)
+  solve(A, b, phi, solver_parameters={'ksp_rtol': 1e-5})
+  #solve(a == L, phi, solver_parameters={'ksp_type': 'cg','pc_type': 'ilu', 'ksp_rtol': 1e-5}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
@@ -80,10 +83,11 @@ else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
 #Computing error
-X = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
-projected = project(phi, X, name='surface')
-ref = project(phi_D, X, name='ref surface')
-err = errornorm(projected, ref, 'l2')
+X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
+projected = project(div(grad(phi)), X, name='surface')
+ref = project(div(grad(phi_D)), X, name='ref surface')
+#err = errornorm(projected, ref, 'l2')
+err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
 PETSc.Sys.Print('Error: %.3e' % err)
 sys.exit()
 
