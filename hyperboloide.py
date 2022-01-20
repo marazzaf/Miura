@@ -25,9 +25,10 @@ l = sin(theta/2)*L
 #size_ref = 5 #10 #degub: 5
 #nx,ny = int(size_ref*H/float(L)),size_ref
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-mesh = Mesh('convergence_4.msh')
+mesh = Mesh('convergence_5.msh')
 #V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
+VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Dirichlet boundary conditions
@@ -44,15 +45,15 @@ psi = TestFunction(V)
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #penalty term for Dirichlet BC
 h = CellDiameter(mesh)
-pen = 1e2
-#pen_term = pen/h**4 * inner(phi_t, psi) * ds #(ds(1) + ds(2))
-#L = pen/h**4 * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
-pen_term = pen * inner(phi_t, psi) * ds #(ds(1) + ds(2))
-L = pen * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
+pen = 1e1 #1e2
+pen_term = pen/h**4 * inner(phi_t, psi) * ds #(ds(1) + ds(2))
+L = pen/h**4 * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
+#pen_term = pen * inner(phi_t, psi) * ds #(ds(1) + ds(2))
+#L = pen * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
 A = assemble(laplace+pen_term)
 b = assemble(L)
-solve(A, phi, b)
-#solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'ilu', 'ksp_rtol': 1e-5})
+#solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
+solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
 
 #Writing our problem now
@@ -72,9 +73,11 @@ for iter in range(maxiter):
   #linear solve
   A = assemble(a)
   b = assemble(L)
+  pp = interpolate(p(phi), VV)
+  PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   #solve(A, phi, b) #, solver_parameters={'ksp_rtol': 1e-5})
-  #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'ilu', 'ksp_rtol': 1e-5})
-  solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+  solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
+  #solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
@@ -90,8 +93,8 @@ else:
 
 #Computing error
 X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
-projected = project(div(grad(phi)), X, name='surface')
-ref = project(div(grad(phi_D)), X, name='ref surface')
+projected = interpolate(div(grad(phi)), X)
+ref = interpolate(div(grad(phi_D)), X)
 #err = errornorm(projected, ref, 'l2')
 err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
 PETSc.Sys.Print('Error: %.3e' % err)
