@@ -47,7 +47,9 @@ h = CellDiameter(mesh)
 pen = 1e2
 pen_term = pen/h**4 * inner(phi_t, psi) * ds #(ds(1) + ds(2))
 L = pen/h**4 * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
-solve(laplace+pen_term == L, phi)
+A = assemble(laplace+pen_term)
+b = asemble(L)
+solve(A, phi, b)
 PETSc.Sys.Print('Laplace equation ok')
 
 #Writing our problem now
@@ -67,8 +69,8 @@ for iter in range(maxiter):
   #linear solve
   A = assemble(a)
   b = assemble(L)
-  solve(A, b, phi, solver_parameters={'ksp_rtol': 1e-5})
-  #solve(a == L, phi, solver_parameters={'ksp_type': 'cg','pc_type': 'ilu', 'ksp_rtol': 1e-5}) # compute next Picard iterate
+  solve(A, phi, b) #, solver_parameters={'ksp_rtol': 1e-5})
+  #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'ilu', 'ksp_rtol': 1e-5}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
