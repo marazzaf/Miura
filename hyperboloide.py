@@ -22,10 +22,11 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-#size_ref = 5 #10 #degub: 5
-#nx,ny = int(size_ref*H/float(L)),size_ref
+size_ref = 50 #10 #degub: 5
+nx,ny = int(size_ref*H/float(L)),size_ref
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-mesh = Mesh('convergence_5.msh')
+mesh = RectangleMesh(nx, ny, L, H)
+#mesh = Mesh('convergence_5.msh')
 #V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
 VV = FunctionSpace(mesh, 'CG', 4)
@@ -52,8 +53,8 @@ L = pen/h**4 * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
 #L = pen * inner(phi_D, psi)  * ds #(ds(1) + ds(2))
 A = assemble(laplace+pen_term)
 b = assemble(L)
-#solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
-solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
+solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
+#solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
 
 #Writing our problem now
@@ -75,9 +76,8 @@ for iter in range(maxiter):
   b = assemble(L)
   pp = interpolate(p(phi), VV)
   PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
-  #solve(A, phi, b) #, solver_parameters={'ksp_rtol': 1e-5})
-  solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
-  #solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+  #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
+  solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
@@ -98,26 +98,25 @@ ref = interpolate(div(grad(phi_D)), X)
 #err = errornorm(projected, ref, 'l2')
 err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
 PETSc.Sys.Print('Error: %.3e' % err)
-sys.exit()
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 projected = project(phi, U, name='surface')
-
-#Checking if second equation is verified
-C = CellVolume(mesh)
-phi_x = project(phi.dx(0), U)
-phi_y = project(phi.dx(1), U)
-res = ((1 - 0.25 * inner(phi_x, phi_x)) * inner(phi_y, phi_y) - 1) / C * dx
-print(abs(assemble(res))) #l1
-UU = FunctionSpace(mesh, 'CG', 1)
-test = interpolate(Constant(1), UU)
-res = errornorm((1 - 0.25 * inner(phi_x, phi_x)) * inner(phi_y, phi_y), test, 'l2')
-print(res) #l2
-res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
-res = res.vector()
-print(max(abs(max(res)), abs(min(res)))) #l-infinity
-sys.exit()
+#
+##Checking if second equation is verified
+#C = CellVolume(mesh)
+#phi_x = project(phi.dx(0), U)
+#phi_y = project(phi.dx(1), U)
+#res = ((1 - 0.25 * inner(phi_x, phi_x)) * inner(phi_y, phi_y) - 1) / C * dx
+#print(abs(assemble(res))) #l1
+#UU = FunctionSpace(mesh, 'CG', 1)
+#test = interpolate(Constant(1), UU)
+#res = errornorm((1 - 0.25 * inner(phi_x, phi_x)) * inner(phi_y, phi_y), test, 'l2')
+#print(res) #l2
+#res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
+#res = res.vector()
+#print(max(abs(max(res)), abs(min(res)))) #l-infinity
+#sys.exit()
 
 #Write 2d results
 file = File('hyper.pvd')
@@ -174,6 +173,7 @@ points = open('hyperboloid_%i.txt' % size_ref, 'w')
 for i in vec_phi_aux:
   points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
 points.close()
+sys.exit()
 
 #computing normals and writing them
 normals = open('normals_%i.txt' % size_ref, 'w')

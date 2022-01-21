@@ -4,10 +4,10 @@ import numpy as np
 import sys
 import open3d as o3d
 
-size_ref = 20
-#data = np.loadtxt('hyperboloid_%i.txt' % size_ref)
+size_ref = 50
+data = np.loadtxt('hyperboloid_%i.txt' % size_ref)
 #data = np.loadtxt('points_aux_%i.txt' % size_ref)
-data = np.loadtxt('points_%i.txt' % size_ref)
+#data = np.loadtxt('points_%i.txt' % size_ref)
 
 x = data[:,0]
 y = data[:,1]
