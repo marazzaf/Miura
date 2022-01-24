@@ -4,10 +4,9 @@ import numpy as np
 import sys
 import open3d as o3d
 
-size_ref = 50
+size_ref = 40
 data = np.loadtxt('hyperboloid_%i.txt' % size_ref)
-#data = np.loadtxt('points_aux_%i.txt' % size_ref)
-#data = np.loadtxt('points_%i.txt' % size_ref)
+data_bis = np.loadtxt('hyperboloid_bis_%i.txt' % size_ref)
 
 x = data[:,0]
 y = data[:,1]
@@ -16,8 +15,16 @@ z = data[:,2]
 #test new plot
 points = np.vstack((x, y, z)).transpose()
 pcd = o3d.geometry.PointCloud()
+pcd.paint_uniform_color([1, 0.706, 0])
 pcd.points = o3d.utility.Vector3dVector(points)
 o3d.visualization.draw_geometries([pcd])
+sys.exit()
+
+points = np.vstack((data_bis[:,0], data_bis[:,1], data_bis[:,2])).transpose()
+pcd2 = o3d.geometry.PointCloud()
+pcd2.paint_uniform_color([1, 0, 0])
+pcd2.points = o3d.utility.Vector3dVector(points)
+o3d.visualization.draw_geometries([pcd, pcd2])
 sys.exit()
 
 #creating a mesh
