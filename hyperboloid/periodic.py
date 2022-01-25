@@ -22,7 +22,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 20 #10 #degub: 5
+size_ref = 5 #10 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
 VV = FunctionSpace(mesh, 'CG', 4)
@@ -91,13 +91,14 @@ err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
 PETSc.Sys.Print('Error: %.3e' % err)
 
 #For projection
-U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
+U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 
 #Write 2d results
 x = SpatialCoordinate(mesh)
 projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
 file = File('periodic_%i.pvd' % size_ref)
 file.write(projected)
+print(projected.vector().array()[:200])
 sys.exit()
 
 #plotting solution
