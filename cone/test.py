@@ -38,6 +38,7 @@ size_ref = 40 #60 #20 #10 #degub: 5
 mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
 #V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
+PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
@@ -61,12 +62,12 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
-pen = 1e2
+pen = 1e1 #1e2
 #lhs
-pen_term = pen/h**2 * inner(phi_t, psi) * ds #h**4
+pen_term = pen/h**4 * inner(phi_t, psi) * ds #h**2
 a += pen_term
 #rhs
-L = pen/h**2 * inner(phi_D, psi) * ds #h**4
+L = pen/h**4 * inner(phi_D, psi) * ds #h**2
 
 #Computing initial guess
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
