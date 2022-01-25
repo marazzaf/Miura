@@ -22,7 +22,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 50 #10 #degub: 5
+size_ref = 5 #10 #degub: 5
 nx,ny = int(size_ref*H/float(L)),size_ref
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 mesh = RectangleMesh(nx, ny, L, H)
@@ -120,6 +120,8 @@ projected = project(phi, U, name='surface')
 
 #Write 2d results
 file = File('hyper.pvd')
+x = SpatialCoordinate(mesh)
+projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
 file.write(projected)
 
 #plotting solution
