@@ -19,29 +19,29 @@ def q(phi):
 def sq_norm(f):
   return inner(f, f)
 
-#plot function
-def Plot(f):
-  fig, axes = plt.subplots()
-  contours = tricontourf(f, axes=axes, cmap="inferno") #levels=levels
-  axes.set_aspect("equal")
-  fig.colorbar(contours)
-  plt.show()
-  return
+##plot function
+#def Plot(f):
+#  fig, axes = plt.subplots()
+#  contours = tricontourf(f, axes=axes, cmap="inferno") #levels=levels
+#  axes.set_aspect("equal")
+#  fig.colorbar(contours)
+#  plt.show()
+#  return
 
 # Create mesh and define function space
 alpha = 1
 L = 1/alpha #length of rectangle
 H = pi/alpha #height of rectangle
 size_ref = 40 #60 #20 #10 #degub: 5
-nx,ny = int(size_ref*L/H),int(size_ref*H/L)
+#nx,ny = int(size_ref*L/H),int(size_ref*H/L)
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-mesh = RectangleMesh(nx, ny, L, H, diagonal='crossed')
+mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
 #V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
-UU = FunctionSpace(mesh, 'CG', 1)
+UU = FunctionSpace(mesh, 'CG', 4)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
@@ -70,7 +70,10 @@ L = pen/h**2 * inner(phi_D, psi) * ds #h**4
 
 #Computing initial guess
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
-solve(laplace+pen_term == L, phi)
+A = assemble(laplace+pen_term)
+b = assemble(L)
+solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
+PETSc.Sys.Print('Laplace equation ok')
 
 #testing bounded slope condition of initial guess
 test = project(sq_norm(phi.dx(0)), UU)
@@ -88,7 +91,11 @@ tol = 1e-5 #1e-9
 maxiter = 50
 for iter in range(maxiter):
   #linear solve
-  solve(a == L, phi) # compute next Picard iterate
+  A = assemble(a)
+  b = assemble(L)
+  pp = interpolate(p(phi), UU)
+  PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
+  solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   #ellipticity test
   test = project(sq_norm(phi.dx(0)), UU)
@@ -113,13 +120,15 @@ if eps > tol:
 else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
+#Write 2d results
+file = File('new_%i.pvd' % size_ref)
+x = SpatialCoordinate(mesh)
+projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
+file.write(projected)
+sys.exit()
 
 #For plot
 projected = project(phi, U, name='surface')
-
-#Write 2d results
-file = File('new_%i.pvd' % size_ref)
-file.write(projected)
 
 #check eq constraint
 res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
