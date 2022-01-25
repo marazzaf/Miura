@@ -15,15 +15,16 @@ def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
 
 # Size for the domain
-theta = pi/2
+theta = pi/4
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 5 #10 #degub: 5
-nx,ny = int(size_ref*H/float(L)),size_ref
+size_ref = 50 #10 #degub: 5
+nx,ny = size_ref,size_ref
+#nx,ny = int(size_ref*H/float(L)),size_ref
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
 mesh = RectangleMesh(nx, ny, L, H)
 #mesh = Mesh('convergence_5.msh')
@@ -119,7 +120,7 @@ projected = project(phi, U, name='surface')
 #sys.exit()
 
 #Write 2d results
-file = File('hyper.pvd')
+file = File('hyper_pi_4_%i.pvd' % size_ref)
 x = SpatialCoordinate(mesh)
 projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
 file.write(projected)
