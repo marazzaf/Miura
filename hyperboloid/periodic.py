@@ -15,17 +15,15 @@ def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
 
 # Size for the domain
-theta = pi/4 #pi/2
+theta = pi/2 #pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 40 #10 #degub: 5
-#nx,ny = int(size_ref*H/float(L)),size_ref
-nx,ny = size_ref,size_ref
-mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
+size_ref = 20 #10 #degub: 5
+mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -44,7 +42,7 @@ psi = TestFunction(V)
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #penalty term for Dirichlet BC
 h = CellDiameter(mesh)
-pen = 1e1 #1e2
+pen = 1e1 #1e1
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
 L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
 A = assemble(laplace+pen_term)
@@ -94,18 +92,21 @@ PETSc.Sys.Print('Error: %.3e' % err)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
-projected = project(phi, U, name='surface')
 
 #Write 2d results
-file = File('periodic_bis_%i.pvd' % size_ref)
+x = SpatialCoordinate(mesh)
+projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
+file = File('periodic_%i.pvd' % size_ref)
 file.write(projected)
+sys.exit()
 
 #plotting solution
+projected = project(phi, U, name='surface')
 vec = projected.vector().get_local()
 vec_phi_aux = vec.reshape((len(vec) // 3, 3))
 
 #writing a file with points
-points = open('hyperboloid_bis_%i.txt' % size_ref, 'w')
+points = open('hyperboloid_%i.txt' % size_ref, 'w')
 for i in vec_phi_aux:
   points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
 points.close()
