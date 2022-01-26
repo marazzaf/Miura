@@ -9,29 +9,18 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
   return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
-  #return 4
   return 4 / inner(phi.dx(1), phi.dx(1))
 
 def sq_norm(f):
   return inner(f, f)
 
-##plot function
-#def Plot(f):
-#  fig, axes = plt.subplots()
-#  contours = tricontourf(f, axes=axes, cmap="inferno") #levels=levels
-#  axes.set_aspect("equal")
-#  fig.colorbar(contours)
-#  plt.show()
-#  return
-
 # Create mesh and define function space
 alpha = 1
 L = 1/alpha #length of rectangle
-H = pi/alpha #height of rectangle
+H = pi/alpha #height of rectangle #1.2 works #1.3 no
 size_ref = 40 #60 #20 #10 #degub: 5
 #nx,ny = int(size_ref*L/H),int(size_ref*H/L)
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
