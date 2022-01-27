@@ -32,21 +32,29 @@ x = SpatialCoordinate(mesh)
 phi_D1 = as_vector((x[0], x[1], 0))
 #modify this one to be the right BC
 alpha = pi/4
-l = H / sqrt(1 + H*H/L/L)
-w = as_vector((L, 0, 0)) + H*H*L/(H*H+L*L)*as_vector((-L,H,0)) + l*as_vector((H/sqrt(H*H+L*L)*cos(alpha), L/sqrt(H*H+L*L)*cos(alpha), sin(alpha)))
-u = -w + as_vector((L,0,0))
-v = -w + as_vector((0,H,0))
-phi_D2 = (1-x[0]/L)*u + (1-x[1]/H)*v + w
+l = H*L / sqrt(L*L + H*H)
+sin_gamma = H / sqrt(L*L+H*H)
+cos_gamma = L / sqrt(L*L+H*H)
+DB = l*as_vector((sin_gamma,cos_gamma,0))
+DBp = l*sin(alpha)*Constant((0,0,1)) + cos(alpha) * DB
+OC = as_vector((L, 0, 0))
+CD = Constant((-sin_gamma*l,H-cos_gamma*l,0))
+OBp = OC + CD + DBp
+BpC = -DBp - CD
+BpA = BpC + Constant((-L, H, 0))
+phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
 
 #test BC
 f = Function(U)
 f.interpolate(phi_D2)
-f = project(f - as_vector((x[0], x[1], 0)), U)
 file = File('test.pvd')
-#file.write(f)
+file.write(f)
+file_3 = File('surf.pvd')
+file_3.write(project(f- as_vector((x[0], x[1], 0)), U))
+file_2 = File('test_2.pvd')
 g = Function(U)
 g.interpolate(Constant((0,0,0)))
-file.write(g)
+file_2.write(g)
 sys.exit()
 
 # Creating function to store solution
