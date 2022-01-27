@@ -31,7 +31,23 @@ UU = FunctionSpace(mesh, 'CG', 4)
 x = SpatialCoordinate(mesh)
 phi_D1 = as_vector((x[0], x[1], 0))
 #modify this one to be the right BC
-phi_D2 = as_vector((x[0], x[1], 0)) ###
+alpha = pi/4
+l = H / sqrt(1 + H*H/L/L)
+w = as_vector((L, 0, 0)) + H*H*L/(H*H+L*L)*as_vector((-L,H,0)) + l*as_vector((H/sqrt(H*H+L*L)*cos(alpha), L/sqrt(H*H+L*L)*cos(alpha), sin(alpha)))
+u = -w + as_vector((L,0,0))
+v = -w + as_vector((0,H,0))
+phi_D2 = (1-x[0]/L)*u + (1-x[1]/H)*v + w
+
+#test BC
+f = Function(U)
+f.interpolate(phi_D2)
+f = project(f - as_vector((x[0], x[1], 0)), U)
+file = File('test.pvd')
+#file.write(f)
+g = Function(U)
+g.interpolate(Constant((0,0,0)))
+file.write(g)
+sys.exit()
 
 # Creating function to store solution
 phi = Function(V, name='solution')
