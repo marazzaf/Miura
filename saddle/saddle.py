@@ -18,7 +18,7 @@ def sq_norm(f):
 # Create mesh and define function space
 L = 2 #length of rectangle
 H = 1 #height of rectangle #1.2 works #1.3 no
-size_ref = 5 #degub: 5
+size_ref = 20 #degub: 5
 mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -30,6 +30,7 @@ UU = FunctionSpace(mesh, 'CG', 4)
 # Boundary conditions
 x = SpatialCoordinate(mesh)
 phi_D1 = as_vector((x[0], x[1], 0))
+
 #modify this one to be the right BC
 alpha = pi/4
 l = H*L / sqrt(L*L + H*H)
@@ -44,18 +45,18 @@ BpC = -DBp - CD
 BpA = BpC + Constant((-L, H, 0))
 phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
 
-#test BC
-f = Function(U)
-f.interpolate(phi_D2)
-file = File('test.pvd')
-file.write(f)
-file_3 = File('surf.pvd')
-file_3.write(project(f- as_vector((x[0], x[1], 0)), U))
-file_2 = File('test_2.pvd')
-g = Function(U)
-g.interpolate(Constant((0,0,0)))
-file_2.write(g)
-sys.exit()
+##test BC
+#f = Function(U)
+#f.interpolate(phi_D2)
+#file = File('test.pvd')
+#file.write(f)
+#file_3 = File('surf.pvd')
+#file_3.write(project(f- as_vector((x[0], x[1], 0)), U))
+#file_2 = File('test_2.pvd')
+#g = Function(U)
+#g.interpolate(Constant((0,0,0)))
+#file_2.write(g)
+#sys.exit()
 
 # Creating function to store solution
 phi = Function(V, name='solution')
