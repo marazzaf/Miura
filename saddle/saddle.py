@@ -84,6 +84,10 @@ b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
 
+#test of coeff
+file_test = File('test.pvd')
+pp = Function(UU, name='coef')
+
 # Picard iterations
 tol = 1e-5 #1e-9
 maxiter = 50
@@ -91,7 +95,8 @@ for iter in range(maxiter):
   #linear solve
   A = assemble(a)
   b = assemble(L)
-  pp = interpolate(p(phi), UU)
+  pp.interpolate(p(phi))
+  file_test.write(pp, time=iter)
   PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
@@ -99,10 +104,7 @@ for iter in range(maxiter):
   #test = project(sq_norm(phi.dx(0)), UU)
   #with test.dat.vec_ro as v:
   #  value = v.max()[1]
-  #try:
-  #  assert value < 4 #not elliptic otherwise.
-  #except AssertionError:
-  #  PETSc.Sys.Print('Bouned slope condition %.2e' % value)
+  #assert value < 4, ('Bouned slope condition %.2e' % value)
   
   #convergence test 
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
