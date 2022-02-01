@@ -33,8 +33,10 @@ x = SpatialCoordinate(mesh)
 phi_D1 = beta*as_vector((x[0], x[1], 0))
 
 #modify this one to be the right BC
-alpha = 0
-#L,H = beta*L,beta*H
+alpha = pi/4
+L *= beta
+H *= beta
+#modify the rest of the BC because it does not give the expected result...
 l = H*L / sqrt(L*L + H*H)
 sin_gamma = H / sqrt(L*L+H*H)
 cos_gamma = L / sqrt(L*L+H*H)
@@ -47,18 +49,18 @@ BpC = -DBp - CD
 BpA = BpC + Constant((-L, H, 0))
 phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
 
-##test BC
-#f = Function(U)
-#f.interpolate(phi_D2)
-#file = File('test.pvd')
-#file.write(f)
-#file_3 = File('surf.pvd')
-#file_3.write(project(f- as_vector((x[0], x[1], 0)), U))
-#file_2 = File('test_2.pvd')
-#g = Function(U)
-#g.interpolate(Constant((0,0,0)))
-#file_2.write(g)
-#sys.exit()
+#test BC
+f = Function(U)
+f.interpolate(phi_D2)
+file = File('test.pvd')
+file.write(f)
+file_3 = File('surf.pvd')
+file_3.write(project(f- as_vector((x[0], x[1], 0)), U))
+file_2 = File('test_2.pvd')
+g = Function(U)
+g.interpolate(Constant((0,0,0)))
+file_2.write(g)
+sys.exit()
 
 # Creating function to store solution
 phi = Function(V, name='solution')
