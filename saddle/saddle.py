@@ -28,11 +28,12 @@ U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 UU = FunctionSpace(mesh, 'CG', 4)
 
 # Boundary conditions
+beta = 0.1
 x = SpatialCoordinate(mesh)
-phi_D1 = as_vector((x[0], x[1], 0))
+phi_D1 = beta*as_vector((x[0], x[1], 0))
 
 #modify this one to be the right BC
-alpha = pi/4
+alpha = 0
 l = H*L / sqrt(L*L + H*H)
 sin_gamma = H / sqrt(L*L+H*H)
 cos_gamma = L / sqrt(L*L+H*H)
@@ -44,6 +45,9 @@ OBp = OC + CD + DBp
 BpC = -DBp - CD
 BpA = BpC + Constant((-L, H, 0))
 phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
+
+#test
+phi_D2 = phi_D1
 
 ##test BC
 #f = Function(U)
