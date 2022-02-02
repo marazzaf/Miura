@@ -10,10 +10,12 @@ def p(phi):
   aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
   P.assign(project(1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0))), UU))
   print(P.vector().array().min())
-  P.assign(project(conditional(gt(Constant(1), aux), Constant(1), aux), UU))
+  P.interpolate(conditional(gt(Constant(1), aux), Constant(1), aux))
+  #P.assign(interpolate(conditional(gt(Constant(1), aux), Constant(1), aux), UU))
   print(P.vector().array().min())
   print('***************************************')
-  return P
+  #return P
+  return interpolate(conditional(lt(aux, Constant(1)), Constant(1), aux), UU)
 
 #def p(phi):
   #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
