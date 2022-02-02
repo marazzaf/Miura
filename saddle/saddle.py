@@ -19,8 +19,9 @@ def sq_norm(f):
 # Create mesh and define function space
 L = 2 #length of rectangle
 H = 1 #height of rectangle #1.2 works #1.3 no
-size_ref = 5 #degub: 5
-mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+size_ref = 2 #degub: 5
+#mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+mesh = UnitDiskMesh(size_ref)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -30,7 +31,7 @@ UU = FunctionSpace(mesh, 'CG', 4)
 P = Function(UU)
 
 # Boundary conditions
-beta = 0.1
+beta = 1 #0.1
 x = SpatialCoordinate(mesh)
 phi_D1 = beta*as_vector((x[0], x[1], 0))
 
@@ -77,7 +78,8 @@ pen = 1e1
 pen_term = pen/h**4 * inner(phi_t, psi) * ds
 a += pen_term
 #rhs
-L = pen/h**4 * inner(phi_D1, psi) *(ds(1)+ds(3)) + pen/h**4 * inner(phi_D2, psi) *(ds(2)+ds(4))
+L = pen/h**4 * inner(phi_D1, psi) * ds
+#L = pen/h**4 * inner(phi_D1, psi) *(ds(1)+ds(3)) + pen/h**4 * inner(phi_D2, psi) *(ds(2)+ds(4))
 
 #Computing initial guess
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
