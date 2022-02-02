@@ -7,7 +7,16 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  P.assign(project(1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0))), UU))
+  print(P.vector().array().min())
+  P.assign(project(conditional(gt(Constant(1), aux), Constant(1), aux), UU))
+  print(P.vector().array().min())
+  print('***************************************')
+  return P
+
+#def p(phi):
+  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
@@ -18,7 +27,7 @@ def sq_norm(f):
 # Create mesh and define function space
 L = 2 #length of rectangle
 H = 1 #height of rectangle #1.2 works #1.3 no
-size_ref = 20 #degub: 5
+size_ref = 5 #degub: 5
 mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -26,6 +35,7 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 UU = FunctionSpace(mesh, 'CG', 4)
+P = Function(UU)
 
 # Boundary conditions
 beta = 0.1
@@ -98,7 +108,7 @@ for iter in range(maxiter):
   b = assemble(L)
   pp.interpolate(p(phi))
   file_test.write(pp, time=iter)
-  PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
+  #PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   ##ellipticity test
