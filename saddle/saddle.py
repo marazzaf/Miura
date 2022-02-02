@@ -8,7 +8,7 @@ import sys
 # the coefficient functions
 def p(phi):
   aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-  return interpolate(conditional(lt(aux, Constant(1)), Constant(1), aux), UU)
+  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
 
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
@@ -19,9 +19,9 @@ def sq_norm(f):
 # Create mesh and define function space
 L = 2 #length of rectangle
 H = 1 #height of rectangle #1.2 works #1.3 no
-size_ref = 2 #degub: 5
-#mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-mesh = UnitDiskMesh(size_ref)
+size_ref = 20 #degub: 2
+mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+#mesh = UnitDiskMesh(size_ref)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -31,12 +31,12 @@ UU = FunctionSpace(mesh, 'CG', 4)
 P = Function(UU)
 
 # Boundary conditions
-beta = 1 #0.1
+beta = 0.1 #0.1
 x = SpatialCoordinate(mesh)
 phi_D1 = beta*as_vector((x[0], x[1], 0))
 
 #modify this one to be the right BC
-alpha = 0 #pi/4
+alpha = pi/4
 #modify the rest of the BC because it does not give the expected result...
 l = H*L / sqrt(L*L + H*H)
 sin_gamma = H / sqrt(L*L+H*H)
@@ -48,17 +48,20 @@ CD = Constant((-sin_gamma*l,H-cos_gamma*l,0))
 OBp = OC + CD + DBp
 BpC = -DBp - CD
 BpA = BpC + Constant((-L, H, 0))
-phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
+#phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
+phi_D2 = (1-x[0]/L)*BpA + (1-x[1]/H)*BpC + OBp
 phi_D2 *= beta
 
 ##test BC
 #f = Function(U)
 #f.interpolate(phi_D1)
 #file = File('test.pvd')
-#file.write(project(f- as_vector((x[0], x[1], 0)), U))
+#file.write(f)
+##file.write(project(f- as_vector((x[0], x[1], 0)), U))
 #file_3 = File('surf.pvd')
 #f.interpolate(phi_D2)
-#file_3.write(project(f- as_vector((x[0], x[1], 0)), U))
+#file_3.write(f)
+##file_3.write(project(f- as_vector((x[0], x[1], 0)), U))
 #sys.exit()
 
 # Creating function to store solution
@@ -78,8 +81,8 @@ pen = 1e1
 pen_term = pen/h**4 * inner(phi_t, psi) * ds
 a += pen_term
 #rhs
-L = pen/h**4 * inner(phi_D1, psi) * ds
-#L = pen/h**4 * inner(phi_D1, psi) *(ds(1)+ds(3)) + pen/h**4 * inner(phi_D2, psi) *(ds(2)+ds(4))
+#L = pen/h**4 * inner(phi_D1, psi) * ds
+L = pen/h**4 * inner(phi_D1, psi) *(ds(1)+ds(3)) + pen/h**4 * inner(phi_D2, psi) *(ds(2)+ds(4))
 
 #Computing initial guess
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
