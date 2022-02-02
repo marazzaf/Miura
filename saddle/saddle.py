@@ -31,12 +31,12 @@ UU = FunctionSpace(mesh, 'CG', 4)
 P = Function(UU)
 
 # Boundary conditions
-beta = 0.1 #0.1
+beta = 1 #0.1
 x = SpatialCoordinate(mesh)
 phi_D1 = beta*as_vector((x[0], x[1], 0))
 
 #modify this one to be the right BC
-alpha = pi/4
+alpha = pi/2
 #modify the rest of the BC because it does not give the expected result...
 l = H*L / sqrt(L*L + H*H)
 sin_gamma = H / sqrt(L*L+H*H)
