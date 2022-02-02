@@ -8,17 +8,7 @@ import sys
 # the coefficient functions
 def p(phi):
   aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-  P.assign(project(1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0))), UU))
-  print(P.vector().array().min())
-  P.interpolate(conditional(gt(Constant(1), aux), Constant(1), aux))
-  #P.assign(interpolate(conditional(gt(Constant(1), aux), Constant(1), aux), UU))
-  print(P.vector().array().min())
-  print('***************************************')
-  #return P
   return interpolate(conditional(lt(aux, Constant(1)), Constant(1), aux), UU)
-
-#def p(phi):
-  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
@@ -45,7 +35,7 @@ x = SpatialCoordinate(mesh)
 phi_D1 = beta*as_vector((x[0], x[1], 0))
 
 #modify this one to be the right BC
-alpha = pi/4
+alpha = 0 #pi/4
 #modify the rest of the BC because it does not give the expected result...
 l = H*L / sqrt(L*L + H*H)
 sin_gamma = H / sqrt(L*L+H*H)
@@ -97,27 +87,14 @@ b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
 
-#test of coeff
-file_test = File('test.pvd')
-pp = Function(UU, name='coef')
-
 # Picard iterations
 tol = 1e-5 #1e-9
-maxiter = 50
+maxiter = 100
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
   b = assemble(L)
-  pp.interpolate(p(phi))
-  file_test.write(pp, time=iter)
-  #PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
-
-  ##ellipticity test
-  #test = project(sq_norm(phi.dx(0)), UU)
-  #with test.dat.vec_ro as v:
-  #  value = v.max()[1]
-  #assert value < 4, ('Bouned slope condition %.2e' % value)
   
   #convergence test 
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
@@ -131,8 +108,15 @@ if eps > tol:
 else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
-#Write 2d results
+#Write 2d resutls
+flat = File('flat_%i.pvd' % size_ref)
+W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
+proj = project(phi, W, name='flat')
+flat.write(proj)
+  
+#Write 3d results
 file = File('new_%i.pvd' % size_ref)
 x = SpatialCoordinate(mesh)
-projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
+projected = Function(W, name='surface')
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
