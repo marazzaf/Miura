@@ -24,7 +24,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L #total height of cylindre
 
 # Create mesh and define function space
-size_ref = 5 #degub: 5
+size_ref = 20 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -46,17 +46,17 @@ phi_D1 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), -2*sin(theta/2)*L)
 #test
 beta = pi/4
 phi_D2 = as_vector((rho*cos(beta)*cos(alpha*x[1]), rho*cos(beta)*sin(alpha*x[1]), rho*sin(beta)*cos(alpha*x[1])))
-file = File('test.pvd')
-truc = Function(W, name='test')
-truc.interpolate(phi_D2 - as_vector((x[0], conditional(gt(x[1], H*0.99), x[1], H), 0)))
-#truc.interpolate(as_vector((truc[0], conditional(gt(x[1], H*0.99), truc((L/2,0))[1], truc[1]), truc[2])))
-#truc.interpolate(as_vector((x[0], conditional(gt(x[1], H*0.99), x[1], H), 0)))
-print(truc((L/2,H))[1])
-print(truc((L/2,H*9/10))[1])
-print(truc((L/2,0))[1])
-
-file.write(truc)
-sys.exit()
+#file = File('test.pvd')
+#truc = Function(W, name='test')
+##truc.interpolate(phi_D2)
+##truc.interpolate(as_vector((x[0], x[1], 0)))
+#truc.interpolate(as_vector((x[0], conditional(gt(x[1], H*0.5), 1, 0), 0)))
+##truc.interpolate(phi_D1 - as_vector((x[0], conditional(gt(x[1], H*0.99), x[1], H), 0)))
+#print(truc((L/2,H))[1])
+#print(truc((L/2,H*9/10))[1])
+#print(truc((L/2,0))[1])
+#file.write(truc)
+#sys.exit()
 
 # Creating function to store solution
 phi = Function(V, name='solution')
@@ -85,7 +85,7 @@ PETSc.Sys.Print('Laplace equation ok')
 
 # Picard iterations
 tol = 1e-5 #1e-9
-maxiter = 50
+maxiter = 100
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
@@ -113,23 +113,7 @@ flat.write(proj)
 file = File('new_%i.pvd' % size_ref)
 x = SpatialCoordinate(mesh)
 projected = Function(W, name='surface')
-cond = conditional(gt(x[1], H-H/100), 0, x[1]) #conditional(lt(x[1], H/100), 0, x[1]) or
-aux = as_vector((x[0], x[1], 0)) #cond, 0))
-#cond_phi_y = conditional(gt(phi[1], H-H/100), 0, x[1])
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
-##special = interpolate(phi[1] - x[1], UU)
-##print(special((2*sin(0.5*acos(0.5/cos(0.5*theta)))/2,H)))
-##print(special((2*sin(0.5*acos(0.5/cos(0.5*theta)))/2,0)))
-##sys.exit()
-##import numpy as np
-##a = special.vector().array()
-##w = np.where(a > 0.2)
-##print(a[w])
-##special.vector().array()[w] = 0.2*np.ones_like(w)
-##file.write(special)
-##sys.exit()
-#other = Function(W, name='surface')
-#other.interpolate(as_vector((projected[0], conditional(gt(projected[1], 0), 0, projected[1]), projected[2])))
-#file.write(other)
-#sys.exit()
+
+#test
