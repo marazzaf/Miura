@@ -22,10 +22,9 @@ L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L #total height of cylindre
-modif = 0.5 #0.1 #variation at the top
 
 # Create mesh and define function space
-size_ref = 20 #degub: 5
+size_ref = 5 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -33,6 +32,7 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 UU = FunctionSpace(mesh, 'CG', 4)
+W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
@@ -40,11 +40,19 @@ rho = sqrt(4*cos(theta/2)**2*(L/2)**2 + 1)
 #BC on lower part
 phi_D1 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), -2*sin(theta/2)*L))
 #BC on upper part
-modif = 5 #2
-#z = -l*modif*(x[1]-H/2)**2*4/H/H + l*(1+modif)
-z = l*modif*(x[1]-H/2)**2*4/H/H + l*(1+modif)
-phi_D2 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-
+#modif = 5 #2
+#z = l*modif*(x[1]-H/2)**2*4/H/H + l*(1+modif)
+#phi_D2 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+#test
+beta = pi/4
+phi_D2 = as_vector((rho*cos(beta)*cos(alpha*x[1]), rho*cos(beta)*sin(alpha*x[1]), rho*sin(beta)*cos(alpha*x[1])))
+file = File('test.pvd')
+truc = Function(W, name='test')
+truc.interpolate(phi_D2 - as_vector((x[0],x[1],0)))
+print(truc((L/2,H))[1])
+print(truc((L/2,H*9/10))[1])
+file.write(truc)
+sys.exit()
 
 # Creating function to store solution
 phi = Function(V, name='solution')
@@ -94,7 +102,6 @@ else:
 
 #Write 2d results
 flat = File('flat_%i.pvd' % size_ref)
-W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 proj = project(phi, W, name='flat')
 flat.write(proj)
   
