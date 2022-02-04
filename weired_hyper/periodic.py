@@ -9,11 +9,9 @@ import numpy as np
 
 # the coefficient functions
 def p(phi):
-  #return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
   return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 def q(phi):
-  #return 4
   return 4 / inner(phi.dx(1), phi.dx(1))
 
 def sq_norm(f):

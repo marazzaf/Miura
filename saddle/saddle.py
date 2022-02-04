@@ -28,12 +28,12 @@ U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 UU = FunctionSpace(mesh, 'CG', 4)
 
 # Boundary conditions
-beta = 0.1
+beta = 0.1 #0.1
 x = SpatialCoordinate(mesh)
 phi_D1 = beta*as_vector((x[0], x[1], 0))
 
 #modify this one to be the right BC
-alpha = pi/4
+alpha = pi/2 #pi/4
 #modify the rest of the BC because it does not give the expected result...
 l = H*L / sqrt(L*L + H*H)
 sin_gamma = H / sqrt(L*L+H*H)
@@ -100,12 +100,6 @@ for iter in range(maxiter):
   file_test.write(pp, time=iter)
   PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
-
-  ##ellipticity test
-  #test = project(sq_norm(phi.dx(0)), UU)
-  #with test.dat.vec_ro as v:
-  #  value = v.max()[1]
-  #assert value < 4, ('Bouned slope condition %.2e' % value)
   
   #convergence test 
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
@@ -124,3 +118,15 @@ file = File('new_%i.pvd' % size_ref)
 x = SpatialCoordinate(mesh)
 projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
 file.write(projected)
+
+#To plot solution
+projected = project(phi, U, name='surface')
+vec = projected.vector().get_local()
+vec_phi_aux = vec.reshape((len(vec) // 3, 3))
+
+#writing a file with points
+points = open('points_%i.txt' % size_ref, 'w')
+for i in vec_phi_aux:
+  points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
+points.close()
+sys.exit()
