@@ -24,7 +24,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L #total height of cylindre
 
 # Create mesh and define function space
-size_ref = 20 #degub: 5
+size_ref = 5 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -40,24 +40,8 @@ rho = sqrt(4*cos(theta/2)**2*(L/2)**2 + 1)
 #BC on lower part
 phi_D1 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), -2*sin(theta/2)*L))
 #BC on upper part
-#modif = 5 #2
-#z = l*modif*(x[1]-H/2)**2*4/H/H + l*(1+modif)
-#phi_D2 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-#test
 beta = pi/4
 phi_D2 = as_vector((rho*cos(beta)*cos(alpha*x[1]), rho*cos(beta)*sin(alpha*x[1]), rho*sin(beta)*cos(alpha*x[1])))
-#file = File('test.pvd')
-#truc = Function(W, name='test')
-##truc.interpolate(phi_D2)
-##truc.interpolate(as_vector((x[0], x[1], 0)))
-#truc.interpolate(as_vector((x[0], conditional(gt(x[1], H*0.5), 1, 0), 0)))
-##truc.interpolate(phi_D1 - as_vector((x[0], conditional(gt(x[1], H*0.99), x[1], H), 0)))
-#print(truc((L/2,H))[1])
-#print(truc((L/2,H*9/10))[1])
-#print(truc((L/2,0))[1])
-#file.write(truc)
-#sys.exit()
-
 # Creating function to store solution
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
@@ -74,12 +58,12 @@ pen = 1e1
 pen_term = pen/h**4 * inner(phi_t, psi) * ds
 a += pen_term
 #rhs
-L = pen/h**4 * inner(phi_D1, psi) * ds(1) + pen/h**4 * inner(phi_D2, psi) * ds(2)
+LL = pen/h**4 * inner(phi_D1, psi) * ds(1) + pen/h**4 * inner(phi_D2, psi) * ds(2)
 
 #Computing initial guess
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 A = assemble(laplace+pen_term)
-b = assemble(L)
+b = assemble(LL)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
 
@@ -89,7 +73,7 @@ maxiter = 100
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
-  b = assemble(L)
+  b = assemble(LL)
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
   
   #convergence test 
@@ -109,11 +93,33 @@ flat = File('flat_%i.pvd' % size_ref)
 proj = project(phi, W, name='flat')
 flat.write(proj)
   
-#Write 3d results
+##Write 3d results
+#file = File('new_%i.pvd' % size_ref)
+#x = SpatialCoordinate(mesh)
+#projected = Function(W, name='surface')
+#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+#file.write(projected)
+
+#test
+mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 file = File('new_%i.pvd' % size_ref)
 x = SpatialCoordinate(mesh)
 projected = Function(W, name='surface')
-projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file.write(projected)
+ref = interpolate(phi, W)
 
-#test
+
+# Next, interpolate the coordinates onto the nodes of W.
+X = interpolate(mesh.coordinates, VectorFunctionSpace(mesh, 'CG', 4))
+print(X.dat.data_ro)
+sys.exit()
+
+# Make an output function.
+f = Function(V)
+
+# Use the external data function to interpolate the values of f.
+f.dat.data[:] = mydata(X.dat.data_ro)
+
+#interpolation on new mesh
+projected.interpolate(ref - as_vector((x[0], x[1], 0)))
+file.write(projected)
