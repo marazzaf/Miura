@@ -24,7 +24,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L #total height of cylindre
 
 # Create mesh and define function space
-size_ref = 5 #degub: 5
+size_ref = 20 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -90,7 +90,9 @@ else:
 
 #Write 2d results
 flat = File('flat_%i.pvd' % size_ref)
-proj = project(phi, W, name='flat')
+#proj = project(phi, W, name='flat')
+proj = Function(W, name='flat')
+proj.interpolate(phi - 1e-10*as_vector((x[0], x[1], 0)))
 flat.write(proj)
   
 ##Write 3d results
@@ -101,25 +103,29 @@ flat.write(proj)
 #file.write(projected)
 
 #test
-mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+mesh = RectangleMesh(size_ref, size_ref, L*0.999, H*0.999, diagonal='crossed')
 W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
-file = File('new_%i.pvd' % size_ref)
-x = SpatialCoordinate(mesh)
-projected = Function(W, name='surface')
-ref = interpolate(phi, W)
-
-
-# Next, interpolate the coordinates onto the nodes of W.
 X = interpolate(mesh.coordinates, VectorFunctionSpace(mesh, 'CG', 4))
-print(X.dat.data_ro)
-sys.exit()
 
-# Make an output function.
-f = Function(V)
+#gives values from phi
+def func(data):
+  res = np.zeros((len(data),3))
+  for i,dat in enumerate(data):
+    #print(i,dat)
+    #print(res[i,:])
+    #print(proj((L/2,H/2)))
+    #print(proj((dat[0], dat[1])))
+    res[i,:] = proj(dat)
+  return res
 
 # Use the external data function to interpolate the values of f.
-f.dat.data[:] = mydata(X.dat.data_ro)
+phi_bis = Function(W)
+phi_bis.dat.data[:] = func(X.dat.data_ro)
 
 #interpolation on new mesh
-projected.interpolate(ref - as_vector((x[0], x[1], 0)))
+projected = Function(W, name='surface')
+file = File('new_%i.pvd' % size_ref)
+x = SpatialCoordinate(mesh)
+#projected.interpolate(as_vector((x[0], x[1], 0)))
+projected.interpolate(phi_bis - as_vector((x[0], x[1], 0)))
 file.write(projected)
