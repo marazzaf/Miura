@@ -48,9 +48,13 @@ beta = pi/4
 phi_D2 = as_vector((rho*cos(beta)*cos(alpha*x[1]), rho*cos(beta)*sin(alpha*x[1]), rho*sin(beta)*cos(alpha*x[1])))
 file = File('test.pvd')
 truc = Function(W, name='test')
-truc.interpolate(phi_D2 - as_vector((x[0],x[1],0)))
+truc.interpolate(phi_D2 - as_vector((x[0], conditional(gt(x[1], H*0.99), x[1], H), 0)))
+#truc.interpolate(as_vector((truc[0], conditional(gt(x[1], H*0.99), truc((L/2,0))[1], truc[1]), truc[2])))
+#truc.interpolate(as_vector((x[0], conditional(gt(x[1], H*0.99), x[1], H), 0)))
 print(truc((L/2,H))[1])
 print(truc((L/2,H*9/10))[1])
+print(truc((L/2,0))[1])
+
 file.write(truc)
 sys.exit()
 
