@@ -40,7 +40,7 @@ rho = sqrt(4*cos(theta/2)**2*(L/2)**2 + 1)
 #BC on lower part
 phi_D1 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), -2*sin(theta/2)*L))
 #BC on upper part
-modif = 2
+modif = 5 #2
 #z = -l*modif*(x[1]-H/2)**2*4/H/H + l*(1+modif)
 z = l*modif*(x[1]-H/2)**2*4/H/H + l*(1+modif)
 phi_D2 = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
@@ -106,6 +106,7 @@ cond = conditional(gt(x[1], H-H/100), 0, x[1]) #conditional(lt(x[1], H/100), 0, 
 aux = as_vector((x[0], x[1], 0)) #cond, 0))
 #cond_phi_y = conditional(gt(phi[1], H-H/100), 0, x[1])
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+file.write(projected)
 ##special = interpolate(phi[1] - x[1], UU)
 ##print(special((2*sin(0.5*acos(0.5/cos(0.5*theta)))/2,H)))
 ##print(special((2*sin(0.5*acos(0.5/cos(0.5*theta)))/2,0)))
@@ -121,4 +122,3 @@ projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 #other.interpolate(as_vector((projected[0], conditional(gt(projected[1], 0), 0, projected[1]), projected[2])))
 #file.write(other)
 #sys.exit()
-file.write(projected)
