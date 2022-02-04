@@ -9,7 +9,8 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
 
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
@@ -83,8 +84,6 @@ for iter in range(maxiter):
   #linear solve
   A = assemble(a)
   b = assemble(L)
-  pp = interpolate(p(phi), UU)
-  PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   #ellipticity test
