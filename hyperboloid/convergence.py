@@ -9,8 +9,9 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-
+  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
+  
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
 
@@ -23,15 +24,15 @@ l = sin(theta/2)*L
 
 #Creating mesh
 size_ref = 50 #10 #degub: 5
-nx,ny = size_ref,size_ref
-#nx,ny = int(size_ref*H/float(L)),size_ref
-#mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
-mesh = RectangleMesh(nx, ny, L, H)
-#mesh = Mesh('convergence_5.msh')
+#mesh = RectangleMesh(size_ref, size_ref, L, H)
+mesh = Mesh('convergence_1.msh')
 #V = VectorFunctionSpace(mesh, "ARG", 5, dim=3)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
-VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
+
+#For projection
+U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
+UU = FunctionSpace(mesh, 'CG', 4)
 
 #  Dirichlet boundary conditions
 x = SpatialCoordinate(mesh)
@@ -75,9 +76,6 @@ for iter in range(maxiter):
   #linear solve
   A = assemble(a)
   b = assemble(L)
-  pp = interpolate(p(phi), VV)
-  PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
-  #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
@@ -91,6 +89,7 @@ if eps > tol:
   PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
 else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
+sys.exit()
 
 #Computing error
 X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
@@ -103,21 +102,6 @@ PETSc.Sys.Print('Error: %.3e' % err)
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 projected = project(phi, U, name='surface')
-#
-##Checking if second equation is verified
-#C = CellVolume(mesh)
-#phi_x = project(phi.dx(0), U)
-#phi_y = project(phi.dx(1), U)
-#res = ((1 - 0.25 * inner(phi_x, phi_x)) * inner(phi_y, phi_y) - 1) / C * dx
-#print(abs(assemble(res))) #l1
-#UU = FunctionSpace(mesh, 'CG', 1)
-#test = interpolate(Constant(1), UU)
-#res = errornorm((1 - 0.25 * inner(phi_x, phi_x)) * inner(phi_y, phi_y), test, 'l2')
-#print(res) #l2
-#res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
-#res = res.vector()
-#print(max(abs(max(res)), abs(min(res)))) #l-infinity
-#sys.exit()
 
 #Write 2d results
 file = File('hyper_pi_4_%i.pvd' % size_ref)
@@ -146,26 +130,6 @@ vec_ref = ref.vector().get_local()
 vec_ref = vec.reshape((len(vec_ref) // 3, 3))
 file_bis = File('ref_hyper.pvd')
 file_bis.write(ref)
-
-#magnitude diff
-#img = plot(sqrt(dot(projected-ref, projected-ref)))
-#plt.colorbar(img)
-#plt.show()
-#diff = Function(U, name='diff')
-#diff.vector()[:] = projected.vector() - ref.vector()
-#file_bis = File('diff.pvd')
-#file_bis.write(diff)
-#sys.exit()
-
-
-##3d plot
-#fig = plt.figure()
-#ax = fig.add_subplot(111, projection='3d')
-##for i,j in zip(vec_phi_aux,vec_ref):
-#for i in vec_phi_aux:
-#  ax.scatter(i[0], i[1], i[2], color='r')
-#  #ax.scatter(j[0], j[1], j[2], color='b')
-#plt.show()
 
 #plotting solution
 vec = projected.vector().get_local()
