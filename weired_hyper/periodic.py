@@ -21,7 +21,6 @@ theta = pi/2
 L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
 alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
-l = sin(theta/2)*L #total height of cylindre
 
 # Create mesh and define function space
 size_ref = 20 #degub: 5
