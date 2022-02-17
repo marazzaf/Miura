@@ -9,4 +9,5 @@ This software is free software, distributed under the 2-clause BSD license. A co
 	Month = {02},
 	Title = {Computation of Miura surfaces for general Dirichlet boundary conditions},
 	Year = {2022},
-	DOI = {10.4171/IFB/171}}
+	DOI = {10.4171/IFB/171}
+	}
