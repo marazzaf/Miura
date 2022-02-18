@@ -15,3 +15,7 @@ This software is free software, distributed under the 2-clause BSD license. A co
       doi={10.48550/arXiv.2202.08796}
 }
 ```
+Here's the zenodo version: 
+
+[![DOI](https://zenodo.org/badge/327956128.svg)](https://zenodo.org/badge/latestdoi/327956128)
+
