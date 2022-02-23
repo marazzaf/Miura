@@ -19,3 +19,17 @@ This software is free software, distributed under the 2-clause BSD license. A co
 
 [![DOI](https://zenodo.org/badge/327956128.svg)](https://zenodo.org/badge/latestdoi/327956128)
 
+This software relies on Firedrake and has been proof test with Firedrake_20220223.1
+You can find this version of Firedrake with DOI:10.5281/zenodo.6246064
+Zenodo URL is https://zenodo.org/record/6246064
+Here's the bibTeX of the Firedrake release
+```
+@misc{zenodo/Firedrake-20220223.1,
+ key   = {zenodo/Firedrake-20220223.1},
+ title = {{Software used in `Miura surfaces'}},
+ year  = {2022},
+ month = {feb},
+ doi   = {10.5281/zenodo.6246064},
+ url   = {https://doi.org/10.5281/zenodo.6246064},
+}
+```
