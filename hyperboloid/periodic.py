@@ -9,7 +9,8 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  return  1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
 
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
@@ -27,6 +28,9 @@ mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
+
+#For projection
+UU = FunctionSpace(mesh, 'CG', 4)
 
 #  Dirichlet boundary conditions
 x = SpatialCoordinate(mesh)
@@ -88,26 +92,21 @@ X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
 projected = interpolate(div(grad(phi)), X)
 ref = interpolate(div(grad(phi_D)), X)
 err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
-PETSc.Sys.Print('Error: %.3e' % err)
+#PETSc.Sys.Print('Error: %.3e' % err)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 
-#Write 2d results
-x = SpatialCoordinate(mesh)
-projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
-file = File('periodic_%i.pvd' % size_ref)
-file.write(projected)
-print(projected.vector().array()[:200])
-sys.exit()
+#Test is inequalities are true
+file_bis = File('verif_x.pvd')
+phi_x = interpolate(phi.dx(0), U)
+proj = project(inner(phi_x,phi_x), UU, name='test phi_x')
+file_bis.write(proj)
+file_ter = File('verif_y.pvd')
+phi_y = interpolate(phi.dx(1), U)
+proj = project(inner(phi_y,phi_y), UU, name='test phi_y')
+file_ter.write(proj)
+file_4 = File('verif_prod.pvd')
+proj = project(inner(phi_x,phi_y), UU, name='test PS')
+file_4.write(proj)
 
-#plotting solution
-projected = project(phi, U, name='surface')
-vec = projected.vector().get_local()
-vec_phi_aux = vec.reshape((len(vec) // 3, 3))
-
-#writing a file with points
-points = open('hyperboloid_%i.txt' % size_ref, 'w')
-for i in vec_phi_aux:
-  points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
-points.close()
