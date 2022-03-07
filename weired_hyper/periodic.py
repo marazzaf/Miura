@@ -94,14 +94,22 @@ proj = Function(W, name='flat')
 proj.interpolate(phi - 1e-10*as_vector((x[0], x[1], 0)))
 flat.write(proj)
   
-##Write 3d results
-#file = File('new_%i.pvd' % size_ref)
-#x = SpatialCoordinate(mesh)
-#projected = Function(W, name='surface')
-#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-#file.write(projected)
+#Test is inequalities are true
+file_bis = File('verif_x.pvd')
+phi_x = interpolate(phi.dx(0), U)
+proj = project(inner(phi_x,phi_x), UU, name='test phi_x')
+file_bis.write(proj)
+file_ter = File('verif_y.pvd')
+phi_y = interpolate(phi.dx(1), U)
+proj = project(inner(phi_y,phi_y), UU, name='test phi_y')
+file_ter.write(proj)
+file_4 = File('verif_prod.pvd')
+proj = project(inner(phi_x,phi_y), UU, name='test PS')
+file_4.write(proj)
 
-#test
+sys.exit()
+
+#Write 3d results
 mesh = RectangleMesh(size_ref, size_ref, L*0.999, H*0.999, diagonal='crossed')
 W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 X = interpolate(mesh.coordinates, VectorFunctionSpace(mesh, 'CG', 4))
@@ -110,10 +118,6 @@ X = interpolate(mesh.coordinates, VectorFunctionSpace(mesh, 'CG', 4))
 def func(data):
   res = np.zeros((len(data),3))
   for i,dat in enumerate(data):
-    #print(i,dat)
-    #print(res[i,:])
-    #print(proj((L/2,H/2)))
-    #print(proj((dat[0], dat[1])))
     res[i,:] = proj(dat)
   return res
 
