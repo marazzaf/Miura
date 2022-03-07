@@ -103,7 +103,7 @@ PETSc.Sys.Print('Error: %.3e' % err)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
-projected = project(phi, U, name='surface')
+#projected = project(phi, U, name='surface')
 
 #Write 3d results
 file = File('hyper.pvd')

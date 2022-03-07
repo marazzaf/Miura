@@ -113,7 +113,7 @@ if eps > tol:
 else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
-#Write 2d resutls
+#Write 2d results
 flat = File('flat_%i.pvd' % size_ref)
 W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 proj = project(phi, W, name='flat')
@@ -126,14 +126,15 @@ projected = Function(W, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
-#To plot solution
-projected = project(phi, U, name='surface')
-vec = projected.vector().get_local()
-vec_phi_aux = vec.reshape((len(vec) // 3, 3))
-
-#writing a file with points
-points = open('points_%i.txt' % size_ref, 'w')
-for i in vec_phi_aux:
-  points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
-points.close()
-sys.exit()
+#Test is inequalities are true
+file_bis = File('verif_x.pvd')
+phi_x = interpolate(phi.dx(0), W)
+proj = project(inner(phi_x,phi_x), UU, name='test phi_x')
+file_bis.write(proj)
+file_ter = File('verif_y.pvd')
+phi_y = interpolate(phi.dx(1), W)
+proj = project(inner(phi_y,phi_y), UU, name='test phi_y')
+file_ter.write(proj)
+file_4 = File('verif_prod.pvd')
+proj = project(inner(phi_x,phi_y), UU, name='test PS')
+file_4.write(proj)

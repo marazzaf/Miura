@@ -21,7 +21,7 @@ def sq_norm(f):
 # Create mesh and define function space
 alpha = 1
 L = 1/alpha #length of rectangle
-H = pi/alpha #height of rectangle #1.2 works #1.3 no
+H = pi/alpha #height of rectangle #1.2*pi does not work
 size_ref = 40 #60 #20 #10 #degub: 5
 #nx,ny = int(size_ref*L/H),int(size_ref*H/L)
 #mesh = PeriodicRectangleMesh(nx, ny, L, H, direction='y', diagonal='crossed')
@@ -31,7 +31,6 @@ V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #For projection
-U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 UU = FunctionSpace(mesh, 'CG', 4)
 
 # Boundary conditions
@@ -109,72 +108,30 @@ if eps > tol:
 else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
-#Write 2d results
-file = File('new_%i.pvd' % size_ref)
+#For projection
+U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
+  
+#Write 3d results
+file = File('cone.pvd')
 x = SpatialCoordinate(mesh)
-projected = project(phi - as_vector((x[0], x[1], 0)), U, name='surface')
+projected = Function(U, name='surface')
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
-sys.exit()
 
-#For plot
-projected = project(phi, U, name='surface')
+#Write 2d result
+file_bis = File('flat.pvd')
+proj = project(phi, U, name='flat')
+file_bis.write(proj)
 
-#check eq constraint
-res = interpolate((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)) - 1, UU)
-res = res.vector()
-PETSc.Sys.Print(max(abs(max(res)), abs(min(res)))) #l-infinity
-test = interpolate(Constant(1), UU)
-res = errornorm((1 - 0.25 * inner(phi.dx(0), phi.dx(0))) * inner(phi.dx(1), phi.dx(1)), test, 'l2')
-PETSc.Sys.Print(res) #l2
-
-
-#plotting solution
-vec = projected.vector().get_local()
-vec_phi_aux = vec.reshape((len(vec) // 3, 3))
-
-#writing a file with points
-points = open('points_%i.txt' % size_ref, 'w')
-#if COMM_WORLD.rank == 0:
-for i in vec_phi_aux:
-  points.write('%.5e %.5e %.5e\n' % (i[0], i[1], i[2]))
-points.close()
-#sys.exit()
-
-#see if solves other equation
-p_aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))**2
-q_aux = 4
-test = inner(p_aux * phi.dx(0).dx(0) + q_aux * phi.dx(1).dx(1), div(grad(psi))) * dx
-test = assemble(test)
-test = project(test, U)
-file = File('verif_%i.pvd' % size_ref)
-file.write(test)
-
-##other test
-#test = interpolate(p(phi) * q(phi), UU)
-#with test.dat.vec_ro as v:
-#    test = v.max()[1] / 4 * 100
-#PETSc.Sys.Print('Max error in percent: %.2e' % test) 
-
-#Citations.print_at_exit()
-
-##Nice 3d plot
-#x = vec_phi_aux[:,0]
-#y = vec_phi_aux[:,1]
-#z = vec_phi_aux[:,2]
-#ax = plt.figure().add_subplot(projection='3d')
-#ax.plot_trisurf(x, y, z, linewidth=0.2, antialiased=True)
-#plt.show()
-#sys.exit()
-
-
-##3d plot
-#fig = plt.figure()
-#ax = fig.add_subplot(111, projection='3d')
-#for i in vec_phi_aux:
-#  ax.scatter(i[0], i[1], i[2], color='r')
-#ax.set_xlabel('x')
-#ax.set_ylabel('y')
-#ax.set_zlabel('z')
-#plt.show()
-#plt.title('Miura ori')
-#plt.savefig('new_shape_%i.pdf' % size_ref)
+#Test is inequalities are true
+file_bis = File('verif_x.pvd')
+phi_x = interpolate(phi.dx(0), U)
+proj = project(inner(phi_x,phi_x), UU, name='test phi_x')
+file_bis.write(proj)
+file_ter = File('verif_y.pvd')
+phi_y = interpolate(phi.dx(1), U)
+proj = project(inner(phi_y,phi_y), UU, name='test phi_y')
+file_ter.write(proj)
+file_4 = File('verif_prod.pvd')
+proj = project(inner(phi_x,phi_y), UU, name='test PS')
+file_4.write(proj)
