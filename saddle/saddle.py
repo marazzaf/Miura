@@ -19,7 +19,7 @@ def sq_norm(f):
 # Create mesh and define function space
 L = 2 #length of rectangle
 H = 1 #height of rectangle #1.2 works #1.3 no
-size_ref = 20 #degub: 2
+size_ref = 50 #degub: 2
 mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
 #mesh = UnitDiskMesh(size_ref)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
@@ -48,7 +48,6 @@ CD = Constant((-sin_gamma*l,H-cos_gamma*l,0))
 OBp = OC + CD + DBp
 BpC = -DBp - CD
 BpA = BpC + Constant((-L, H, 0))
-#phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
 phi_D2 = (1-x[0]/L)*BpA + (1-x[1]/H)*BpC + OBp
 phi_D2 *= beta
 
@@ -91,6 +90,10 @@ A = assemble(laplace+pen_term)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
+
+#test
+eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
+PETSc.Sys.Print('Before computation  H2 seminorm of delta: {:10.2e}'.format(eps))
 
 # Picard iterations
 tol = 1e-5 #1e-9
@@ -138,3 +141,8 @@ file_ter.write(proj)
 file_4 = File('verif_prod.pvd')
 proj = project(inner(phi_x,phi_y), UU, name='test PS')
 file_4.write(proj)
+
+#Test
+test = project(div(grad(phi)), W, name='minimal')
+file_6 = File('minimal_bis.pvd')
+file_6.write(test)
