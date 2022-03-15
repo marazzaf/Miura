@@ -70,16 +70,12 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty term for Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e1 #1e1
-pen_Dir = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
-L_Dir = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
-#pen_Dir = pen/h**4 * inner(phi_t[2], psi[2]) * (ds(1) + ds(2))
-#L_Dir = pen/h**4 * phi_D[2] * psi[2]  * (ds(1) + ds(2))
-#n = FacetNormal(mesh)
-#L_Neu = dot(g) * (ds(1) + ds(2))
-#Hess = as_tensor(((phi_t.dx(0).dx(0), phi_t.dx(0).dx(1)), (phi_t.dx(1).dx(0), phi_t.dx(1).dx(1))))
-#Grad = as_vector((psi.dx(0), psi.dx(1)))
-#pen_Neu = pen/h**2 * (inner(phi_t.dx(0).dx(0), psi.dx(1)) + inner(phi_t, psi)) * (ds(1) + ds(2))
-a += pen_Dir
+pen_Dir = pen/h**4 * inner(phi_t[2], psi[2]) * (ds(1) + ds(2))
+L_Dir = pen/h**4 * phi_D[2] * psi[2]  * (ds(1) + ds(2))
+aux_trial = as_vector((dot(phi.dx(0).dx(0), phi_t.dx(0)) + dot(phi.dx(0).dx(1), phi_t.dx(1)), dot(phi.dx(1).dx(0), phi_t.dx(1)) + dot(phi.dx(1).dx(1), phi_t.dx(0))))
+aux_test = as_vector((dot(phi.dx(0).dx(0), psi.dx(0)) + dot(phi.dx(0).dx(1), psi.dx(1)), dot(phi.dx(1).dx(0), psi.dx(1)) + dot(phi.dx(1).dx(1), psi.dx(0))))
+pen_Neu = pen/h**2 * inner(aux_trial, aux_test) * (ds(1) + ds(2))
+a += pen_Dir + pen_Neu
 
 # Picard iteration
 tol = 1e-5 #1e-9
