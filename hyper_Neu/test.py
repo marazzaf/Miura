@@ -6,6 +6,7 @@ from firedrake.petsc import PETSc
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import pyplot as plt
 import sys
+parameters["form_compiler"].update({"optimize": True, "cpp_optimize": True, "representation":"uflacs", "quadrature_degree": 3})
 
 # the coefficient functions
 def p(phi):
@@ -69,9 +70,11 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty to impose Dirichlet BC
 #penalty term for Dirichlet BC
 h = CellDiameter(mesh)
+n = cross(phi_D.dx(0), phi_D.dx(1)) #Just phi later...
+n /= sqrt(inner(n, n))
 pen = 1e1 #1e1
-pen_Dir = pen/h**4 * inner(phi_t[2], psi[2]) * (ds(1) + ds(2))
-L_Dir = pen/h**4 * phi_D[2] * psi[2]  * (ds(1) + ds(2))
+pen_Dir = pen/h**4 * dot(phi_t, n) * dot(psi,n) * (ds(1) + ds(2))
+L_Dir = pen/h**4 * dot(phi_D, n) * dot(psi,n) * (ds(1) + ds(2))
 aux_trial = as_vector((dot(phi_D.dx(0).dx(0), phi_t.dx(0)) + dot(phi_D.dx(0).dx(1), phi_t.dx(1)), dot(phi_D.dx(1).dx(0), phi_t.dx(1)) + dot(phi_D.dx(1).dx(1), phi_t.dx(0))))
 aux_test = as_vector((dot(phi_D.dx(0).dx(0), psi.dx(0)) + dot(phi_D.dx(0).dx(1), psi.dx(1)), dot(phi_D.dx(1).dx(0), psi.dx(1)) + dot(phi_D.dx(1).dx(1), psi.dx(0))))
 pen_Neu = pen/h**2 * inner(aux_trial, aux_test) * (ds(1) + ds(2))
