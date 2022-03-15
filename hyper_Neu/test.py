@@ -38,8 +38,6 @@ x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
 z = 2*sin(theta/2) * (x[0]-L/2)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-phi_Dx = phi_D.dx(0)
-phi_Dy = phi_D.dx(1)
 
 #initial guess
 W = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
@@ -75,9 +73,7 @@ n /= sqrt(inner(n, n))
 pen = 1e1 #1e1
 pen_Dir = pen/h**4 * dot(phi_t, n) * dot(psi,n) * (ds(1) + ds(2))
 L_Dir = pen/h**4 * dot(phi_D, n) * dot(psi,n) * (ds(1) + ds(2))
-aux_trial = as_vector((dot(phi_D.dx(0).dx(0), phi_t.dx(0)) + dot(phi_D.dx(0).dx(1), phi_t.dx(1)), dot(phi_D.dx(1).dx(0), phi_t.dx(1)) + dot(phi_D.dx(1).dx(1), phi_t.dx(0))))
-aux_test = as_vector((dot(phi_D.dx(0).dx(0), psi.dx(0)) + dot(phi_D.dx(0).dx(1), psi.dx(1)), dot(phi_D.dx(1).dx(0), psi.dx(1)) + dot(phi_D.dx(1).dx(1), psi.dx(0))))
-pen_Neu = pen/h**2 * inner(aux_trial, aux_test) * (ds(1) + ds(2))
+pen_Neu = pen/h**2 * (dot(phi_D.dx(0), phi_t.dx(1)) * dot(phi_D.dx(0), psi.dx(1)) + dot(phi_D.dx(1), phi_t.dx(0)) * dot(phi_D.dx(1), psi.dx(0))) * (ds(1) + ds(2))
 a += pen_Dir + pen_Neu
 
 # Picard iteration
