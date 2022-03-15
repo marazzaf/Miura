@@ -54,12 +54,13 @@ b = assemble(L, bcs=bcs)
 solve(A, phi_l, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
 
-file_bis = File('verif_laplace.pvd')
-file_bis.write(phi_l)
-sys.exit()
+#file_bis = File('verif_laplace.pvd')
+#file_bis.write(phi_l)
+#sys.exit()
 
 #Writing our problem now
 phi = Function(V, name='solution')
+phi.vector()[:] = project(phi_l, V).vector()
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 #bilinear form for linearization
@@ -69,14 +70,16 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty term for Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e1 #1e1
-pen_Dir = pen/h**4 * inner(phi_t[2], psi[2]) * (ds(1) + ds(2))
-L_Dir = pen/h**4 * inner(phi_D[2], psi[2])  * (ds(1) + ds(2))
-n = FacetNormal(mesh)
-L_Neu = dot(g) * (ds(1) + ds(2))
-Hess = as_tensor(((phi_t.dx(0).dx(0), phi_t.dx(0).dx(1)), (phi_t.dx(1).dx(0), phi_t.dx(1).dx(1))))
-Grad = as_vector((psi.dx(0), psi.dx(1)))
-pen_Neu = pen/h**2 * (inner(phi_t.dx(0).dx(0), psi.dx(1)) + inner(phi_t, psi)) * (ds(1) + ds(2))
-a += pen_term
+pen_Dir = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
+L_Dir = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
+#pen_Dir = pen/h**4 * inner(phi_t[2], psi[2]) * (ds(1) + ds(2))
+#L_Dir = pen/h**4 * phi_D[2] * psi[2]  * (ds(1) + ds(2))
+#n = FacetNormal(mesh)
+#L_Neu = dot(g) * (ds(1) + ds(2))
+#Hess = as_tensor(((phi_t.dx(0).dx(0), phi_t.dx(0).dx(1)), (phi_t.dx(1).dx(0), phi_t.dx(1).dx(1))))
+#Grad = as_vector((psi.dx(0), psi.dx(1)))
+#pen_Neu = pen/h**2 * (inner(phi_t.dx(0).dx(0), psi.dx(1)) + inner(phi_t, psi)) * (ds(1) + ds(2))
+a += pen_Dir
 
 # Picard iteration
 tol = 1e-5 #1e-9
@@ -85,10 +88,9 @@ phi_old = Function(V) #for iterations
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
-  b = assemble(L)
+  b = assemble(L_Dir)
   pp = interpolate(p(phi), VV)
   PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
-  #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
@@ -108,12 +110,26 @@ X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
 projected = interpolate(div(grad(phi)), X)
 ref = interpolate(div(grad(phi_D)), X)
 err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
-#PETSc.Sys.Print('Error: %.3e' % err)
+PETSc.Sys.Print('Error: %.3e' % err)
 
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 
-#Test is inequalities are true
+#Write 3d results
+file = File('hyper.pvd')
+x = SpatialCoordinate(mesh)
+projected = Function(U, name='surface')
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+file.write(projected)
+
+#Write 2d result
+file_bis = File('flat.pvd')
+proj = project(phi, U, name='flat')
+file_bis.write(proj)
+
+sys.exit()
+
+#Test if inequalities are true
 file_bis = File('verif_x.pvd')
 phi_x = interpolate(phi.dx(0), U)
 proj = project(inner(phi_x,phi_x), UU, name='test phi_x')
