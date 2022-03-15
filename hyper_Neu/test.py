@@ -37,29 +37,45 @@ x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
 z = 2*sin(theta/2) * (x[0]-L/2)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+phi_Dx = phi_D.dx(0)
+phi_Dy = phi_D.dx(1)
 
 #initial guess
+W = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
+trial = TrialFunction(W)
+test = TestFunction(W)
+phi_l = Function(W, name='laplace')
 #solve laplace equation on the domain
+bcs = [DirichletBC(W, phi_D, 1), DirichletBC(W, phi_D, 2)]
+laplace = inner(grad(trial), grad(test)) * dx #laplace in weak form
+L = inner(Constant((0,0,0)), test) * dx
+A = assemble(laplace, bcs=bcs)
+b = assemble(L, bcs=bcs)
+solve(A, phi_l, b, solver_parameters={'direct_solver': 'mumps'})
+PETSc.Sys.Print('Laplace equation ok')
+
+file_bis = File('verif_laplace.pvd')
+file_bis.write(phi_l)
+sys.exit()
+
+#Writing our problem now
 phi = Function(V, name='solution')
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
-laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
-#penalty term for Dirichlet BC
-h = CellDiameter(mesh)
-pen = 1e1 #1e1
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
-L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
-A = assemble(laplace+pen_term)
-b = assemble(L)
-solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
-#solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
-PETSc.Sys.Print('Laplace equation ok')
-
-#Writing our problem now
 #bilinear form for linearization
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
+#penalty term for Dirichlet BC
+h = CellDiameter(mesh)
+pen = 1e1 #1e1
+pen_Dir = pen/h**4 * inner(phi_t[2], psi[2]) * (ds(1) + ds(2))
+L_Dir = pen/h**4 * inner(phi_D[2], psi[2])  * (ds(1) + ds(2))
+n = FacetNormal(mesh)
+L_Neu = dot(g) * (ds(1) + ds(2))
+Hess = as_tensor(((phi_t.dx(0).dx(0), phi_t.dx(0).dx(1)), (phi_t.dx(1).dx(0), phi_t.dx(1).dx(1))))
+Grad = as_vector((psi.dx(0), psi.dx(1)))
+pen_Neu = pen/h**2 * (inner(phi_t.dx(0).dx(0), psi.dx(1)) + inner(phi_t, psi)) * (ds(1) + ds(2))
 a += pen_term
 
 # Picard iteration
