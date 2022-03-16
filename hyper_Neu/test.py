@@ -10,9 +10,9 @@ parameters["form_compiler"].update({"optimize": True, "cpp_optimize": True, "rep
 
 # the coefficient functions
 def p(phi):
-  #aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-  #return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
-  return 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
+  #return 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
 
 def q(phi):
@@ -61,8 +61,8 @@ PETSc.Sys.Print('Laplace equation ok')
 
 #Writing our problem now
 phi = Function(V, name='solution')
-#phi.vector()[:] = project(phi_l, V).vector() #phi minimal surface
-phi.vector()[:] = project(phi_D, V).vector()
+phi.vector()[:] = project(phi_l, V).vector() #phi minimal surface
+#phi.vector()[:] = project(phi_D, V).vector()
 #file_bis = File('verif_BC.pvd')
 #file_bis.write(phi_l)
 #sys.exit()
@@ -79,8 +79,12 @@ n /= sqrt(inner(n, n))
 pen = 1e1 #1e1
 pen_Dir = pen/h**4 * dot(phi_t, n) * dot(psi,n) * (ds(1) + ds(2))
 L_Dir = pen/h**4 * dot(phi_D, n) * dot(psi,n) * (ds(1) + ds(2))
-pen_Neu = pen/h**2 * (dot(phi_D.dx(0), phi_t.dx(1)) * dot(phi_D.dx(0), psi.dx(1)) + dot(phi_D.dx(1), phi_t.dx(0)) * dot(phi_D.dx(1), psi.dx(0))) * (ds(1) + ds(2))
-a += pen_Dir #+ pen_Neu
+phi_x = phi_D.dx(0) / sqrt(inner(phi_D.dx(0),phi_D.dx(0)))
+phi_y = phi_D.dx(1) / sqrt(inner(phi_D.dx(1),phi_D.dx(1)))
+pen_Dir_aux = pen/h**4 * dot(phi_t, phi_x) * dot(psi,phi_x) * (ds(1) + ds(2)) + pen/h**4 * dot(phi_t, phi_y) * dot(psi,phi_y) * (ds(1) + ds(2))
+L_Dir_aux = pen/h**4 * dot(phi_D, phi_x) * dot(psi,phi_x) * (ds(1) + ds(2)) + pen/h**4 * dot(phi_D, phi_y) * dot(psi,phi_y) * (ds(1) + ds(2))
+#pen_Neu = pen/h**2 * (dot(phi_D.dx(0), phi_t.dx(1)) * dot(phi_D.dx(0), psi.dx(1)) + dot(phi_D.dx(1), phi_t.dx(0)) * dot(phi_D.dx(1), psi.dx(0))) * (ds(1) + ds(2))
+a += pen_Dir + pen_Dir_aux #+ pen_Neu
 
 # Picard iteration
 tol = 1e-5 #1e-9
@@ -89,7 +93,7 @@ phi_old = Function(V) #for iterations
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
-  b = assemble(L_Dir)
+  b = assemble(L_Dir+L_Dir_aux)
   pp = interpolate(p(phi), VV)
   PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
