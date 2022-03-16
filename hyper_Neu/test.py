@@ -10,8 +10,10 @@ parameters["form_compiler"].update({"optimize": True, "cpp_optimize": True, "rep
 
 # the coefficient functions
 def p(phi):
-  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
+  #aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  #return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
+  return 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+
 
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
@@ -24,7 +26,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 5 #10 #degub: 5
+size_ref = 10 #10 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
 VV = FunctionSpace(mesh, 'CG', 4)
@@ -59,7 +61,11 @@ PETSc.Sys.Print('Laplace equation ok')
 
 #Writing our problem now
 phi = Function(V, name='solution')
-phi.vector()[:] = project(phi_l, V).vector()
+#phi.vector()[:] = project(phi_l, V).vector() #phi minimal surface
+phi.vector()[:] = project(phi_D, V).vector()
+#file_bis = File('verif_BC.pvd')
+#file_bis.write(phi_l)
+#sys.exit()
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 #bilinear form for linearization
@@ -74,7 +80,7 @@ pen = 1e1 #1e1
 pen_Dir = pen/h**4 * dot(phi_t, n) * dot(psi,n) * (ds(1) + ds(2))
 L_Dir = pen/h**4 * dot(phi_D, n) * dot(psi,n) * (ds(1) + ds(2))
 pen_Neu = pen/h**2 * (dot(phi_D.dx(0), phi_t.dx(1)) * dot(phi_D.dx(0), psi.dx(1)) + dot(phi_D.dx(1), phi_t.dx(0)) * dot(phi_D.dx(1), psi.dx(0))) * (ds(1) + ds(2))
-a += pen_Dir + pen_Neu
+a += pen_Dir #+ pen_Neu
 
 # Picard iteration
 tol = 1e-5 #1e-9
