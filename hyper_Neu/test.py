@@ -72,8 +72,8 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 h = CellDiameter(mesh)
 
 #test
-phi_x = phi_D.dx(0) / sqrt(inner(phi_D.dx(0),phi_D.dx(0)))
-phi_y = phi_D.dx(1) / sqrt(inner(phi_D.dx(1),phi_D.dx(1)))
+phi_x = phi_D.dx(0)# / sqrt(inner(phi_D.dx(0),phi_D.dx(0)))
+phi_y = phi_D.dx(1)# / sqrt(inner(phi_D.dx(1),phi_D.dx(1)))
 n = cross(phi_D.dx(0), phi_D.dx(1))
 n /= sqrt(inner(n, n))
 phi_aux = Function(V, name='test')
