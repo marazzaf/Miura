@@ -9,9 +9,9 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  #aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-  #return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
-  return 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
+  #return 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
   
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
@@ -93,10 +93,6 @@ else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
 #Computing error
-X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
-projected = interpolate(div(grad(phi)), X)
-ref = interpolate(div(grad(phi_D)), X)
-#err = errornorm(projected, ref, 'l2')
 err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
 PETSc.Sys.Print('Error: %.3e' % err)
 
