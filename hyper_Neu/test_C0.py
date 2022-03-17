@@ -22,8 +22,6 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-#size_ref = 50 #10 #degub: 5
-#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 mesh = Mesh('rectangle.msh')
 V = VectorFunctionSpace(mesh, "CG", 2, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -46,8 +44,6 @@ A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
-file = File('minimal.pvd')
-file.write(phi)
 
 #Writing our problem now
 phi.interpolate(phi_D)
@@ -64,47 +60,17 @@ a += pen_term
 #BC to prevent rigid body rotation
 bc = [DirichletBC(V, phi_D, 5)]
 
-#test
+#Forms to impose the BC
 phi_x = phi_D.dx(0)
 phi_y = phi_D.dx(1)
-n = cross(phi_D.dx(0), phi_D.dx(1))
-n /= sqrt(inner(n, n))
-phi_aux = Function(V, name='test')
-pen = 10/h**2 * dot(phi_t.dx(0), psi.dx(0)) * ds(1) + 10/h**2 * dot(phi_t.dx(1), psi.dx(1)) * ds# + 10/h**2 * dot(phi_t, n) * dot(psi, n) * ds
-A = assemble(a + pen,bcs=bc)
-L = 10/h**2 * dot(phi_x, psi.dx(0)) * ds(1) + 10/h**2 * dot(phi_y, psi.dx(1)) * ds# + 10/h**2 * dot(phi_D, n) * dot(psi, n) * ds
-b = assemble(L,bcs=bc)
-solve(A, phi_aux, b, solver_parameters={'direct_solver': 'mumps'})
-
-#Write 2d result
-file_bis = File('test.pvd')
-file_bis.write(phi_aux)
-
-error = sqrt(assemble(inner(div(grad(phi_aux-phi_D)), div(grad(phi_aux-phi_D)))*dx))
-PETSc.Sys.Print('Error: %.3e' % error)
-
-#Write 3d results
-file = File('hyper_test.pvd')
-x = SpatialCoordinate(mesh)
-projected = Function(V, name='surface')
-projected.interpolate(phi_aux - as_vector((x[0], x[1], 0)))
-file.write(projected)
-sys.exit()
-
-#penalty to impose Dirichlet BC
-#penalty term for Dirichlet BC
-h = CellDiameter(mesh)
-n = cross(phi.dx(0), phi.dx(1)) #Just phi later...
-n /= sqrt(inner(n, n))
-pen = 1e1 #1e1
-pen_Dir = pen/h**4 * dot(phi_t, n) * dot(psi,n) * (ds(1) + ds(2))
-L_Dir = pen/h**4 * dot(phi_D, n) * dot(psi,n) * (ds(1) + ds(2))
-phi_x = phi.dx(0) / sqrt(inner(phi.dx(0),phi.dx(0)))
-phi_y = phi.dx(1) / sqrt(inner(phi.dx(1),phi.dx(1)))
-pen_Dir_aux = pen/h**4 * dot(phi_t, phi_x) * dot(psi,phi_x) * (ds(1) + ds(2)) + pen/h**4 * dot(phi_t, phi_y) * dot(psi,phi_y) * (ds(1) + ds(2))
-L_Dir_aux = pen/h**4 * dot(phi_D, phi_x) * dot(psi,phi_x) * (ds(1) + ds(2)) + pen/h**4 * dot(phi_D, phi_y) * dot(psi,phi_y) * (ds(1) + ds(2))
-#pen_Neu = pen/h**2 * (dot(phi_D.dx(0), phi_t.dx(1)) * dot(phi_D.dx(0), psi.dx(1)) + dot(phi_D.dx(1), phi_t.dx(0)) * dot(phi_D.dx(1), psi.dx(0))) * (ds(1) + ds(2))
-a += pen_Dir + pen_Dir_aux #+ pen_Neu
+#n = cross(phi_D.dx(0), phi_D.dx(1))
+#n /= sqrt(inner(n, n))
+pen = 10
+pen_term = pen/h**2 * dot(phi_t.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi_t.dx(1), psi.dx(1)) * ds # + pen/h**2 * dot(phi_t, n) * dot(psi, n) * ds
+a += pen_term
+L = pen/h**2 * dot(phi.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi.dx(1), psi.dx(1)) * ds # + pen/h**2 * dot(phi_D, n) * dot(psi, n) * ds
+#pen_scal = 
+#a += pen_scal
 
 # Picard iteration
 tol = 1e-5 #1e-9
@@ -112,8 +78,8 @@ maxiter = 50
 phi_old = Function(V) #for iterations
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a)
-  b = assemble(L_Dir+L_Dir_aux)
+  A = assemble(a, bcs=bc)
+  b = assemble(L, bcs=bc)
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
@@ -134,9 +100,6 @@ projected = interpolate(div(grad(phi)), X)
 ref = interpolate(div(grad(phi_D)), X)
 err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
 PETSc.Sys.Print('Error: %.3e' % err)
-
-#For projection
-U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 
 #Write 3d results
 file = File('hyper.pvd')
