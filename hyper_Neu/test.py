@@ -74,13 +74,13 @@ a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi)))
 #penalty to impose Dirichlet BC
 #penalty term for Dirichlet BC
 h = CellDiameter(mesh)
-n = cross(phi_D.dx(0), phi_D.dx(1)) #Just phi later...
+n = cross(phi.dx(0), phi.dx(1)) #Just phi later...
 n /= sqrt(inner(n, n))
 pen = 1e1 #1e1
 pen_Dir = pen/h**4 * dot(phi_t, n) * dot(psi,n) * (ds(1) + ds(2))
 L_Dir = pen/h**4 * dot(phi_D, n) * dot(psi,n) * (ds(1) + ds(2))
-phi_x = phi_D.dx(0) / sqrt(inner(phi_D.dx(0),phi_D.dx(0)))
-phi_y = phi_D.dx(1) / sqrt(inner(phi_D.dx(1),phi_D.dx(1)))
+phi_x = phi.dx(0) / sqrt(inner(phi.dx(0),phi.dx(0)))
+phi_y = phi.dx(1) / sqrt(inner(phi.dx(1),phi.dx(1)))
 pen_Dir_aux = pen/h**4 * dot(phi_t, phi_x) * dot(psi,phi_x) * (ds(1) + ds(2)) + pen/h**4 * dot(phi_t, phi_y) * dot(psi,phi_y) * (ds(1) + ds(2))
 L_Dir_aux = pen/h**4 * dot(phi_D, phi_x) * dot(psi,phi_x) * (ds(1) + ds(2)) + pen/h**4 * dot(phi_D, phi_y) * dot(psi,phi_y) * (ds(1) + ds(2))
 #pen_Neu = pen/h**2 * (dot(phi_D.dx(0), phi_t.dx(1)) * dot(phi_D.dx(0), psi.dx(1)) + dot(phi_D.dx(1), phi_t.dx(0)) * dot(phi_D.dx(1), psi.dx(0))) * (ds(1) + ds(2))
@@ -129,7 +129,9 @@ file.write(projected)
 
 #Write 2d result
 file_bis = File('flat.pvd')
-proj = project(phi, U, name='flat')
+#proj = project(phi, U, name='flat')
+proj = Function(U, name='flat')
+proj.interpolate(phi - 1.e-5*as_vector((x[0], x[1], 0)))
 file_bis.write(proj)
 
 sys.exit()
