@@ -69,6 +69,7 @@ phi_t = TrialFunction(V)
 psi = TestFunction(V)
 #bilinear form for linearization
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+h = CellDiameter(mesh)
 
 #test
 phi_x = phi_D.dx(0) / sqrt(inner(phi_D.dx(0),phi_D.dx(0)))
@@ -76,9 +77,9 @@ phi_y = phi_D.dx(1) / sqrt(inner(phi_D.dx(1),phi_D.dx(1)))
 n = cross(phi_D.dx(0), phi_D.dx(1))
 n /= sqrt(inner(n, n))
 phi_aux = Function(V, name='test')
-pen = 10 * dot(phi_t.dx(0), psi.dx(0)) * (ds(1) + ds(2)) + 10 * dot(phi_t.dx(1), psi.dx(1)) * (ds(1) + ds(2)) + 10 * dot(phi_t, n) * dot(psi, n) * (ds(1) + ds(2))
+pen = 10/h**2 * dot(phi_t.dx(0), psi.dx(0)) * (ds(1) + ds(2)) + 10/h**2 * dot(phi_t.dx(1), psi.dx(1)) * (ds(1) + ds(2)) + 10/h**2 * dot(phi_t, n) * dot(psi, n) * (ds(1) + ds(2))
 A = assemble(a + pen)
-L = 10 * dot(phi_x, psi.dx(0)) * (ds(1) + ds(2)) + 10 * dot(phi_y, psi.dx(1)) * (ds(1) + ds(2)) + 10 * dot(phi_D, n) * dot(psi, n) * (ds(1) + ds(2))
+L = 10/h**2 * dot(phi_x, psi.dx(0)) * (ds(1) + ds(2)) + 10/h**2 * dot(phi_y, psi.dx(1)) * (ds(1) + ds(2)) + 10/h**2 * dot(phi_D, n) * dot(psi, n) * (ds(1) + ds(2))
 b = assemble(L)
 solve(A, phi_aux, b, solver_parameters={'direct_solver': 'mumps'})
 
