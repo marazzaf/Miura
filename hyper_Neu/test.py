@@ -14,7 +14,6 @@ def p(phi):
   return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
   #return 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
 
-
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
 
@@ -62,7 +61,7 @@ PETSc.Sys.Print('Laplace equation ok')
 #Writing our problem now
 phi = Function(V, name='solution')
 phi.vector()[:] = project(phi_l, V).vector() #phi minimal surface
-#phi.vector()[:] = project(phi_D, V).vector()
+phi.vector()[:] = project(phi_D, V).vector()
 #file_bis = File('verif_BC.pvd')
 #file_bis.write(phi_l)
 #sys.exit()
@@ -70,6 +69,27 @@ phi_t = TrialFunction(V)
 psi = TestFunction(V)
 #bilinear form for linearization
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+
+#test
+phi_x = phi_D.dx(0) / sqrt(inner(phi_D.dx(0),phi_D.dx(0)))
+phi_y = phi_D.dx(1) / sqrt(inner(phi_D.dx(1),phi_D.dx(1)))
+phi_aux = Function(V, name='test')
+pen = 10 * dot(phi_t.dx(0), psi.dx(0)) * (ds(1) + ds(2)) + 10 * dot(phi_t.dx(1), psi.dx(1)) * (ds(1) + ds(2))
+A = assemble(a + pen)
+L = 10 * dot(phi_x, psi.dx(0)) * (ds(1) + ds(2)) + 10 * dot(phi_y, psi.dx(1)) * (ds(1) + ds(2))
+b = assemble(L)
+solve(A, phi_aux, b, solver_parameters={'direct_solver': 'mumps'})
+
+#Write 2d result
+file_bis = File('test.pvd')
+#proj = project(phi, U, name='flat')
+proj = Function(W, name='test')
+proj.interpolate(phi_aux - 1.e-5*as_vector((x[0], x[1], 0)))
+file_bis.write(proj)
+
+error = sqrt(assemble(inner(div(grad(phi_aux-phi_D)), div(grad(phi_aux-phi_D)))*dx))
+PETSc.Sys.Print('Error: %.3e' % error)
+sys.exit()
 
 #penalty to impose Dirichlet BC
 #penalty term for Dirichlet BC
