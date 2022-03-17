@@ -168,4 +168,3 @@ file_ter.write(proj)
 file_4 = File('verif_prod.pvd')
 proj = project(inner(phi_x,phi_y), UU, name='test PS')
 file_4.write(proj)
-
