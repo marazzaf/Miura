@@ -39,7 +39,7 @@ phi = Function(V, name='solution')
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 #solve laplace equation on the domain
-bcs = [DirichletBC(V, phi_D, 1), DirichletBC(V, phi_D, 2)]
+bcs = [DirichletBC(V, phi_D, 1), DirichletBC(V, phi_D, 2), DirichletBC(V, phi_D, 3), DirichletBC(V, phi_D, 4)]
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 L = inner(Constant((0,0,0)), psi) * dx
 A = assemble(laplace, bcs=bcs)
