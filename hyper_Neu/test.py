@@ -25,7 +25,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 80 #10 #degub: 5
+size_ref = 20 #10 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
 VV = FunctionSpace(mesh, 'CG', 4)
@@ -83,14 +83,21 @@ b = assemble(L)
 solve(A, phi_aux, b, solver_parameters={'direct_solver': 'mumps'})
 
 #Write 2d result
+U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 file_bis = File('test.pvd')
-#proj = project(phi, U, name='flat')
-proj = Function(W, name='test')
+proj = Function(U, name='test')
 proj.interpolate(phi_aux - 1.e-5*as_vector((x[0], x[1], 0)))
 file_bis.write(proj)
 
 error = sqrt(assemble(inner(div(grad(phi_aux-phi_D)), div(grad(phi_aux-phi_D)))*dx))
 PETSc.Sys.Print('Error: %.3e' % error)
+
+#Write 3d results
+file = File('hyper_test.pvd')
+x = SpatialCoordinate(mesh)
+projected = Function(U, name='surface')
+projected.interpolate(phi_aux - as_vector((x[0], x[1], 0)))
+file.write(projected)
 sys.exit()
 
 #penalty to impose Dirichlet BC
