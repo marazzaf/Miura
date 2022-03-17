@@ -22,7 +22,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 20 #10 #degub: 5
+#size_ref = 50 #10 #degub: 5
 #mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 mesh = Mesh('rectangle.msh')
 V = VectorFunctionSpace(mesh, "CG", 2, dim=3)
@@ -39,16 +39,18 @@ phi = Function(V, name='solution')
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 #solve laplace equation on the domain
-bcs = [DirichletBC(V, phi_D, 1), DirichletBC(V, phi_D, 2), DirichletBC(V, phi_D, 3), DirichletBC(V, phi_D, 4)]
+bcs = [DirichletBC(V, phi_D, 1), DirichletBC(V, phi_D, 2), DirichletBC(V, phi_D, 3), DirichletBC(V, phi_D, 4), DirichletBC(V, phi_D, 5)]
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 L = inner(Constant((0,0,0)), psi) * dx
 A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
+file = File('minimal.pvd')
+file.write(phi)
 
 #Writing our problem now
-phi.vector()[:] = project(phi_D, V).vector()
+phi.interpolate(phi_D)
 
 #bilinear form for linearization
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
@@ -60,11 +62,7 @@ pen_term = pen/h_avg**2 * inner(jump(grad(phi_t)), jump(grad(psi))) * dS - inner
 a += pen_term
 
 #BC to prevent rigid body rotation
-tol = 1e-5
-phi_Daux = interpolate(phi_D, V)
-#def fixed_point(x,on_boundary):
-#    return (abs(x[1]) < tol) and (abs(x[0])<tol)
-bc = [DirichletBC(V, phi_Daux.at(0,0), 5)]
+bc = [DirichletBC(V, phi_D, 5)]
 
 #test
 phi_x = phi_D.dx(0)
@@ -75,7 +73,7 @@ phi_aux = Function(V, name='test')
 pen = 10/h**2 * dot(phi_t.dx(0), psi.dx(0)) * ds(1) + 10/h**2 * dot(phi_t.dx(1), psi.dx(1)) * ds# + 10/h**2 * dot(phi_t, n) * dot(psi, n) * ds
 A = assemble(a + pen,bcs=bc)
 L = 10/h**2 * dot(phi_x, psi.dx(0)) * ds(1) + 10/h**2 * dot(phi_y, psi.dx(1)) * ds# + 10/h**2 * dot(phi_D, n) * dot(psi, n) * ds
-b = assemble(L,bcs=[bc])
+b = assemble(L,bcs=bc)
 solve(A, phi_aux, b, solver_parameters={'direct_solver': 'mumps'})
 
 #Write 2d result
@@ -88,7 +86,7 @@ PETSc.Sys.Print('Error: %.3e' % error)
 #Write 3d results
 file = File('hyper_test.pvd')
 x = SpatialCoordinate(mesh)
-projected = Function(U, name='surface')
+projected = Function(V, name='surface')
 projected.interpolate(phi_aux - as_vector((x[0], x[1], 0)))
 file.write(projected)
 sys.exit()
