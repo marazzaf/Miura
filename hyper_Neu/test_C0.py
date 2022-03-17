@@ -3,16 +3,13 @@
 
 from firedrake import *
 from firedrake.petsc import PETSc
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import pyplot as plt
 import sys
 parameters["form_compiler"].update({"optimize": True, "cpp_optimize": True, "representation":"uflacs", "quadrature_degree": 3})
 
 # the coefficient functions
 def p(phi):
   aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
-  #return 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
+  return conditional(lt(aux, Constant(1)), Constant(100), aux)
 
 def q(phi):
   return 4 / inner(phi.dx(1), phi.dx(1))
@@ -26,13 +23,10 @@ l = sin(theta/2)*L
 
 #Creating mesh
 size_ref = 20 #10 #degub: 5
-mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
-V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
-VV = FunctionSpace(mesh, 'CG', 4)
+#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+mesh = Mesh('rectangle.msh')
+V = VectorFunctionSpace(mesh, "CG", 2, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
-
-#For projection
-UU = FunctionSpace(mesh, 'CG', 4)
 
 #  Dirichlet boundary conditions
 x = SpatialCoordinate(mesh)
@@ -41,42 +35,36 @@ z = 2*sin(theta/2) * (x[0]-L/2)
 phi_D = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 #initial guess
-W = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
-trial = TrialFunction(W)
-test = TestFunction(W)
-phi_l = Function(W, name='laplace')
-#solve laplace equation on the domain
-bcs = [DirichletBC(W, phi_D, 1), DirichletBC(W, phi_D, 2)]
-laplace = inner(grad(trial), grad(test)) * dx #laplace in weak form
-L = inner(Constant((0,0,0)), test) * dx
-A = assemble(laplace, bcs=bcs)
-b = assemble(L, bcs=bcs)
-solve(A, phi_l, b, solver_parameters={'direct_solver': 'mumps'})
-PETSc.Sys.Print('Laplace equation ok')
-
-#file_bis = File('verif_laplace.pvd')
-#file_bis.write(phi_l)
-#sys.exit()
-
-#Writing our problem now
 phi = Function(V, name='solution')
-phi.vector()[:] = project(phi_l, V).vector() #phi minimal surface
-phi.vector()[:] = project(phi_D, V).vector()
-#file_bis = File('verif_BC.pvd')
-#file_bis.write(phi_l)
-#sys.exit()
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
+#solve laplace equation on the domain
+bcs = [DirichletBC(V, phi_D, 1), DirichletBC(V, phi_D, 2)]
+laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
+L = inner(Constant((0,0,0)), psi) * dx
+A = assemble(laplace, bcs=bcs)
+b = assemble(L, bcs=bcs)
+solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
+PETSc.Sys.Print('Laplace equation ok')
+
+#Writing our problem now
+phi.vector()[:] = project(phi_D, V).vector()
+
 #bilinear form for linearization
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 h = CellDiameter(mesh)
+h_avg = 0.5 * (h('+')+h('-'))
+n = FacetNormal(mesh)
+pen = 1e1
+pen_term = pen/h_avg**2 * inner(jump(grad(phi_t)), jump(grad(psi))) * dS - inner(avg( p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1) ), jump(grad(psi), n))*dS - inner(jump(grad(phi_t), n), avg( p(phi) * psi.dx(0).dx(0) + q(phi)*psi.dx(1).dx(1) ))*dS
+a += pen_term
 
-#BC to
+#BC to prevent rigid body rotation
 tol = 1e-5
-phi_Daux = interpolate(phi_D, W)
-def fixed_point(x,on_boundary):
-    return (abs(x[1]) < tol) and (abs(x[0])<tol)
-bc_lower_fixed_point=DirichletBC(V, phi_Daux.at(0,0), fixed_point) 
+phi_Daux = interpolate(phi_D, V)
+#def fixed_point(x,on_boundary):
+#    return (abs(x[1]) < tol) and (abs(x[0])<tol)
+bc = [DirichletBC(V, phi_Daux.at(0,0), 5)]
 
 #test
 phi_x = phi_D.dx(0)
@@ -84,18 +72,15 @@ phi_y = phi_D.dx(1)
 n = cross(phi_D.dx(0), phi_D.dx(1))
 n /= sqrt(inner(n, n))
 phi_aux = Function(V, name='test')
-pen = 10/h**2 * dot(phi_t.dx(0), psi.dx(0)) * (ds(1) + ds(2)) + 10/h**2 * dot(phi_t.dx(1), psi.dx(1)) * (ds(1) + ds(2))# + 10/h**2 * dot(phi_t, n) * dot(psi, n) * (ds(1) + ds(2))
-A = assemble(a + pen)
-L = 10/h**2 * dot(phi_x, psi.dx(0)) * (ds(1) + ds(2)) + 10/h**2 * dot(phi_y, psi.dx(1)) * (ds(1) + ds(2))# + 10/h**2 * dot(phi_D, n) * dot(psi, n) * (ds(1) + ds(2))
-b = assemble(L)
+pen = 10/h**2 * dot(phi_t.dx(0), psi.dx(0)) * ds(1) + 10/h**2 * dot(phi_t.dx(1), psi.dx(1)) * ds# + 10/h**2 * dot(phi_t, n) * dot(psi, n) * ds
+A = assemble(a + pen,bcs=bc)
+L = 10/h**2 * dot(phi_x, psi.dx(0)) * ds(1) + 10/h**2 * dot(phi_y, psi.dx(1)) * ds# + 10/h**2 * dot(phi_D, n) * dot(psi, n) * ds
+b = assemble(L,bcs=[bc])
 solve(A, phi_aux, b, solver_parameters={'direct_solver': 'mumps'})
 
 #Write 2d result
-U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 file_bis = File('test.pvd')
-proj = Function(U, name='test')
-proj.interpolate(phi_aux - 1.e-5*as_vector((x[0], x[1], 0)))
-file_bis.write(proj)
+file_bis.write(phi_aux)
 
 error = sqrt(assemble(inner(div(grad(phi_aux-phi_D)), div(grad(phi_aux-phi_D)))*dx))
 PETSc.Sys.Print('Error: %.3e' % error)
@@ -131,8 +116,6 @@ for iter in range(maxiter):
   #linear solve
   A = assemble(a)
   b = assemble(L_Dir+L_Dir_aux)
-  pp = interpolate(p(phi), VV)
-  PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
