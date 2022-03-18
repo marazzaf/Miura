@@ -71,11 +71,25 @@ L = pen/h**2 * dot(phi_D.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi_D.dx(1), ps
 pen_scal = pen * dot(phi.dx(0), phi.dx(1)) * (dot(phi_t.dx(0), psi.dx(1)) + dot(phi_t.dx(1), psi.dx(0))) * ds
 a += pen_scal
 
-##test newton
-#a = inner(p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1), div(grad(psi))) * dx
-#a += pen/h_avg**2 * inner(jump(grad(phi)), jump(grad(psi))) * dS - inner(avg( p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1) ), jump(grad(psi), n))*dS - inner(jump(grad(phi), n), avg( p(phi) * psi.dx(0).dx(0) + q(phi)*psi.dx(1).dx(1) ))*dS
-#a += pen/h**2 * dot(phi.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi.dx(1), psi.dx(1)) * ds - pen/h**2 * dot(phi.dx(0), psi.dx(0)) * ds - pen/h**2 * dot(phi.dx(1), psi.dx(1)) * ds
-#solve(a == 0, phi, solver_parameters={'snes_monitor': None}) 
+#test newton
+a = inner(p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1), div(grad(psi))) * dx
+a += pen/h_avg**2 * inner(jump(grad(phi)), jump(grad(psi))) * dS - inner(avg( p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1) ), jump(grad(psi), n))*dS - inner(jump(grad(phi), n), avg( p(phi) * psi.dx(0).dx(0) + q(phi)*psi.dx(1).dx(1) ))*dS
+a += pen/h**2 * dot(phi.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi.dx(1), psi.dx(1)) * ds - pen/h**2 * dot(phi_D.dx(0), psi.dx(0)) * ds - pen/h**2 * dot(phi_D.dx(1), psi.dx(1)) * ds
+a += pen * dot(phi.dx(0), phi.dx(1)) * (dot(phi.dx(0), psi.dx(1)) + dot(phi.dx(1), psi.dx(0))) * ds
+solve(a == 0, phi, bcs=bcs, solver_parameters={'snes_monitor': None})
+
+#Write 3d results
+file = File('hyper.pvd')
+x = SpatialCoordinate(mesh)
+projected = Function(V, name='surface')
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+file.write(projected)
+
+#Write 2d result
+file_bis = File('flat.pvd')
+file_bis.write(phi)
+
+sys.exit()
 
 # Picard iteration
 tol = 1e-5 #1e-9

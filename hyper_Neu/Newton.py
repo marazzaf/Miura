@@ -23,7 +23,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 5 #10 #degub: 5
+size_ref = 40 #10 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3) #faster
 VV = FunctionSpace(mesh, 'CG', 4)
