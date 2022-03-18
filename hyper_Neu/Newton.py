@@ -62,7 +62,7 @@ a = inner(p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1), div(grad(psi))) * d
 #penalty to impose Dirichlet BC
 a += pen/h**4 * inner(phi, psi) * (ds(1) + ds(2)) - pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
 
-solve(a == 0, phi) #, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+solve(a == 0, phi, solver_parameters={'snes_monitor': None}) #, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
 U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 

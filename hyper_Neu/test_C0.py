@@ -67,9 +67,15 @@ phi_y = phi_D.dx(1)
 #n /= sqrt(inner(n, n))
 pen_term_2 = pen/h**2 * dot(phi_t.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi_t.dx(1), psi.dx(1)) * ds # + pen/h**2 * dot(phi_t, n) * dot(psi, n) * ds
 a += pen_term_2
-L = pen/h**2 * dot(phi.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi.dx(1), psi.dx(1)) * ds # + pen/h**2 * dot(phi_D, n) * dot(psi, n) * ds
+L = pen/h**2 * dot(phi_D.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi_D.dx(1), psi.dx(1)) * ds # + pen/h**2 * dot(phi_D, n) * dot(psi, n) * ds
 pen_scal = pen * dot(phi.dx(0), phi.dx(1)) * (dot(phi_t.dx(0), psi.dx(1)) + dot(phi_t.dx(1), psi.dx(0))) * ds
 a += pen_scal
+
+##test newton
+#a = inner(p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1), div(grad(psi))) * dx
+#a += pen/h_avg**2 * inner(jump(grad(phi)), jump(grad(psi))) * dS - inner(avg( p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1) ), jump(grad(psi), n))*dS - inner(jump(grad(phi), n), avg( p(phi) * psi.dx(0).dx(0) + q(phi)*psi.dx(1).dx(1) ))*dS
+#a += pen/h**2 * dot(phi.dx(0), psi.dx(0)) * ds + pen/h**2 * dot(phi.dx(1), psi.dx(1)) * ds - pen/h**2 * dot(phi.dx(0), psi.dx(0)) * ds - pen/h**2 * dot(phi.dx(1), psi.dx(1)) * ds
+#solve(a == 0, phi, solver_parameters={'snes_monitor': None}) 
 
 # Picard iteration
 tol = 1e-5 #1e-9
