@@ -57,10 +57,28 @@ PETSc.Sys.Print('Laplace equation ok')
 
 #Writing our problem now
 #bilinear form for linearization
-a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+a = inner(p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
-a += pen_term
+a += pen/h**4 * inner(phi, psi) * (ds(1) + ds(2)) - pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
+
+solve(a == 0, phi) #, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+
+U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
+
+#Write 3d results
+file = File('hyper.pvd')
+x = SpatialCoordinate(mesh)
+projected = Function(U, name='surface')
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+file.write(projected)
+
+#Write 2d result
+file_bis = File('flat.pvd')
+proj = project(phi, U, name='flat')
+file_bis.write(proj)
+
+sys.exit()
 
 # Picard iteration
 tol = 1e-5 #1e-9
