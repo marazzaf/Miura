@@ -24,6 +24,7 @@ l = sin(theta/2)*L
 size_ref = 5 #10 #degub: 5
 mesh = RectangleMesh(size_ref, size_ref, L, H)
 #mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+h = mesh.hmax()
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -36,6 +37,7 @@ x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
 z = 2*sin(theta/2) * (x[0]-L/2)
 phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+g = as_vector((inner(phi.dx(0),phi.dx(0)), inner(phi.dx(1),phi.dx(1)), 0))
 
 #initial guess
 #solve laplace equation on the domain
@@ -43,11 +45,21 @@ phi = Function(V, name='solution')
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
-#penalty term for Dirichlet BC
+
+#penalty term for new BC
 h = CellDiameter(mesh)
 pen = 1e1 #1e1
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
 L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
+
+#penalty term to remove the invariance
+#for one point
+#Define the surface of the boundary
+
+pen_disp = eta * inner(phi_t,psi) * ds()
+#for directions
+
+#solving
 A = assemble(laplace+pen_term)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
