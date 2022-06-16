@@ -21,7 +21,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-mesh = Mesh('mesh.msh')
+mesh = Mesh('mesh_1.msh')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -54,16 +54,15 @@ L = pen * inner(g, B) * ds
 
 #penalty term to remove the invariance
 #Define the surface of the boundary
-hF = 0.5 * (h('+') + h('-'))
-pen_disp = pen/hF**4 * inner(phi_t,psi) * ds(1)
+pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
 #pen_disp = pen * inner(phi_t * dx, psi * dx)
 #for directions
-tau_1 = Constant((0,1,0))
-pen_rot = pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(2)
-tau_2 = Constant((-1,0,0))
-pen_rot += pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(3)
-tau_3 = Constant((0,0,-1))
-pen_rot += pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4)
+tau_1 = Constant((1,0,0))
+pen_rot = pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
+tau_2 = Constant((0,0,1))
+pen_rot += pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(3) #e_x blocked
+tau_3 = Constant((0,0,1))
+pen_rot += pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(2) #e_y blocked
 
 #solving
 A = assemble(laplace+pen_term+pen_disp+pen_rot)
@@ -72,13 +71,16 @@ solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
 
-##Write 3d results
-#U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
-#file = File('laplacian.pvd')
-#x = SpatialCoordinate(mesh)
-#projected = Function(U, name='surface')
+#Write 3d results
+U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
+file = File('laplacian.pvd')
+x = SpatialCoordinate(mesh)
+projected = Function(U, name='surface')
+projected.interpolate(phi - 0.00001*as_vector((x[0], x[1], 0)))
+print(projected.at((0,0)))
+sys.exit()
 #projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-#file.write(projected)
+file.write(projected)
 sys.exit()
 
 #Writing our problem now
