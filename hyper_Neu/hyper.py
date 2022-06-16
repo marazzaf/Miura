@@ -67,6 +67,7 @@ sys.exit()
 
 #Writing our problem now
 #bilinear form for linearization
+Gamma = ... #Write that down!!
 a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
