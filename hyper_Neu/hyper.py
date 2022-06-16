@@ -21,10 +21,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-size_ref = 5 #10 #degub: 5
-mesh = RectangleMesh(size_ref, size_ref, L, H)
-#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
-h = mesh.hmax()
+mesh = Mesh('mesh.msh')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -37,11 +34,12 @@ x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
 z = 2*sin(theta/2) * (x[0]-L/2)
 phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-g = as_vector((inner(phi.dx(0),phi.dx(0)), inner(phi.dx(1),phi.dx(1)), 0))
+g = as_vector((inner(phi_ref.dx(0),phi_ref.dx(0)), inner(phi_ref.dx(1),phi_ref.dx(1)), 0))
 
 #initial guess
 #solve laplace equation on the domain
 phi = Function(V, name='solution')
+phi.project(phi_ref) #for now
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
@@ -49,22 +47,23 @@ laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #penalty term for new BC
 h = CellDiameter(mesh)
 pen = 1e1 #1e1
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
-L = pen/h**4 * inner(phi_D, psi)  * (ds(1) + ds(2))
+B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), 0.5*(inner(phi.dx(0), phi_t.dx(1)) + inner(phi.dx(1), phi_t.dx(0)))))
+B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), 0.5*(inner(phi.dx(0), psi.dx(1)) + inner(phi.dx(1), psi.dx(0)))))
+pen_term = pen * inner(B_t, B) * ds
+L = pen * inner(g, B) * ds
 
 #penalty term to remove the invariance
-#for one point
 #Define the surface of the boundary
-
-pen_disp = eta * inner(phi_t,psi) * ds()
+pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
 #for directions
 
 #solving
-A = assemble(laplace+pen_term)
+A = assemble(laplace+pen_term+pen_disp)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
+sys.exit()
 
 #Writing our problem now
 #bilinear form for linearization
