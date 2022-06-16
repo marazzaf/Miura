@@ -55,7 +55,9 @@ L = pen * inner(g, B) * ds
 #penalty term to remove the invariance
 #Define the surface of the boundary
 pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
+#pen_disp = pen * inner(phi_t * dx, psi * dx)
 #for directions
+
 
 #solving
 A = assemble(laplace+pen_term+pen_disp)
@@ -63,12 +65,20 @@ b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
-sys.exit()
+
+##Write 3d results
+#U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
+#file = File('laplacian.pvd')
+#x = SpatialCoordinate(mesh)
+#projected = Function(U, name='surface')
+#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+#file.write(projected)
+#sys.exit()
 
 #Writing our problem now
 #bilinear form for linearization
-Gamma = ... #Write that down!!
-a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
+a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
 a += pen_term
