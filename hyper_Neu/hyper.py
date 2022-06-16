@@ -54,13 +54,19 @@ L = pen * inner(g, B) * ds
 
 #penalty term to remove the invariance
 #Define the surface of the boundary
-pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
+hF = 0.5 * (h('+') + h('-'))
+pen_disp = pen/hF**4 * inner(phi_t,psi) * ds(1)
 #pen_disp = pen * inner(phi_t * dx, psi * dx)
 #for directions
-
+tau_1 = Constant((0,1,0))
+pen_rot = pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(2)
+tau_2 = Constant((-1,0,0))
+pen_rot += pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(3)
+tau_3 = Constant((0,0,-1))
+pen_rot += pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4)
 
 #solving
-A = assemble(laplace+pen_term+pen_disp)
+A = assemble(laplace+pen_term+pen_disp+pen_rot)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
@@ -73,7 +79,7 @@ PETSc.Sys.Print('Laplace equation ok')
 #projected = Function(U, name='surface')
 #projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 #file.write(projected)
-#sys.exit()
+sys.exit()
 
 #Writing our problem now
 #bilinear form for linearization
