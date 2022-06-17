@@ -9,12 +9,16 @@ import sys
 
 # the coefficient functions
 def p(phi):
-  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
+  sq = inner(phi.dx(0), phi.dx(0))
+  aux = 4 / (4 - sq )
+  return conditional(gt(sq, Constant(4)), Constant(100), aux)
+  #return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU)
   #return 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
   
 def q(phi):
-  return 4 / inner(phi.dx(1), phi.dx(1))
+  sq = inner(phi.dx(1), phi.dx(1))
+  aux = 4 / sq
+  return conditional(gt(sq, Constant(4)), Constant(1), aux)
 
 # Size for the domain
 theta = pi/2
