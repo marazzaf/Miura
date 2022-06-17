@@ -4,6 +4,7 @@
 from firedrake import *
 from firedrake.petsc import PETSc
 import sys
+import numpy as np
 
 # the coefficient functions
 def p(phi):
@@ -77,11 +78,8 @@ file = File('laplacian.pvd')
 x = SpatialCoordinate(mesh)
 projected = Function(U, name='surface')
 projected.interpolate(phi - 0.00001*as_vector((x[0], x[1], 0)))
-print(projected.at((0,0)))
-sys.exit()
-#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file.write(projected)
-sys.exit()
+blocked = projected.at((0,0))
+assert np.linalg.norm(blocked) < 0.05 * abs(projected.vector()[:].max()) #checking that the disp at the origin is blocked
 
 #Writing our problem now
 #bilinear form for linearization
@@ -89,7 +87,8 @@ Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi))
 a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
-a += pen_term
+a += pen_term + pen_disp + pen_rot
+#see what to do with pen terms to be able to apply the newton method...
 
 # Solving with Newton method
 solve(a == 0, phi, solver_parameters={'snes_monitor': None}) 
