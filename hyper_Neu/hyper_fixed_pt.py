@@ -110,7 +110,9 @@ a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(gra
 #B_t = as_vector((inner(phi.dx(0), phi.dx(0)), inner(phi.dx(1), phi.dx(1)), 0.5*(inner(phi.dx(0), phi.dx(1)) + inner(phi.dx(1), phi.dx(0)))))
 #pen_term = pen * inner(B_t, B) * ds
 
-a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+#a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+pen_term = pen/h**4 * inner(phi_t, psi) * ds
+L = pen/h**4 * inner(phi_ref, psi)  * ds
 a += pen_term# + pen_disp + pen_rot
 
 # Solving with Newton method
@@ -120,7 +122,7 @@ a += pen_term# + pen_disp + pen_rot
 tol = 1e-5 #1e-9
 maxiter = 50
 phi_old = Function(V) #for iterations
-phi.project(phi_ref - 0.00001*as_vector((x[0], x[1], 0)))
+#phi.project(phi_ref - 0.00001*as_vector((x[0], x[1], 0)))
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
