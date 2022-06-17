@@ -32,7 +32,7 @@ l = sin(theta/2)*L
 
 #Creating mesh
 #mesh = Mesh('mesh_1.msh')
-size_ref = 10 #degub: 5
+size_ref = 20 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 VV = FunctionSpace(mesh, 'CG', 4)
@@ -46,7 +46,7 @@ x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
 z = 2*sin(theta/2) * (x[0]-L/2)
 phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-g = as_vector((inner(phi_ref.dx(0),phi_ref.dx(0)), inner(phi_ref.dx(1),phi_ref.dx(1)), 0))
+g = as_vector((inner(phi_ref.dx(0),phi_ref.dx(0)), inner(phi_ref.dx(1),phi_ref.dx(1)), inner(phi_ref.dx(1),phi_ref.dx(0))))
 
 #initial guess
 #solve laplace equation on the domain
@@ -59,8 +59,10 @@ laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #penalty term for new BC
 h = CellDiameter(mesh)
 pen = 1e1 #1e1
-B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), 0.5*(inner(phi.dx(0), phi_t.dx(1)) + inner(phi.dx(1), phi_t.dx(0)))))
-B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), 0.5*(inner(phi.dx(0), psi.dx(1)) + inner(phi.dx(1), psi.dx(0)))))
+#B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), 0.5*(inner(phi.dx(0), phi_t.dx(1)) + inner(phi.dx(1), phi_t.dx(0)))))
+#B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), 0.5*(inner(phi.dx(0), psi.dx(1)) + inner(phi.dx(1), psi.dx(0)))))
+B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(0), phi_t.dx(1))))
+B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(0), psi.dx(1))))
 pen_term = pen * inner(B_t, B) * ds
 L = pen * inner(g, B) * ds
 
@@ -93,7 +95,6 @@ PETSc.Sys.Print('Laplace equation ok')
 #Write 3d results
 U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 file = File('laplacian.pvd')
-x = SpatialCoordinate(mesh)
 projected = Function(U, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
@@ -120,12 +121,13 @@ a += pen_term # + pen_disp# + pen_rot
 
 # Solving with Newton method
 #solve(a == 0, phi, solver_parameters={'snes_monitor': None})
+file = File('res.pvd')
 
 # Picard iteration
 tol = 1e-5 #1e-9
 maxiter = 50
 phi_old = Function(V) #for iterations
-#phi.project(phi_ref - 0.00001*as_vector((x[0], x[1], 0)))
+#phi.project(phi_ref)
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
@@ -136,6 +138,9 @@ for iter in range(maxiter):
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  projected = Function(U, name='surface')
+  projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+  file.write(projected)
 
   if eps < tol:
     break
@@ -146,11 +151,11 @@ if eps > tol:
 else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
+sys.exit()
 #For projection
 file = File('res.pvd')
-x = SpatialCoordinate(mesh)
 projected = Function(U, name='surface')
-projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 sys.exit()
 
