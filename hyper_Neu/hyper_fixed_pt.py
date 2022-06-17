@@ -109,7 +109,9 @@ a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(gra
 #pens = pen_disp + pen_rot
 #B_t = as_vector((inner(phi.dx(0), phi.dx(0)), inner(phi.dx(1), phi.dx(1)), 0.5*(inner(phi.dx(0), phi.dx(1)) + inner(phi.dx(1), phi.dx(0)))))
 #pen_term = pen * inner(B_t, B) * ds
-a += pen_term + pen_disp + pen_rot
+
+a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+a += pen_term# + pen_disp + pen_rot
 
 # Solving with Newton method
 #solve(a == 0, phi, solver_parameters={'snes_monitor': None})
@@ -118,6 +120,7 @@ a += pen_term + pen_disp + pen_rot
 tol = 1e-5 #1e-9
 maxiter = 50
 phi_old = Function(V) #for iterations
+phi.project(phi_ref - 0.00001*as_vector((x[0], x[1], 0)))
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)

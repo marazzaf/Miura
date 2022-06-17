@@ -30,7 +30,7 @@ l = sin(theta/2)*L
 #Creating mesh
 size_ref = 50 #10 #degub: 5
 #mesh = RectangleMesh(size_ref, size_ref, L, H)
-mesh = Mesh('mesh/convergence_1.msh')
+mesh = Mesh('mesh/convergence_2.msh')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -63,7 +63,9 @@ phi.vector()[:] = project(phi_l, V).vector()
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 #bilinear form for linearization
-a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi))
+a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+#a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
