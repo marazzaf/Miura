@@ -98,12 +98,17 @@ assert np.linalg.norm(blocked) < 0.05 * abs(projected.vector()[:].max()) #checki
 #bilinear form for linearization
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
 a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+#a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 n = FacetNormal(mesh)
-gr_t = dot(grad(phi_t), n)
-gr = dot(grad(psi), n)
+#gr_t = dot(grad(phi_t), n)
+#gr = dot(grad(psi), n)
+#pen_term = pen * inner(gr_t, gr) * ds
+#L = pen * inner(dot(grad(phi_ref), n), gr) * ds
+gr_t = grad(phi_t)
+gr = grad(psi)
 pen_term = pen * inner(gr_t, gr) * ds
-L = pen * inner(dot(grad(phi_ref), n), gr) * ds
+L = pen * inner(grad(phi_ref), gr) * ds
 
 #pen_term = pen/h**4 * inner(phi_t, psi) * ds
 #L = pen/h**4 * inner(phi_ref, psi)  * ds
