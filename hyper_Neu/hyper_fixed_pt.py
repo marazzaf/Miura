@@ -61,15 +61,15 @@ h = CellDiameter(mesh)
 pen = 1e1 #1e1
 #B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), 0.5*(inner(phi.dx(0), phi_t.dx(1)) + inner(phi.dx(1), phi_t.dx(0)))))
 #B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), 0.5*(inner(phi.dx(0), psi.dx(1)) + inner(phi.dx(1), psi.dx(0)))))
-B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(0), phi_t.dx(1))))
-B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(0), psi.dx(1))))
+B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
+B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
 pen_term = pen * inner(B_t, B) * ds
 L = pen * inner(g, B) * ds
 
 #penalty term to remove the invariance
 #Define the surface of the boundary
 pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
-pen_disp = pen/h**4 *  ((phi_t[0] * dx)*(psi[0] * dx) + (phi_t[1] * dx)*(psi[1] * dx) + (phi_t[2] * dx)*(psi[2] * dx))
+#pen_disp = pen/h**4 *  ((phi_t[0] * dx)*(psi[0] * dx) + (phi_t[1] * dx)*(psi[1] * dx) + (phi_t[2] * dx)*(psi[2] * dx))
 #for directions
 tau_1 = Constant((1,0,0))
 pen_rot = pen/h**4 * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
