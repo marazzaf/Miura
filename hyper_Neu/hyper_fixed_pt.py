@@ -76,15 +76,15 @@ pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocke
 tau_3 = Constant((0,0,1))
 pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
 
-#test
-n = FacetNormal(mesh)
-gr_t = dot(grad(phi_t), n)
-gr = dot(grad(psi), n)
-pen_term = pen * inner(gr_t, gr) * (ds(1) + ds(2))
-L = pen * inner(dot(grad(phi_ref), n), gr) * (ds(1) + ds(2))
+##test
+#n = FacetNormal(mesh)
+#gr_t = dot(grad(phi_t), n)
+#gr = dot(grad(psi), n)
+#pen_term = pen * inner(gr_t, gr) * (ds(1) + ds(2))
+#L = pen * inner(dot(grad(phi_ref), n), gr) * (ds(1) + ds(2))
 
 #solving
-A = assemble(laplace+pen_term) #+pen_disp+pen_rot)
+A = assemble(laplace+pen_term) #+pen_disp) #+pen_rot)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
@@ -116,7 +116,7 @@ a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(gra
 
 #pen_term = pen/h**4 * inner(phi_t, psi) * ds
 #L = pen/h**4 * inner(phi_ref, psi)  * ds
-a += pen_term# + pen_disp + pen_rot
+a += pen_term # + pen_disp# + pen_rot
 
 # Solving with Newton method
 #solve(a == 0, phi, solver_parameters={'snes_monitor': None})
