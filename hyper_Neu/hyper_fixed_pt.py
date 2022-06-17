@@ -31,7 +31,9 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-mesh = Mesh('mesh_2.msh')
+#mesh = Mesh('mesh_1.msh')
+size_ref = 10 #degub: 5
+mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -74,8 +76,15 @@ pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocke
 tau_3 = Constant((0,0,1))
 pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
 
+#test
+n = FacetNormal(mesh)
+gr_t = dot(grad(phi_t), n)
+gr = dot(grad(psi), n)
+pen_term = pen * inner(gr_t, gr) * (ds(1) + ds(2))
+L = pen * inner(dot(grad(phi_ref), n), gr) * (ds(1) + ds(2))
+
 #solving
-A = assemble(laplace+pen_term+pen_disp+pen_rot)
+A = assemble(laplace+pen_term) #+pen_disp+pen_rot)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
@@ -91,7 +100,7 @@ file.write(projected)
 
 projected.interpolate(phi - 0.00001*as_vector((x[0], x[1], 0)))
 blocked = projected.at((0,0))
-assert np.linalg.norm(blocked) < 0.05 * abs(projected.vector()[:].max()) #checking that the disp at the origin is blocked
+#assert np.linalg.norm(blocked) < 0.05 * abs(projected.vector()[:].max()) #checking that the disp at the origin is blocked
 #sys.exit()
 
 #Writing our problem now
@@ -100,15 +109,10 @@ Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi))
 a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 #a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
-n = FacetNormal(mesh)
-#gr_t = dot(grad(phi_t), n)
-#gr = dot(grad(psi), n)
+#gr_t = grad(phi_t)
+#gr = grad(psi)
 #pen_term = pen * inner(gr_t, gr) * ds
-#L = pen * inner(dot(grad(phi_ref), n), gr) * ds
-gr_t = grad(phi_t)
-gr = grad(psi)
-pen_term = pen * inner(gr_t, gr) * ds
-L = pen * inner(grad(phi_ref), gr) * ds
+#L = pen * inner(grad(phi_ref), gr) * ds
 
 #pen_term = pen/h**4 * inner(phi_t, psi) * ds
 #L = pen/h**4 * inner(phi_ref, psi)  * ds
