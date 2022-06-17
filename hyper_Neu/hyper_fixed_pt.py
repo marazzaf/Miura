@@ -31,7 +31,7 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-mesh = Mesh('mesh_1.msh')
+mesh = Mesh('mesh_2.msh')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -68,11 +68,11 @@ pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
 #pen_disp = pen * inner(phi_t * dx, psi * dx)
 #for directions
 tau_1 = Constant((1,0,0))
-pen_rot = pen * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
+pen_rot = pen/h**4 * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
 tau_2 = Constant((0,0,1))
-pen_rot += pen * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocked
+pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocked
 tau_3 = Constant((0,0,1))
-pen_rot += pen * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
+pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
 
 #solving
 A = assemble(laplace+pen_term+pen_disp+pen_rot)
@@ -98,21 +98,15 @@ assert np.linalg.norm(blocked) < 0.05 * abs(projected.vector()[:].max()) #checki
 #bilinear form for linearization
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
 a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-#a = Gamma * inner(p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1), div(grad(psi))) * dx
-#a += pen_term + pen_disp + pen_rot - L
 
-##penalty to impose Dirichlet BC
-#pen_disp = pen/h**4 * inner(phi,psi) * ds(1)
-#pen_rot = pen * inner(phi,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
-#pen_rot += pen * inner(phi,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocked
-#pen_rot += pen * inner(phi,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
-#pens = pen_disp + pen_rot
-#B_t = as_vector((inner(phi.dx(0), phi.dx(0)), inner(phi.dx(1), phi.dx(1)), 0.5*(inner(phi.dx(0), phi.dx(1)) + inner(phi.dx(1), phi.dx(0)))))
-#pen_term = pen * inner(B_t, B) * ds
+n = FacetNormal(mesh)
+gr_t = dot(grad(phi_t), n)
+gr = dot(grad(psi), n)
+pen_term = pen * inner(gr_t, gr) * ds
+L = pen * inner(dot(grad(phi_ref), n), gr) * ds
 
-#a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-pen_term = pen/h**4 * inner(phi_t, psi) * ds
-L = pen/h**4 * inner(phi_ref, psi)  * ds
+#pen_term = pen/h**4 * inner(phi_t, psi) * ds
+#L = pen/h**4 * inner(phi_ref, psi)  * ds
 a += pen_term# + pen_disp + pen_rot
 
 # Solving with Newton method
@@ -127,8 +121,8 @@ for iter in range(maxiter):
   #linear solve
   A = assemble(a)
   b = assemble(L)
-  pp = interpolate(p(phi), UU)
-  PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
+  #pp = interpolate(p(phi), UU)
+  #PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
@@ -143,6 +137,12 @@ if eps > tol:
 else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
+#For projection
+file = File('res.pvd')
+x = SpatialCoordinate(mesh)
+projected = Function(U, name='surface')
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+file.write(projected)
 sys.exit()
 
 #Computing error
@@ -151,9 +151,6 @@ projected = interpolate(div(grad(phi)), X)
 ref = interpolate(div(grad(phi_D)), X)
 err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
 #PETSc.Sys.Print('Error: %.3e' % err)
-
-#For projection
-U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 
 #Tests if inequalities are true
 file_bis = File('verif_x.pvd')
