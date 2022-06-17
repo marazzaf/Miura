@@ -46,7 +46,7 @@ x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
 z = 2*sin(theta/2) * (x[0]-L/2)
 phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-g = as_vector((inner(phi_ref.dx(0),phi_ref.dx(0)), inner(phi_ref.dx(1),phi_ref.dx(1)), inner(phi_ref.dx(1),phi_ref.dx(0))))
+g = as_vector((inner(phi_ref.dx(0),phi_ref.dx(0)), inner(phi_ref.dx(1),phi_ref.dx(1)), 0)) #inner(phi_ref.dx(1),phi_ref.dx(0))))
 
 #initial guess
 #solve laplace equation on the domain
@@ -69,7 +69,7 @@ L = pen * inner(g, B) * ds
 #penalty term to remove the invariance
 #Define the surface of the boundary
 pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
-#pen_disp = pen * inner(phi_t * dx, psi * dx)
+pen_disp = pen/h**4 *  ((phi_t[0] * dx)*(psi[0] * dx) + (phi_t[1] * dx)*(psi[1] * dx) + (phi_t[2] * dx)*(psi[2] * dx))
 #for directions
 tau_1 = Constant((1,0,0))
 pen_rot = pen/h**4 * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
