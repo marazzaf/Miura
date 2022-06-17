@@ -8,11 +8,20 @@ import numpy as np
 
 # the coefficient functions
 def p(phi):
-  aux = 1 / (1 - 0.25 * inner(phi.dx(0), phi.dx(0)))
-  return interpolate(conditional(lt(aux, Constant(1)), Constant(100), aux), UU) #update maybe?
+  sq = inner(phi.dx(0), phi.dx(0))
+  aux = 4 / (4 - sq)
+  truc = conditional(gt(sq, Constant(3)), Constant(4), aux)
+  return truc
+  #pp = interpolate(truc, UU)
+  #PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
+  #return interpolate(truc, UU) #update maybe?
 
 def q(phi):
-  return 4 / inner(phi.dx(1), phi.dx(1)) #update maybe?
+  sq = inner(phi.dx(1), phi.dx(1))
+  aux = 4 / sq
+  truc = conditional(lt(sq, Constant(1)), Constant(4), aux)
+  truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
+  return truc2
 
 # Size for the domain
 theta = pi/2 #pi/2
@@ -88,22 +97,48 @@ assert np.linalg.norm(blocked) < 0.05 * abs(projected.vector()[:].max()) #checki
 #Writing our problem now
 #bilinear form for linearization
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
-#a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-a = Gamma * inner(p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1), div(grad(psi))) * dx
+a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+#a = Gamma * inner(p(phi) * phi.dx(0).dx(0) + q(phi)*phi.dx(1).dx(1), div(grad(psi))) * dx
+#a += pen_term + pen_disp + pen_rot - L
 
-#penalty to impose Dirichlet BC
-pen_disp = pen/h**4 * inner(phi,psi) * ds(1)
-pen_rot = pen * inner(phi,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
-pen_rot += pen * inner(phi,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocked
-pen_rot += pen * inner(phi,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
-pens = pen_disp + pen_rot
-B_t = as_vector((inner(phi.dx(0), phi.dx(0)), inner(phi.dx(1), phi.dx(1)), 0.5*(inner(phi.dx(0), phi.dx(1)) + inner(phi.dx(1), phi.dx(0)))))
-pen_term = pen * inner(B_t, B) * ds
-a += pen_term - L + pen_disp + pen_rot
-#see what to do with pen terms to be able to apply the newton method...
+##penalty to impose Dirichlet BC
+#pen_disp = pen/h**4 * inner(phi,psi) * ds(1)
+#pen_rot = pen * inner(phi,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
+#pen_rot += pen * inner(phi,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocked
+#pen_rot += pen * inner(phi,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
+#pens = pen_disp + pen_rot
+#B_t = as_vector((inner(phi.dx(0), phi.dx(0)), inner(phi.dx(1), phi.dx(1)), 0.5*(inner(phi.dx(0), phi.dx(1)) + inner(phi.dx(1), phi.dx(0)))))
+#pen_term = pen * inner(B_t, B) * ds
+a += pen_term + pen_disp + pen_rot
 
 # Solving with Newton method
-solve(a == 0, phi, solver_parameters={'snes_monitor': None}) 
+#solve(a == 0, phi, solver_parameters={'snes_monitor': None})
+
+# Picard iteration
+tol = 1e-5 #1e-9
+maxiter = 50
+phi_old = Function(V) #for iterations
+for iter in range(maxiter):
+  #linear solve
+  A = assemble(a)
+  b = assemble(L)
+  pp = interpolate(p(phi), UU)
+  PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
+  solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+    
+  eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
+  PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+
+  if eps < tol:
+    break
+  phi_old.assign(phi)
+
+if eps > tol:
+  PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
+else:
+  PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
+
+sys.exit()
 
 #Computing error
 X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
