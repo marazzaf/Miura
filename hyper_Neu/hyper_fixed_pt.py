@@ -59,17 +59,15 @@ laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #penalty term for new BC
 h = CellDiameter(mesh)
 pen = 1e1 #1e1
-#B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), 0.5*(inner(phi.dx(0), phi_t.dx(1)) + inner(phi.dx(1), phi_t.dx(0)))))
-#B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), 0.5*(inner(phi.dx(0), psi.dx(1)) + inner(phi.dx(1), psi.dx(0)))))
 B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
 B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-pen_term = pen * inner(B_t, B) * ds
-L = pen * inner(g, B) * ds
+pen_term = pen * inner(B_t, B) * ds(2)
+L = pen * inner(g, B) * ds(2)
 
 #penalty term to remove the invariance
 #Define the surface of the boundary
 pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
-#pen_disp = pen/h**4 *  ((phi_t[0] * dx)*(psi[0] * dx) + (phi_t[1] * dx)*(psi[1] * dx) + (phi_t[2] * dx)*(psi[2] * dx))
+L += pen/h**4 * inner(phi_ref,psi) * ds(1)
 #for directions
 tau_1 = Constant((1,0,0))
 pen_rot = pen/h**4 * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
@@ -86,7 +84,7 @@ pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocke
 #L = pen * inner(dot(grad(phi_ref), n), gr) * (ds(1) + ds(2))
 
 #solving
-A = assemble(laplace+pen_term) #+pen_disp) #+pen_rot)
+A = assemble(laplace+pen_disp+pen_term)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
@@ -117,7 +115,7 @@ a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(gra
 
 #pen_term = pen/h**4 * inner(phi_t, psi) * ds
 #L = pen/h**4 * inner(phi_ref, psi)  * ds
-a += pen_term # + pen_disp# + pen_rot
+a += pen_disp + pen_term
 
 # Solving with Newton method
 #solve(a == 0, phi, solver_parameters={'snes_monitor': None})
@@ -134,12 +132,14 @@ for iter in range(maxiter):
   b = assemble(L)
   #pp = interpolate(p(phi), UU)
   #PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
+  #qq = interpolate(q(phi), UU)
+  #PETSc.Sys.Print('Min of q: %.3e' % qq.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
   projected = Function(U, name='surface')
-  projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+  projected.interpolate(phi - 1e-5*as_vector((x[0], x[1], 0)))
   file.write(projected)
 
   if eps < tol:
@@ -162,8 +162,8 @@ sys.exit()
 #Computing error
 X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
 projected = interpolate(div(grad(phi)), X)
-ref = interpolate(div(grad(phi_D)), X)
-err = sqrt(assemble(inner(div(grad(phi-phi_D)), div(grad(phi-phi_D)))*dx))
+ref = interpolate(div(grad(phi_ref)), X)
+err = sqrt(assemble(inner(div(grad(phi-phi_ref)), div(grad(phi-phi_ref)))*dx))
 #PETSc.Sys.Print('Error: %.3e' % err)
 
 #Tests if inequalities are true
