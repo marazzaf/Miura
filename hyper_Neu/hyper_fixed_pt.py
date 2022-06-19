@@ -31,9 +31,9 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-#mesh = Mesh('mesh_1.msh')
-size_ref = 20 #degub: 5
-mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+mesh = Mesh('mesh_1.msh')
+#size_ref = 20 #degub: 5
+#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -51,6 +51,7 @@ g = as_vector((inner(phi_ref.dx(0),phi_ref.dx(0)), inner(phi_ref.dx(1),phi_ref.d
 #initial guess
 #solve laplace equation on the domain
 phi = Function(V, name='solution')
+#phi.project(phi_ref)
 phi.project(as_vector((x[0], x[1], 0))) #works?
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
@@ -61,13 +62,13 @@ h = CellDiameter(mesh)
 pen = 1e1 #1e1
 B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
 B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-pen_term = pen * inner(B_t, B) * ds(2) #ds(11)
-L = pen * inner(g, B) * ds(2) #ds(11)
+pen_term = pen * inner(B_t, B) * ds(11)
+L = pen * inner(g, B) * ds(11)
 
 #penalty term to remove the invariance
 #Define the surface of the boundary
-pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1) #(ds(8)+ds(6)+ds(5))
-L += pen/h**4 * inner(phi_ref,psi) * ds(1) #(ds(8)+ds(6)+ds(5)) 
+pen_disp = pen/h**4 * inner(phi_t,psi) * (ds(8)+ds(6)+ds(5)+ds(11))
+L = pen/h**4 * inner(phi_ref,psi) * (ds(8)+ds(6)+ds(5)+ds(11)) 
 #for directions
 tau_1 = Constant((1,0,0))
 pen_rot = pen/h**4 * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
@@ -84,7 +85,7 @@ pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocke
 #L = pen * inner(dot(grad(phi_ref), n), gr) * (ds(1) + ds(2))
 
 #solving
-A = assemble(laplace+pen_disp+pen_term) #+pen_rot)
+A = assemble(laplace+pen_disp) #+pen_term) #+pen_rot)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
@@ -107,16 +108,9 @@ blocked = projected.at((0,0))
 #bilinear form for linearization
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
 a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-#a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-
-#gr_t = grad(phi_t)
-#gr = grad(psi)
-#pen_term = pen * inner(gr_t, gr) * ds
-#L = pen * inner(grad(phi_ref), gr) * ds
-
-#pen_term = pen/h**4 * inner(phi_t, psi) * ds
-#L = pen/h**4 * inner(phi_ref, psi)  * ds
-a += pen_disp + pen_term# + pen_rot
+pen_disp = pen/h**4 * inner(phi_t,psi) * (ds(8)+ds(6)+ds(5))
+L = pen/h**4 * inner(phi_ref,psi) * (ds(8)+ds(6)+ds(5)) 
+a += pen_disp + pen_term # + pen_rot
 
 # Solving with Newton method
 #solve(a == 0, phi, solver_parameters={'snes_monitor': None})
@@ -127,6 +121,7 @@ tol = 1e-5 #1e-9
 maxiter = 50
 phi_old = Function(V) #for iterations
 #phi.project(phi_ref)
+#phi.project(as_vector((x[0], x[1], 0))) #works?
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
