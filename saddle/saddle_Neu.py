@@ -37,20 +37,33 @@ P = Function(UU)
 x = SpatialCoordinate(mesh)
 phi_D1 = as_vector((x[0], 2/sqrt(3)*x[1], 0))
 
+file = File('BC_1.pvd')
+x = SpatialCoordinate(mesh)
+projected = Function(U, name='surface')
+projected.interpolate(phi_D1 - as_vector((x[0], x[1], 0)))
+file.write(projected)
+
 #other part of BC
-alpha = pi/2 #pi/4
-l = H*L / sqrt(L*L + H*H)
-sin_gamma = H / sqrt(L*L+H*H)
-cos_gamma = L / sqrt(L*L+H*H)
+HH = 2/sqrt(3)*H
+alpha = pi/2 #pi/2 #pi/4
+l = H*L / sqrt(L*L + HH*HH)
+sin_gamma = HH / sqrt(L*L+HH*HH) 
+cos_gamma = L / sqrt(L*L+HH*HH) 
 DB = l*as_vector((sin_gamma,cos_gamma,0))
 DBp = l*sin(alpha)*Constant((0,0,1)) + cos(alpha) * DB
-OC = as_vector((L, 0, 0))
-CD = Constant((-sin_gamma*l,H-cos_gamma*l,0))
-OBp = OC + CD + DBp
-BpC = -DBp - CD
-BpA = BpC + Constant((-L, H, 0))
-#BpA *= 2/sqrt(3)
-phi_D2 = (1-x[0]/L)*BpA + (1-x[1]/H)*BpC + OBp
+OA = as_vector((L, 0, 0))
+AD = Constant((-sin_gamma*l,HH-cos_gamma*l,0))
+OBp = OA + AD + DBp
+BpC = -DBp - AD + Constant((-L, HH, 0))
+BpA = BpC + Constant((L, -HH, 0))
+phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
+
+file = File('BC_2.pvd')
+x = SpatialCoordinate(mesh)
+projected = Function(U, name='surface')
+projected.interpolate(phi_D2 - as_vector((x[0], x[1], 0)))
+file.write(projected)
+sys.exit()
 
 # Creating function to store solution
 phi = Function(V, name='solution')
@@ -83,13 +96,15 @@ PETSc.Sys.Print('Laplace equation ok')
 #Dirichlet pen term
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1)+ds(3)) 
 L = pen/h**4 * inner(phi_D1, psi) * (ds(1)+ds(3)) 
-#pen term for new BC
-pen = 1e1 #1e1
-B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
-B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-g = as_vector((inner(phi_D2.dx(0),phi_D2.dx(0)), inner(phi_D2.dx(1),phi_D2.dx(1)), 0)) 
-pen_term += pen * inner(B_t, B) * (ds(2)+ds(4))
-L += pen * inner(g, B) * (ds(2)+ds(4))
+##pen term for new BC
+#pen = 1e1 #1e1
+#B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
+#B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
+#g = as_vector((inner(phi_D2.dx(0),phi_D2.dx(0)), inner(phi_D2.dx(1),phi_D2.dx(1)), 0)) 
+#pen_term += pen * inner(B_t, B) * (ds(2)+ds(4))
+#L += pen * inner(g, B) * (ds(2)+ds(4))
+pen_term = pen/h**4 * inner(phi_t, psi) * (ds(2)+ds(4)) 
+L = pen/h**4 * inner(phi_D2, psi) * (ds(2)+ds(4)) 
 
 #Bilinear form
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
