@@ -85,7 +85,7 @@ a += pen_cont
 
 #BC to prevent rigid body rotation
 #bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(2), Constant(0), 2), DirichletBC(V.sub(2), Constant(0), 3), DirichletBC(V.sub(0), Constant(0), 4), DirichletBC(V, phi_ref, 6), DirichletBC(V, phi_ref, 8)]
-#bcs = DirichletBC(V, phi_ref, 1)
+bcs = DirichletBC(V, phi_ref, 1)
 
 # Picard iteration
 tol = 1e-5 #1e-9
