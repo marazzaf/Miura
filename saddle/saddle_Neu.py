@@ -22,7 +22,7 @@ def q(phi):
 # Create mesh and define function space
 L = 2 #length of rectangle
 H = 3/sqrt(2)*L #height of rectangle
-size_ref = 25 #50 #degub: 2
+size_ref = 50 #degub: 2
 mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
 #mesh = UnitDiskMesh(size_ref)
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
@@ -31,7 +31,6 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 #For projection
 U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
 UU = FunctionSpace(mesh, 'CG', 4)
-P = Function(UU)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
@@ -58,10 +57,13 @@ BpC = -DBp - AD + Constant((-L, HH, 0))
 BpA = BpC + Constant((L, -HH, 0))
 phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
 
+g = as_vector((inner(phi_D2.dx(0),phi_D2.dx(0)), inner(phi_D2.dx(1),phi_D2.dx(1)), inner(phi_D2.dx(0),phi_D2.dx(1)))) 
+
 #file = File('BC_2.pvd')
 #x = SpatialCoordinate(mesh)
 #projected = Function(U, name='surface')
-#projected.interpolate(phi_D2 - as_vector((x[0], x[1], 0)))
+#projected.interpolate(g - 1e-5*as_vector((x[0], x[1], 0)))
+##projected.interpolate(phi_D2 - as_vector((x[0], x[1], 0)))
 #file.write(projected)
 #sys.exit()
 
@@ -145,16 +147,20 @@ file.write(projected)
 
 #Test is inequalities are true
 file_bis = File('verif_x.pvd')
-phi_x = interpolate(phi.dx(0), W)
-proj = project(inner(phi_x,phi_x), UU, name='test phi_x')
+#phi_x = interpolate(phi.dx(0), W)
+proj = project(inner(phi.dx(0),phi.dx(0)), UU, name='test phi_x')
 file_bis.write(proj)
 file_ter = File('verif_y.pvd')
-phi_y = interpolate(phi.dx(1), W)
-proj = project(inner(phi_y,phi_y), UU, name='test phi_y')
+#phi_y = interpolate(phi.dx(1), W)
+proj = project(inner(phi.dx(1),phi.dx(1)), UU, name='test phi_y')
 file_ter.write(proj)
 file_4 = File('verif_prod.pvd')
-proj = project(inner(phi_x,phi_y), UU, name='test PS')
+#UU = FunctionSpace(mesh, 'CG', 8)
+proj = project(inner(phi.dx(0),phi.dx(1)), UU, name='test PS')
 file_4.write(proj)
+#Compute average value?
+value = assemble(inner(phi.dx(0),phi.dx(1)) * dx) / 2 / float(HH)
+print(value)
 
 #Test
 test = project(div(grad(phi)), W, name='minimal')
