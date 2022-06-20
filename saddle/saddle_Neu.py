@@ -37,11 +37,11 @@ P = Function(UU)
 x = SpatialCoordinate(mesh)
 phi_D1 = as_vector((x[0], 2/sqrt(3)*x[1], 0))
 
-file = File('BC_1.pvd')
-x = SpatialCoordinate(mesh)
-projected = Function(U, name='surface')
-projected.interpolate(phi_D1 - as_vector((x[0], x[1], 0)))
-file.write(projected)
+#file = File('BC_1.pvd')
+#x = SpatialCoordinate(mesh)
+#projected = Function(U, name='surface')
+#projected.interpolate(phi_D1 - as_vector((x[0], x[1], 0)))
+#file.write(projected)
 
 #other part of BC
 HH = 2/sqrt(3)*H
@@ -58,12 +58,12 @@ BpC = -DBp - AD + Constant((-L, HH, 0))
 BpA = BpC + Constant((L, -HH, 0))
 phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
 
-file = File('BC_2.pvd')
-x = SpatialCoordinate(mesh)
-projected = Function(U, name='surface')
-projected.interpolate(phi_D2 - as_vector((x[0], x[1], 0)))
-file.write(projected)
-sys.exit()
+#file = File('BC_2.pvd')
+#x = SpatialCoordinate(mesh)
+#projected = Function(U, name='surface')
+#projected.interpolate(phi_D2 - as_vector((x[0], x[1], 0)))
+#file.write(projected)
+#sys.exit()
 
 # Creating function to store solution
 phi = Function(V, name='solution')
@@ -73,14 +73,12 @@ phi_old = Function(V) #for iterations
 #bilinear form for linearization
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
-a = inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 #penalty to impose Dirichlet BC
 h = CellDiameter(mesh)
 pen = 1e1
 #lhs
 pen_term = pen/h**4 * inner(phi_t, psi) * ds
-a += pen_term
 #rhs
 #L = pen/h**4 * inner(phi_D1, psi) * ds
 L = pen/h**4 * inner(phi_D1, psi) *(ds(1)+ds(3)) + pen/h**4 * inner(phi_D2, psi) *(ds(2)+ds(4))
@@ -103,8 +101,8 @@ L = pen/h**4 * inner(phi_D1, psi) * (ds(1)+ds(3))
 #g = as_vector((inner(phi_D2.dx(0),phi_D2.dx(0)), inner(phi_D2.dx(1),phi_D2.dx(1)), 0)) 
 #pen_term += pen * inner(B_t, B) * (ds(2)+ds(4))
 #L += pen * inner(g, B) * (ds(2)+ds(4))
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(2)+ds(4)) 
-L = pen/h**4 * inner(phi_D2, psi) * (ds(2)+ds(4)) 
+pen_term += pen/h**4 * inner(phi_t, psi) * (ds(2)+ds(4)) 
+L += pen/h**4 * inner(phi_D2, psi) * (ds(2)+ds(4)) 
 
 #Bilinear form
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
