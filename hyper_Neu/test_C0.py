@@ -29,7 +29,9 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-mesh = Mesh('mesh_1.msh')
+#mesh = Mesh('mesh_1.msh')
+size_ref = 20 #degub: 5
+mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "CG", 2, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -44,7 +46,8 @@ g = as_vector((inner(phi_ref.dx(0),phi_ref.dx(0)), inner(phi_ref.dx(1),phi_ref.d
 phi = Function(V, name='solution')
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
-bcs = [DirichletBC(V, phi_ref, 11), DirichletBC(V, phi_ref, 5), DirichletBC(V, phi_ref, 6), DirichletBC(V, phi_ref, 8)]
+#bcs = [DirichletBC(V, phi_ref, 11), DirichletBC(V, phi_ref, 5), DirichletBC(V, phi_ref, 6), DirichletBC(V, phi_ref, 8)]
+bcs = [DirichletBC(V, phi_ref, 1), DirichletBC(V, phi_ref, 2)]
 L = inner(Constant((0,0,0)), psi) * dx
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 A = assemble(laplace, bcs=bcs)
@@ -71,8 +74,8 @@ h = CellDiameter(mesh)
 pen = 1e1 #1e1
 B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
 B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-pen_term = pen * inner(B_t, B) * (ds(5)+ds(11))
-L = pen * inner(g, B) * (ds(5)+ds(11))
+pen_term = pen * inner(B_t, B) * (ds(1)+ds(2)) #(ds(5)+ds(11))
+L = pen * inner(g, B) * (ds(2)+ds(1)) #(ds(5)+ds(11))
 a += pen_term
 #pen continuity of derivative
 h_avg = 0.5 * (h('+')+h('-'))
@@ -81,7 +84,8 @@ pen_cont = pen/h_avg**2 * inner(jump(grad(phi_t)), jump(grad(psi))) * dS - inner
 a += pen_cont
 
 #BC to prevent rigid body rotation
-bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(2), Constant(0), 2), DirichletBC(V.sub(2), Constant(0), 3), DirichletBC(V.sub(0), Constant(0), 4), DirichletBC(V, phi_ref, 6), DirichletBC(V, phi_ref, 8)]
+#bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(2), Constant(0), 2), DirichletBC(V.sub(2), Constant(0), 3), DirichletBC(V.sub(0), Constant(0), 4), DirichletBC(V, phi_ref, 6), DirichletBC(V, phi_ref, 8)]
+#bcs = DirichletBC(V, phi_ref, 1)
 
 # Picard iteration
 tol = 1e-5 #1e-9
@@ -97,7 +101,7 @@ for iter in range(maxiter):
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
   #checking translation
   blocked = phi.at((0,0))
-  assert np.linalg.norm(blocked) < 0.05 * abs(phi.vector()[:].max()) #checking that the disp at the origin is blocked
+  #assert np.linalg.norm(blocked) < 0.05 * abs(phi.vector()[:].max()) #checking that the disp at the origin is blocked
   #output surface
   projected = Function(U, name='surface')
   projected.interpolate(phi - as_vector((x[0], x[1], 0)))
