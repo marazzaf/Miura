@@ -74,8 +74,8 @@ h = CellDiameter(mesh)
 pen = 1e1 #1e1
 B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
 B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-pen_term = pen * inner(B_t, B) * (ds(1)+ds(2)) #(ds(5)+ds(11))
-L = pen * inner(g, B) * (ds(2)+ds(1)) #(ds(5)+ds(11))
+pen_term = pen * inner(B_t, B) * ds #(ds(1)+ds(2)) #(ds(5)+ds(11))
+L = pen * inner(g, B) * ds #(ds(2)+ds(1)) #(ds(5)+ds(11))
 a += pen_term
 #pen continuity of derivative
 h_avg = 0.5 * (h('+')+h('-'))
@@ -85,7 +85,8 @@ a += pen_cont
 
 #BC to prevent rigid body rotation
 #bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(2), Constant(0), 2), DirichletBC(V.sub(2), Constant(0), 3), DirichletBC(V.sub(0), Constant(0), 4), DirichletBC(V, phi_ref, 6), DirichletBC(V, phi_ref, 8)]
-bcs = DirichletBC(V, phi_ref, 1)
+#bcs = [DirichletBC(V.sub(0), phi_ref[0], 1), DirichletBC(V.sub(2), phi_ref[2], 2), DirichletBC(V.sub(1), phi_ref[1], 2)]
+bcs = DirichletBC(V, phi_ref, 2)
 
 # Picard iteration
 tol = 1e-5 #1e-9
