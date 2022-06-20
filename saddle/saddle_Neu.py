@@ -80,13 +80,25 @@ b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
 
-#test
-eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
-PETSc.Sys.Print('Before computation  H2 seminorm of delta: {:10.2e}'.format(eps))
+#Dirichlet pen term
+pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1)+ds(3)) 
+L = pen/h**4 * inner(phi_D1, psi) * (ds(1)+ds(3)) 
+#pen term for new BC
+pen = 1e1 #1e1
+B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
+B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
+g = as_vector((inner(phi_D2.dx(0),phi_D2.dx(0)), inner(phi_D2.dx(1),phi_D2.dx(1)), 0)) 
+pen_term += pen * inner(B_t, B) * (ds(2)+ds(4))
+L += pen * inner(g, B) * (ds(2)+ds(4))
+
+#Bilinear form
+Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
+a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+a += pen_term
 
 # Picard iterations
 tol = 1e-5 #1e-9
-maxiter = 100
+maxiter = 50
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
