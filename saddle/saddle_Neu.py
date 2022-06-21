@@ -33,10 +33,11 @@ UU = FunctionSpace(mesh, 'CG', 4)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
+n = FacetNormal(mesh)
 aux = x[0]**2 + x[1]**2
 g1 = conditional(gt(aux, Constant(3)), Constant(3), aux)
 g2 = 4 / (4 - g1)
-g = as_vector((g1, g2, 0))
+g = as_vector((g1, g2, 0)) #g1))
 
 # Creating function to store solution
 phi = Function(V, name='solution')
@@ -52,8 +53,12 @@ h = CellDiameter(mesh)
 pen = 1e1
 B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
 B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-pen_term = pen * inner(B_t, B) * (ds(5)+ds(11)+ds(8)+ds(6))
-L = pen * inner(g, B) * (ds(5)+ds(11)+ds(8)+ds(6))
+pen_term = pen * inner(B_t, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+L = pen * inner(g, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+
+##penalty for Neumann BC
+#pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+#L = pen * inner(g, dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 
 #penalty terms so solution can't move
 #for translation
@@ -82,7 +87,7 @@ file_bis.write(proj)
 #Bilinear form
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
 a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-a += pen_term + pen_rot + pen_disp
+a += pen_term + pen_disp +pen_rot
 
 file = File('res.pvd')
 
@@ -101,6 +106,8 @@ for iter in range(maxiter):
   projected = Function(W, name='surface')
   projected.interpolate(phi - as_vector((x[0], x[1], 0)))
   file.write(projected)
+
+  #assert on disp and directions?
   
   if eps < tol:
     break
