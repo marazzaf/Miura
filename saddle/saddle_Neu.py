@@ -4,6 +4,7 @@
 from firedrake import *
 from firedrake.petsc import PETSc
 import sys
+import numpy as np
 
 # the coefficient functions
 def p(phi):
@@ -20,7 +21,7 @@ def q(phi):
   return truc2
 
 # Create mesh and define function space
-L = 2 #length of rectangle
+LL = 2 #length of rectangle
 H = 1 #height of rectangle
 mesh= Mesh('mesh_1.msh')
 size_ref = 1
@@ -103,12 +104,21 @@ for iter in range(maxiter):
   #convergence test 
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  #output
   projected = Function(W, name='surface')
   projected.interpolate(phi - as_vector((x[0], x[1], 0)))
   file.write(projected)
 
   #assert on disp and directions?
-  
+  projected.interpolate(phi - 1e-5*as_vector((x[0], x[1], 0)))
+  blocked = projected.at((0,0))
+  assert np.linalg.norm(blocked) < 0.05 * abs(projected.vector()[:].max()) #checking that the disp at the origin is blocked
+  blocked = projected.at((LL-1e-5,0))[2]
+  assert abs(blocked) < 0.05 * abs(projected.vector()[:].max())
+  blocked = projected.at((LL-1e-5,H-1e-5))[2]
+  assert abs(blocked) < 0.05 * abs(projected.vector()[:].max())
+  blocked = projected.at((0,H-1e-5))[0]
+  assert abs(blocked) < 0.05 * abs(projected.vector()[:].max())
   if eps < tol:
     break
   phi_old.assign(phi)
