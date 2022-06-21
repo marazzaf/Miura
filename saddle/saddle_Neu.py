@@ -21,122 +21,75 @@ def q(phi):
 
 # Create mesh and define function space
 L = 2 #length of rectangle
-H = 3/sqrt(2)*L #height of rectangle
-size_ref = 50 #degub: 2
-mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-#mesh = UnitDiskMesh(size_ref)
+H = 1 #height of rectangle
+mesh= Mesh('mesh_1.msh')
+size_ref = 1
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #For projection
-U = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
+W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 UU = FunctionSpace(mesh, 'CG', 4)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
-phi_D1 = as_vector((x[0], 2/sqrt(3)*x[1], 0))
-
-#file = File('BC_1.pvd')
-#x = SpatialCoordinate(mesh)
-#projected = Function(U, name='surface')
-#projected.interpolate(phi_D1 - as_vector((x[0], x[1], 0)))
-#file.write(projected)
-
-#other part of BC
-HH = 2/sqrt(3)*H
-alpha = pi/2 #pi/2 #pi/4
-l = H*L / sqrt(L*L + HH*HH)
-sin_gamma = HH / sqrt(L*L+HH*HH) 
-cos_gamma = L / sqrt(L*L+HH*HH) 
-DB = l*as_vector((sin_gamma,cos_gamma,0))
-DBp = l*sin(alpha)*Constant((0,0,1)) + cos(alpha) * DB
-OA = as_vector((L, 0, 0))
-AD = Constant((-sin_gamma*l,HH-cos_gamma*l,0))
-OBp = OA + AD + DBp
-BpC = -DBp - AD + Constant((-L, HH, 0))
-BpA = BpC + Constant((L, -HH, 0))
-phi_D2 = (1-x[0]/L)*BpC + (1-x[1]/H)*BpA + OBp
-
-g = as_vector((inner(phi_D2.dx(0),phi_D2.dx(0)), inner(phi_D2.dx(1),phi_D2.dx(1)), inner(phi_D2.dx(0),phi_D2.dx(1)))) 
-
-#file = File('BC_2.pvd')
-#x = SpatialCoordinate(mesh)
-#projected = Function(U, name='surface')
-#projected.interpolate(g - 1e-5*as_vector((x[0], x[1], 0)))
-##projected.interpolate(phi_D2 - as_vector((x[0], x[1], 0)))
-#file.write(projected)
-#sys.exit()
+aux = x[0]**2 + x[1]**2
+g1 = conditional(gt(aux, Constant(3)), Constant(3), aux)
+g2 = 4 / (4 - g1)
+g = as_vector((g1, g2, 0))
 
 # Creating function to store solution
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-
+phi.project(as_vector((x[0],-x[1],x[0])))
 #Defining the bilinear forms
 #bilinear form for linearization
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 
-#penalty to impose Dirichlet BC
+#penalty to impose new BC
 h = CellDiameter(mesh)
 pen = 1e1
-#lhs
-pen_term = pen/h**4 * inner(phi_t, psi) * ds
-#rhs
-#L = pen/h**4 * inner(phi_D1, psi) * ds
-L = pen/h**4 * inner(phi_D1, psi) *(ds(1)+ds(3)) + pen/h**4 * inner(phi_D2, psi) *(ds(2)+ds(4))
+B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
+B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
+pen_term = pen * inner(B_t, B) * (ds(5)+ds(11)+ds(8)+ds(6))
+L = pen * inner(g, B) * (ds(5)+ds(11)+ds(8)+ds(6))
+
+#penalty terms so solution can't move
+#for translation
+pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
+#for directions
+tau_1 = Constant((1,0,0))
+pen_rot = pen/h**4 * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
+tau_2 = Constant((0,0,1))
+pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocked
+tau_3 = Constant((0,0,1))
+pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
 
 #Computing initial guess
-U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
-bcs = [DirichletBC(U, phi_D1, 1), DirichletBC(U, phi_D1, 3), DirichletBC(U, phi_D2, 2), DirichletBC(U, phi_D2, 4)]
-phi_t = TrialFunction(U)
-psi = TestFunction(U)
-phi = Function(U, name='solution')
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
-A = assemble(laplace, bcs=bcs) #+pen_term
-L = Constant(0) * psi[0] * dx
-b = assemble(L, bcs=bcs)
+A = assemble(laplace+pen_term+pen_disp+pen_rot)
+b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
 
-file_bis = File('verif.pvd')
-proj = interpolate(phi.dx(1).dx(1), U)
-#proj = project(inner(grad(phi),grad(phi)), UU, name='test grad phi')
+file_bis = File('laplacian.pvd')
+proj = project(phi - as_vector((x[0],x[1],0)), W, name='laplacian')
 file_bis.write(proj)
-
-value = assemble(inner(phi.dx(0),phi.dx(1)) * dx) / 2 / float(HH)
-print(value)
-pp = interpolate(p(phi), UU)
-PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
-PETSc.Sys.Print('Max of p: %.3e' % pp.vector().array().max())
-qq = interpolate(q(phi), UU)
-PETSc.Sys.Print('Min of q: %.3e' % qq.vector().array().min())
-PETSc.Sys.Print('Max of q: %.3e' % qq.vector().array().max())
-sys.exit()
-
-#Dirichlet pen term
-pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1)+ds(3)) 
-L = pen/h**4 * inner(phi_D1, psi) * (ds(1)+ds(3)) 
-##pen term for new BC
-#pen = 1e1 #1e1
-#B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
-#B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-#g = as_vector((inner(phi_D2.dx(0),phi_D2.dx(0)), inner(phi_D2.dx(1),phi_D2.dx(1)), 0)) 
-#pen_term += pen * inner(B_t, B) * (ds(2)+ds(4))
-#L += pen * inner(g, B) * (ds(2)+ds(4))
-pen_term += pen/h**4 * inner(phi_t, psi) * (ds(2)+ds(4)) 
-L += pen/h**4 * inner(phi_D2, psi) * (ds(2)+ds(4)) 
+#sys.exit()
 
 #Bilinear form
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
 a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-a += pen_term
+a += pen_term + pen_rot + pen_disp
+
+file = File('res.pvd')
 
 # Picard iterations
 tol = 1e-5 #1e-9
 maxiter = 50
 for iter in range(maxiter):
-  break
   #linear solve
   A = assemble(a)
   b = assemble(L)
@@ -145,18 +98,21 @@ for iter in range(maxiter):
   #convergence test 
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  projected = Function(W, name='surface')
+  projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+  file.write(projected)
+  
   if eps < tol:
     break
   phi_old.assign(phi)
 
-#if eps > tol:
-#  PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
-#else:
-#  PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
+if eps > tol:
+  PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
+else:
+  PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
 #Write 2d results
 flat = File('flat_%i.pvd' % size_ref)
-W = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
 proj = project(phi, W, name='flat')
 flat.write(proj)
   
@@ -169,22 +125,11 @@ file.write(projected)
 
 #Test is inequalities are true
 file_bis = File('verif_x.pvd')
-#phi_x = interpolate(phi.dx(0), W)
 proj = project(inner(phi.dx(0),phi.dx(0)), UU, name='test phi_x')
 file_bis.write(proj)
 file_ter = File('verif_y.pvd')
-#phi_y = interpolate(phi.dx(1), W)
 proj = project(inner(phi.dx(1),phi.dx(1)), UU, name='test phi_y')
 file_ter.write(proj)
 file_4 = File('verif_prod.pvd')
-#UU = FunctionSpace(mesh, 'CG', 8)
 proj = project(inner(phi.dx(0),phi.dx(1)), UU, name='test PS')
 file_4.write(proj)
-#Compute average value?
-value = assemble(inner(phi.dx(0),phi.dx(1)) * dx) / 2 / float(HH)
-print(value)
-
-#Test
-test = project(div(grad(phi)), W, name='minimal')
-file_6 = File('minimal_bis.pvd')
-file_6.write(test)

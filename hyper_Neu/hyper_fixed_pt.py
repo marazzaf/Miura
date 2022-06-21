@@ -66,7 +66,6 @@ pen_term = pen * inner(B_t, B) * ds(11)
 L = pen * inner(g, B) * ds(11)
 
 #penalty term to remove the invariance
-#Define the surface of the boundary
 pen_disp = pen/h**4 * inner(phi_t,psi) * (ds(8)+ds(6)+ds(5)+ds(11))
 L = pen/h**4 * inner(phi_ref,psi) * (ds(8)+ds(6)+ds(5)+ds(11)) 
 #for directions
