@@ -86,12 +86,33 @@ pen_term = pen/h**4 * inner(phi_t, psi) * ds
 L = pen/h**4 * inner(phi_D1, psi) *(ds(1)+ds(3)) + pen/h**4 * inner(phi_D2, psi) *(ds(2)+ds(4))
 
 #Computing initial guess
+U = VectorFunctionSpace(mesh, 'CG', 4, dim=3)
+bcs = [DirichletBC(U, phi_D1, 1), DirichletBC(U, phi_D1, 3), DirichletBC(U, phi_D2, 2), DirichletBC(U, phi_D2, 4)]
+phi_t = TrialFunction(U)
+psi = TestFunction(U)
+phi = Function(U, name='solution')
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
-A = assemble(laplace+pen_term)
-b = assemble(L)
+A = assemble(laplace, bcs=bcs) #+pen_term
+L = Constant(0) * psi[0] * dx
+b = assemble(L, bcs=bcs)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 PETSc.Sys.Print('Laplace equation ok')
+
+file_bis = File('verif.pvd')
+proj = interpolate(phi.dx(1).dx(1), U)
+#proj = project(inner(grad(phi),grad(phi)), UU, name='test grad phi')
+file_bis.write(proj)
+
+value = assemble(inner(phi.dx(0),phi.dx(1)) * dx) / 2 / float(HH)
+print(value)
+pp = interpolate(p(phi), UU)
+PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
+PETSc.Sys.Print('Max of p: %.3e' % pp.vector().array().max())
+qq = interpolate(q(phi), UU)
+PETSc.Sys.Print('Min of q: %.3e' % qq.vector().array().min())
+PETSc.Sys.Print('Max of q: %.3e' % qq.vector().array().max())
+sys.exit()
 
 #Dirichlet pen term
 pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1)+ds(3)) 
@@ -115,6 +136,7 @@ a += pen_term
 tol = 1e-5 #1e-9
 maxiter = 50
 for iter in range(maxiter):
+  break
   #linear solve
   A = assemble(a)
   b = assemble(L)
@@ -127,10 +149,10 @@ for iter in range(maxiter):
     break
   phi_old.assign(phi)
 
-if eps > tol:
-  PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
-else:
-  PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
+#if eps > tol:
+#  PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
+#else:
+#  PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
 #Write 2d results
 flat = File('flat_%i.pvd' % size_ref)
