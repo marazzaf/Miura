@@ -1,5 +1,5 @@
 //Définition des valeurs physiques
-L = 2; //Longeur selon x
+L = 1; //Longeur selon x
 H = 1; //Longuer selon y
 h = 0.05; //0.05; //0.01; //Taille du maillage
 aux = h/5;

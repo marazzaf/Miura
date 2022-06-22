@@ -7,7 +7,7 @@ import sys
 import numpy as np
 
 # Create mesh and define function space
-LL = 2 #length of rectangle
+LL = 1 #length of rectangle
 H = 1 #height of rectangle
 mesh= Mesh('mesh_1.msh')
 size_ref = 1
@@ -17,15 +17,20 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 # Boundary conditions
 x = SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
-aux = x[0]**2 + x[1]**2
-g1 = conditional(gt(aux, Constant(3)), Constant(3), aux)
-g2 = 4 / (4 - g1)
-g = as_vector((g1, g2, g1))
+#aux = x[0]**2 + x[1]**2
+#g1 = conditional(gt(aux, Constant(3)), Constant(3), aux)
+#g2 = 4 / (4 - g1)
+g = Constant((1, 2, 0)) #as_vector((g1, g2, 0))
 
 # Creating function to store solution
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-phi.interpolate(as_vector((x[0],-x[1],x[0])))
+#phi.interpolate(as_vector((x[0],-x[1],x[0])))
+phi.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
+
+file = File('test.pvd')
+file.write(phi)
+
 #Defining the bilinear forms
 #bilinear form for linearization
 phi_t = TrialFunction(V)
@@ -40,13 +45,17 @@ pen_term = pen * inner(B_t, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 L = pen * inner(g, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 
 ##penalty for Neumann BC
-pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
-L = pen * inner(g, dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+#pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+#L = pen * inner(g, dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 
 #Bilinear form
-laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
+laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
+#laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
-a = laplace+pen_term
+a = laplace + pen_term
+
+print(assemble(action(a, phi)).vector()[:])
+sys.exit()
 
 #BC to have uniqueness
 tau_4 = Constant((1,0,0))
