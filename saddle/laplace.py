@@ -56,9 +56,12 @@ L = pen * inner(g, B) * ds # + pen/h**2 * phi_D * inner(psi, N) * ds
 #L = pen * inner(dot(grad(phi_ref),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 #L = inner(dot(grad(phi_ref),n), psi) * ds
 
-##Dirichlet BC
+#Dirichlet BC
 #pen_term = pen/h**2 * inner(phi_t, psi) * ds
 #L = pen/h**2 * inner(phi_ref, psi) * ds
+N = cross(phi_ref.dx(0), phi_ref.dx(1)) / norm(cross(phi_ref.dx(0), phi_ref.dx(1)))
+pen_term = pen/h**2 * inner(phi_t, phi_ref.dx(0)) * inner(psi, phi_ref.dx(0)) * ds + pen/h**2 * inner(phi_t, phi_ref.dx(1)) * inner(psi, phi_ref.dx(1)) * ds + pen/h**2 * inner(phi_t, N) * inner(psi, N) * ds
+L = pen/h**2 * inner(phi_ref, phi_ref.dx(0)) * inner(psi, phi_ref.dx(0)) * ds + pen/h**2 * inner(phi_ref, phi_ref.dx(1)) * inner(psi, phi_ref.dx(1)) * ds + pen/h**2 * inner(phi_ref, N) * inner(psi, N) * ds
 
 #Bilinear form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
