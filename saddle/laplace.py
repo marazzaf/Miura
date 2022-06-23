@@ -20,15 +20,18 @@ n = FacetNormal(mesh)
 #aux = x[0]**2 + x[1]**2
 #g1 = conditional(gt(aux, Constant(3)), Constant(3), aux)
 #g2 = 4 / (4 - g1)
-g = Constant((1, 2, 0)) #as_vector((g1, g2, 0))
+#g = as_vector((g1, g2, 0))
 
 # Creating function to store solution
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-#phi.interpolate(as_vector((x[0],-x[1],0))) #Initial guess...
+phi.interpolate(as_vector((x[0],-x[1],0))) #Initial guess...
 #phi_old.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
 #phi.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
-phi_ref = as_vector((x[0],sqrt(2)*x[1],0))
+phi_ref = as_vector((x[0], sqrt(2)*x[1], 0))
+g = Constant((1, 2, 0))
+N = cross(phi.dx(0), phi.dx(1)) / norm(cross(phi.dx(0), phi.dx(1)))
+phi_D = 0
 
 file = File('test.pvd')
 file.write(interpolate(phi_ref, V))
@@ -43,10 +46,10 @@ h = CellDiameter(mesh)
 pen = 1e1
 #B_t = as_vector((inner(phi_ref.dx(0), phi_t.dx(0)), inner(phi_ref.dx(1), phi_t.dx(1)), inner(phi_ref.dx(1), phi_t.dx(0))))
 #B = as_vector((inner(phi_ref.dx(0), psi.dx(0)), inner(phi_ref.dx(1), psi.dx(1)), inner(phi_ref.dx(1), psi.dx(0))))
-B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
-B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-pen_term = pen * inner(B_t, B) * ds
-L = pen * inner(g, B) * ds
+B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), 0))
+B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), 0))
+pen_term = pen * inner(B_t, B) * ds + pen/h**2 * inner(phi_t, N) * inner(psi, N) * ds
+L = pen * inner(g, B) * ds # + pen/h**2 * phi_D * inner(psi, N) * ds
 
 ##penalty for Neumann BC
 #pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
