@@ -25,7 +25,7 @@ LL = 2 #length of rectangle
 H = 1 #height of rectangle
 mesh= Mesh('mesh_1.msh')
 size_ref = 1
-V = VectorFunctionSpace(mesh, "CG", 5, dim=3)
+V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #For projection

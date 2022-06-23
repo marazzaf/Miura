@@ -59,9 +59,8 @@ L = pen * inner(g, B) * ds # + pen/h**2 * phi_D * inner(psi, N) * ds
 #Dirichlet BC
 #pen_term = pen/h**2 * inner(phi_t, psi) * ds
 #L = pen/h**2 * inner(phi_ref, psi) * ds
-N = cross(phi_ref.dx(0), phi_ref.dx(1)) / norm(cross(phi_ref.dx(0), phi_ref.dx(1)))
-pen_term = pen/h**2 * inner(phi_t, phi_ref.dx(0)) * inner(psi, phi_ref.dx(0)) * ds + pen/h**2 * inner(phi_t, phi_ref.dx(1)) * inner(psi, phi_ref.dx(1)) * ds + pen/h**2 * inner(phi_t, N) * inner(psi, N) * ds
-L = pen/h**2 * inner(phi_ref, phi_ref.dx(0)) * inner(psi, phi_ref.dx(0)) * ds + pen/h**2 * inner(phi_ref, phi_ref.dx(1)) * inner(psi, phi_ref.dx(1)) * ds + pen/h**2 * inner(phi_ref, N) * inner(psi, N) * ds
+pen_term = pen/h**2 * inner(phi_t, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_t, phi.dx(1)) * inner(psi, phi.dx(1)) * ds + pen/h**2 * inner(phi_t, N) * inner(psi, N) * ds
+L = pen/h**2 * inner(phi_ref, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_ref, phi.dx(1)) * inner(psi, phi.dx(1)) * ds + pen/h**2 * inner(phi_ref, N) * inner(psi, N) * ds
 
 #Bilinear form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
@@ -96,8 +95,8 @@ tol = 1e-5 #1e-9
 maxiter = 50
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a, bcs=bcs)
-  b = assemble(L, bcs=bcs)
+  A = assemble(a) #, bcs=bcs)
+  b = assemble(L) #, bcs=bcs)
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   test = assemble(action(a, phi_old) - L).vector().sum()
