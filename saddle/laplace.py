@@ -57,16 +57,16 @@ L = pen * inner(g, B) * ds # + pen/h**2 * phi_D * inner(psi, N) * ds
 #L = inner(dot(grad(phi_ref),n), psi) * ds
 
 #Dirichlet BC
-#pen_term = pen/h**2 * inner(phi_t, psi) * ds
-#L = pen/h**2 * inner(phi_ref, psi) * ds
-pen_term = pen/h**2 * inner(phi_t, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_t, phi.dx(1)) * inner(psi, phi.dx(1)) * ds + pen/h**2 * inner(phi_t, N) * inner(psi, N) * ds
-L = pen/h**2 * inner(phi_ref, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_ref, phi.dx(1)) * inner(psi, phi.dx(1)) * ds + pen/h**2 * inner(phi_ref, N) * inner(psi, N) * ds
+pen_term = pen/h**4 * inner(phi_t, psi) * ds
+L = pen/h**4 * inner(phi_ref, psi) * ds
+#pen_term = pen/h**2 * inner(phi_t, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_t, phi.dx(1)) * inner(psi, phi.dx(1)) * ds + pen/h**2 * inner(phi_t, N) * inner(psi, N) * ds
+#L = pen/h**2 * inner(phi_ref, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_ref, phi.dx(1)) * inner(psi, phi.dx(1)) * ds + pen/h**2 * inner(phi_ref, N) * inner(psi, N) * ds
 
 #Bilinear form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
-laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
-#laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
-a = laplace + pen_term - inner(dot(grad(phi_t),n), psi) * ds
+#laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
+laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
+a = laplace + pen_term# - inner(dot(grad(phi_t),n), psi) * ds
 
 #test = assemble(action(a, phi) - L).vector().sum()
 #print(test)
@@ -86,7 +86,7 @@ pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(3) #e_x blocke
 tau_2 = Constant((0,0,1))
 pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(2) #e_y blocked
 
-#a += pen_disp + pern_rot
+#a += pen_disp + pen_rot
 
 file = File('res_laplace.pvd')
 
