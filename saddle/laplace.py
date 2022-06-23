@@ -25,7 +25,7 @@ g = Constant((1, 2, 0)) #as_vector((g1, g2, 0))
 # Creating function to store solution
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-phi.interpolate(as_vector((x[0],-x[1],x[0]))) #Initial guess...
+#phi.interpolate(as_vector((x[0],-x[1],0))) #Initial guess...
 #phi_old.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
 #phi.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
 phi_ref = as_vector((x[0],sqrt(2)*x[1],0))
