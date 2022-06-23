@@ -59,7 +59,7 @@ L = pen * inner(g, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
-a = laplace + pen_term
+a = laplace + pen_term - inner(dot(grad(phi_t),n), psi) * ds
 
 #test = assemble(action(a, phi) - L).vector().sum()
 #print(test)
