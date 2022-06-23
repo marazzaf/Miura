@@ -11,8 +11,9 @@ LL = 1 #length of rectangle
 H = 1 #height of rectangle
 mesh= Mesh('mesh_1.msh')
 size_ref = 1
-V = VectorFunctionSpace(mesh, "CG", 4, dim=3)
+V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
+W = VectorFunctionSpace(mesh, "CG", 4, dim=3)
 
 # Boundary conditions
 x = SpatialCoordinate(mesh)
@@ -25,16 +26,13 @@ n = FacetNormal(mesh)
 # Creating function to store solution
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-phi.interpolate(as_vector((x[0],-x[1],0))) #Initial guess...
+phi.project(as_vector((x[0],-x[1],0))) #Initial guess...
 #phi_old.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
 #phi.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
 phi_ref = as_vector((x[0], sqrt(2)*x[1], 0))
 g = Constant((1, 2, 0))
 N = cross(phi.dx(0), phi.dx(1)) / norm(cross(phi.dx(0), phi.dx(1)))
 phi_D = 0
-
-file = File('test.pvd')
-file.write(interpolate(phi_ref, V))
 
 #Defining the bilinear forms
 #bilinear form for linearization
@@ -73,7 +71,7 @@ a = laplace + pen_term# - inner(dot(grad(phi_t),n), psi) * ds
 #sys.exit()
 
 #BC to have uniqueness
-bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(0), phi_ref[0], 4), DirichletBC(V.sub(2), phi_ref[2], 3), DirichletBC(V.sub(2), phi_ref[2], 2)]
+#bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(0), phi_ref[0], 4), DirichletBC(V.sub(2), phi_ref[2], 3), DirichletBC(V.sub(2), phi_ref[2], 2)]
 #bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(0), Constant(0), 4), DirichletBC(V.sub(2), Constant(0), 3), DirichletBC(V.sub(2), Constant(0), 2)]
 
 #pen terms to have uniqueness
@@ -106,8 +104,8 @@ for iter in range(maxiter):
   eps = sqrt(assemble(inner(grad(phi-phi_old), grad(phi-phi_old))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
   #output
-  projected = Function(V, name='surface')
-  projected.interpolate(phi) # - as_vector((x[0], x[1], 0)))
+  projected = Function(W, name='surface')
+  projected.project(phi  - 1e-5*as_vector((x[0], x[1], 0)))
   file.write(projected)
   #sys.exit()
 
