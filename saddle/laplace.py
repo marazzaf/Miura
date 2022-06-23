@@ -26,10 +26,12 @@ g = Constant((1, 2, 0)) #as_vector((g1, g2, 0))
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
 #phi.interpolate(as_vector((x[0],-x[1],x[0])))
-phi.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
+#phi_old.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
+#phi.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
+phi_ref = as_vector((x[0],sqrt(2)*x[1],0))
 
 file = File('test.pvd')
-file.write(phi)
+file.write(interpolate(phi_ref, V))
 
 #Defining the bilinear forms
 #bilinear form for linearization
@@ -39,8 +41,8 @@ psi = TestFunction(V)
 #penalty to impose new BC
 h = CellDiameter(mesh)
 pen = 1e1
-B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
-B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
+B_t = as_vector((inner(phi_ref.dx(0), phi_t.dx(0)), inner(phi_ref.dx(1), phi_t.dx(1)), inner(phi_ref.dx(1), phi_t.dx(0))))
+B = as_vector((inner(phi_ref.dx(0), psi.dx(0)), inner(phi_ref.dx(1), psi.dx(1)), inner(phi_ref.dx(1), psi.dx(0))))
 pen_term = pen * inner(B_t, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 L = pen * inner(g, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 
@@ -54,17 +56,13 @@ laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
 a = laplace + pen_term
 
-print(assemble(action(a, phi)).vector()[:])
-sys.exit()
+#test = assemble(action(a, phi) - L).vector().sum()
+#print(test)
+#sys.exit()
 
 #BC to have uniqueness
-tau_4 = Constant((1,0,0))
-pen_rot = pen/h**4 * inner(phi_t,tau_4) * inner(psi,tau_4)  * ds(4) #e_z blocked
-tau_3 = Constant((0,0,1))
-pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(3) #e_x blocked
-tau_2 = Constant((0,0,1))
-pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(2) #e_y blocked
-bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(0), Constant(0), 4), DirichletBC(V.sub(2), Constant(0), 3), DirichletBC(V.sub(2), Constant(0), 2)]
+bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(0), phi_ref[0], 4), DirichletBC(V.sub(2), phi_ref[2], 3), DirichletBC(V.sub(2), phi_ref[2], 2)]
+#bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(0), Constant(0), 4), DirichletBC(V.sub(2), Constant(0), 3), DirichletBC(V.sub(2), Constant(0), 2)]
 
 file = File('res_laplace.pvd')
 
@@ -76,14 +74,18 @@ for iter in range(maxiter):
   A = assemble(a, bcs=bcs)
   b = assemble(L, bcs=bcs)
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+
+  test = assemble(action(a, phi_old) - L).vector().sum()
+  print(test)
   
   #convergence test 
   eps = sqrt(assemble(inner(grad(phi-phi_old), grad(phi-phi_old))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
   #output
   projected = Function(V, name='surface')
-  projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+  projected.interpolate(phi) # - as_vector((x[0], x[1], 0)))
   file.write(projected)
+  #sys.exit()
 
   if eps < tol:
     break
