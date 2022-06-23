@@ -47,8 +47,9 @@ pen_term = pen * inner(B_t, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 L = pen * inner(g, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 
 ##penalty for Neumann BC
-pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
-L = pen * inner(dot(grad(phi_ref),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+#pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+#L = pen * inner(dot(grad(phi_ref),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+#L = inner(dot(grad(phi_ref),n), psi) * ds
 
 ##Dirichlet BC
 #pen_term = pen/h**2 * inner(phi_t, psi) * ds
@@ -58,8 +59,7 @@ L = pen * inner(dot(grad(phi_ref),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
-a = laplace# + pen_term
-L = inner(dot(grad(phi_ref),n), psi) * ds
+a = laplace + pen_term
 
 #test = assemble(action(a, phi) - L).vector().sum()
 #print(test)
@@ -68,6 +68,18 @@ L = inner(dot(grad(phi_ref),n), psi) * ds
 #BC to have uniqueness
 bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(0), phi_ref[0], 4), DirichletBC(V.sub(2), phi_ref[2], 3), DirichletBC(V.sub(2), phi_ref[2], 2)]
 #bcs = [DirichletBC(V, Constant((0,0,0)), 1), DirichletBC(V.sub(0), Constant(0), 4), DirichletBC(V.sub(2), Constant(0), 3), DirichletBC(V.sub(2), Constant(0), 2)]
+
+#pen terms to have uniqueness
+pen_disp = pen/h**4 * inner(phi_t,psi) * ds(1)
+#for directions
+tau_4 = Constant((1,0,0))
+pen_rot = pen/h**4 * inner(phi_t,tau_4) * inner(psi,tau_4)  * ds(4) #e_z blocked
+tau_3 = Constant((0,0,1))
+pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(3) #e_x blocked
+tau_2 = Constant((0,0,1))
+pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(2) #e_y blocked
+
+#a += pen_disp + pern_rot
 
 file = File('res_laplace.pvd')
 
