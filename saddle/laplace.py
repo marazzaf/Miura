@@ -11,7 +11,7 @@ LL = 1 #length of rectangle
 H = 1 #height of rectangle
 mesh= Mesh('mesh_1.msh')
 size_ref = 1
-V = VectorFunctionSpace(mesh, "CG", 2, dim=3)
+V = VectorFunctionSpace(mesh, "CG", 4, dim=3)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 # Boundary conditions
@@ -47,14 +47,19 @@ pen_term = pen * inner(B_t, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 L = pen * inner(g, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
 
 ##penalty for Neumann BC
-#pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
-#L = pen * inner(g, dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+L = pen * inner(dot(grad(phi_ref),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+
+##Dirichlet BC
+#pen_term = pen/h**2 * inner(phi_t, psi) * ds
+#L = pen/h**2 * inner(phi_ref, psi) * ds
 
 #Bilinear form
-laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
-#laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
+#laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
+laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #test
-a = laplace + pen_term
+a = laplace# + pen_term
+L = inner(dot(grad(phi_ref),n), psi) * ds
 
 #test = assemble(action(a, phi) - L).vector().sum()
 #print(test)
