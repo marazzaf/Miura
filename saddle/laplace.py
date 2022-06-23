@@ -25,7 +25,7 @@ g = Constant((1, 2, 0)) #as_vector((g1, g2, 0))
 # Creating function to store solution
 phi = Function(V, name='solution')
 phi_old = Function(V) #for iterations
-#phi.interpolate(as_vector((x[0],-x[1],x[0])))
+phi.interpolate(as_vector((x[0],-x[1],x[0]))) #Initial guess...
 #phi_old.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
 #phi.interpolate(as_vector((x[0],sqrt(2)*x[1],0)))
 phi_ref = as_vector((x[0],sqrt(2)*x[1],0))
@@ -41,10 +41,12 @@ psi = TestFunction(V)
 #penalty to impose new BC
 h = CellDiameter(mesh)
 pen = 1e1
-B_t = as_vector((inner(phi_ref.dx(0), phi_t.dx(0)), inner(phi_ref.dx(1), phi_t.dx(1)), inner(phi_ref.dx(1), phi_t.dx(0))))
-B = as_vector((inner(phi_ref.dx(0), psi.dx(0)), inner(phi_ref.dx(1), psi.dx(1)), inner(phi_ref.dx(1), psi.dx(0))))
-pen_term = pen * inner(B_t, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
-L = pen * inner(g, B) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
+#B_t = as_vector((inner(phi_ref.dx(0), phi_t.dx(0)), inner(phi_ref.dx(1), phi_t.dx(1)), inner(phi_ref.dx(1), phi_t.dx(0))))
+#B = as_vector((inner(phi_ref.dx(0), psi.dx(0)), inner(phi_ref.dx(1), psi.dx(1)), inner(phi_ref.dx(1), psi.dx(0))))
+B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
+B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
+pen_term = pen * inner(B_t, B) * ds
+L = pen * inner(g, B) * ds
 
 ##penalty for Neumann BC
 #pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
