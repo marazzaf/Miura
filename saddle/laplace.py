@@ -45,9 +45,13 @@ pen = 1e1
 pen_term = pen * inner(phi.dx(0), phi_t.dx(0)) * inner(phi.dx(0), psi.dx(0)) * ds
 L = pen * g[0] * inner(phi.dx(0), psi.dx(0)) * ds
 
+#New BC on the norm of phi.dx(1)
+#pen_term += pen * inner(phi.dx(1), phi_t.dx(1)) * inner(phi.dx(1), psi.dx(1)) * ds
+#L += pen * g[1] * inner(phi.dx(1), psi.dx(1)) * ds
+
 #Dirichlet BC in phi.dx(0) direction
-#pen_term = pen/h**2 * inner(phi_t, phi.dx(0)) * inner(psi, phi.dx(0)) * ds
-#L = pen/h**2 * inner(phi_ref, phi.dx(0)) * inner(psi, phi.dx(0)) * ds
+pen_term = pen/h**2 * inner(phi_t, phi.dx(0)) * inner(psi, phi.dx(0)) * ds
+L = pen/h**2 * inner(phi_ref, phi.dx(0)) * inner(psi, phi.dx(0)) * ds
 
 ##penalty for Neumann BC
 #pen_term = pen * inner(dot(grad(phi_t),n), dot(grad(psi),n)) * ds #(ds(5)+ds(11)+ds(8)+ds(6))
@@ -63,11 +67,11 @@ pen_term += pen/h**4 * inner(phi_t, N) * inner(psi, N) * ds
 L += pen/h**4 * inner(phi_ref, N) * inner(psi, N) * ds
 
 #Dirichlet BC in phi.dx(1) direction
-pen_term += pen/h**2 * inner(phi_t, phi.dx(1)) * inner(psi, phi.dx(1)) * ds
-L += pen/h**2 * inner(phi_ref, phi.dx(1)) * inner(psi, phi.dx(1)) * ds
+#pen_term += pen/h**2 * inner(phi_t, phi.dx(1)) * inner(psi, phi.dx(1)) * ds
+#L += pen/h**2 * inner(phi_ref, phi.dx(1)) * inner(psi, phi.dx(1)) * ds
 
 #New BC on scalar product
-#pen_term += pen * inner(phi_ref.dx(1), phi_t.dx(0)) * inner(phi_ref.dx(1), psi.dx(0)) * ds
+pen_term += pen * inner(phi.dx(1), phi_t.dx(0)) * inner(phi.dx(1), psi.dx(0)) * ds
 
 ##New BC on the norm of phi.dx(1)
 #pen_term = pen * inner(phi.dx(1), phi_t.dx(1)) * inner(phi.dx(1), psi.dx(1)) * ds
@@ -94,7 +98,7 @@ tau_4 = Constant((1,0,0))
 pen_rot = pen/h**4 * inner(phi_t,tau_4) * inner(psi,tau_4)  * ds(4) #e_z blocked
 tau_3 = Constant((0,0,1))
 pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(3) #e_x blocked
-tau_2 = Constant((0,0,1))
+tau_2 = Constant((0,0,1)) #Constant((0,0,1))
 pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(2) #e_y blocked
 
 a += pen_disp + pen_rot
@@ -103,7 +107,7 @@ file = File('res_laplace.pvd')
 
 # Picard iterations
 tol = 1e-5 #1e-9
-maxiter = 50
+maxiter = 100
 for iter in range(maxiter):
   #linear solve
   A = assemble(a) #, bcs=bcs)
