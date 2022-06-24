@@ -32,7 +32,6 @@ phi.project(as_vector((x[0],-x[1],0))) #Initial guess...
 phi_ref = as_vector((x[0], sqrt(2)*x[1], 0))
 g = Constant((1, 2, 0))
 N = cross(phi.dx(0), phi.dx(1)) / norm(cross(phi.dx(0), phi.dx(1)))
-phi_D = 0
 
 #Defining the bilinear forms
 #bilinear form for linearization
@@ -55,10 +54,10 @@ L = pen * inner(g, B) * ds # + pen/h**2 * phi_D * inner(psi, N) * ds
 #L = inner(dot(grad(phi_ref),n), psi) * ds
 
 #Dirichlet BC
-pen_term = pen/h**4 * inner(phi_t, psi) * ds
-L = pen/h**4 * inner(phi_ref, psi) * ds
-#pen_term = pen/h**2 * inner(phi_t, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_t, phi.dx(1)) * inner(psi, phi.dx(1)) * ds + pen/h**2 * inner(phi_t, N) * inner(psi, N) * ds
-#L = pen/h**2 * inner(phi_ref, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_ref, phi.dx(1)) * inner(psi, phi.dx(1)) * ds + pen/h**2 * inner(phi_ref, N) * inner(psi, N) * ds
+#pen_term = pen/h**4 * inner(phi_t, psi) * ds
+#L = pen/h**4 * inner(phi_ref, psi) * ds
+pen_term = pen/h**2 * inner(phi_t, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_t, N) * inner(psi, N) * ds + pen/h**2 * inner(phi_ref.dx(1), phi_t.dx(0)) * inner(phi_ref.dx(1), psi.dx(0)) * ds # + pen/h**2 * inner(phi_t, phi.dx(1)) * inner(psi, phi.dx(1)) * ds
+L = pen/h**2 * inner(phi_ref, phi.dx(0)) * inner(psi, phi.dx(0)) * ds + pen/h**2 * inner(phi_ref, N) * inner(psi, N) * ds # + pen/h**2 * inner(phi_ref, phi.dx(1)) * inner(psi, phi.dx(1)) * ds
 
 #Bilinear form
 #laplace = inner(div(grad(phi_t)), div(grad(psi))) * dx #laplace in weak form
