@@ -80,10 +80,10 @@ file.write(projected)
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
 #a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
 a = Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), N) + q(phi)*dot(phi_t.dx(1).dx(1), N)) * div(grad(psi[2])) * dx
-a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(0))) * div(grad(psi[0])) * dx
-#a += p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(0))) * div(grad(psi[0])) * dx
-a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(1)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(1))) * div(grad(psi[1])) * dx
+#a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(0))) * div(grad(psi[0])) * dx
+a += (p(phi) * u.dx(0) + 2*v.dx(1)) * psi[0] * dx
 #a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(1)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(1))) * div(grad(psi[1])) * dx
+a += (p(phi) * u.dx(1) - 2*v.dx(0)) * psi[1] * dx
 
 # Solving with Newton method
 solve(replace(a+pen_term, {phi_t:phi}) - L == 0, phi, solver_parameters={'snes_monitor': None})
