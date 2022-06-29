@@ -46,45 +46,22 @@ x = SpatialCoordinate(mesh)
 rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
 z = 2*sin(theta/2) * (x[0]-L/2)
 phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
-g = as_vector((inner(phi_ref.dx(0),phi_ref.dx(0)), inner(phi_ref.dx(1),phi_ref.dx(1)), 0)) #inner(phi_ref.dx(1),phi_ref.dx(0))))
 
 #initial guess
 #solve laplace equation on the domain
 phi = Function(V, name='solution')
-#phi.project(phi_ref)
-phi.project(as_vector((x[0], x[1], 0))) #works?
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 
-#penalty term for new BC
-h = CellDiameter(mesh)
-pen = 1e1 #1e1
-B_t = as_vector((inner(phi.dx(0), phi_t.dx(0)), inner(phi.dx(1), phi_t.dx(1)), inner(phi.dx(1), phi_t.dx(0))))
-B = as_vector((inner(phi.dx(0), psi.dx(0)), inner(phi.dx(1), psi.dx(1)), inner(phi.dx(1), psi.dx(0))))
-pen_term = pen * inner(B_t, B) * ds(11)
-L = pen * inner(g, B) * ds(11)
-
-#penalty term to remove the invariance
-pen_disp = pen/h**4 * inner(phi_t,psi) * (ds(8)+ds(6)+ds(5)+ds(11))
-L = pen/h**4 * inner(phi_ref,psi) * (ds(8)+ds(6)+ds(5)+ds(11)) 
-#for directions
-tau_1 = Constant((1,0,0))
-pen_rot = pen/h**4 * inner(phi_t,tau_1) * inner(psi,tau_1)  * ds(4) #e_z blocked
-tau_2 = Constant((0,0,1))
-pen_rot += pen/h**4 * inner(phi_t,tau_2) * inner(psi,tau_2)  * ds(3) #e_x blocked
-tau_3 = Constant((0,0,1))
-pen_rot += pen/h**4 * inner(phi_t,tau_3) * inner(psi,tau_3)  * ds(2) #e_y blocked
-
-##test
-#n = FacetNormal(mesh)
-#gr_t = dot(grad(phi_t), n)
-#gr = dot(grad(psi), n)
-#pen_term = pen * inner(gr_t, gr) * (ds(1) + ds(2))
-#L = pen * inner(dot(grad(phi_ref), n), gr) * (ds(1) + ds(2))
+#test
+n = FacetNormal(mesh)
+pen = 10
+pen_term = pen * inner(phi_t, psi) * (ds(1) + ds(2))
+L = pen * inner(phi_ref, psi) * (ds(1) + ds(2))
 
 #solving
-A = assemble(laplace+pen_disp) #+pen_term) #+pen_rot)
+A = assemble(laplace+pen_disp)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
@@ -97,30 +74,21 @@ projected = Function(U, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
-#check blocked disp
-projected.interpolate(phi - 1e-5*as_vector((x[0], x[1], 0)))
-blocked = projected.at((0,0))
-#assert np.linalg.norm(blocked) < 0.05 * abs(projected.vector()[:].max()) #checking that the disp at the origin is blocked
-#sys.exit()
 
 #Writing our problem now
 #bilinear form for linearization
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
-a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-pen_disp = pen/h**4 * inner(phi_t,psi) * (ds(8)+ds(6)+ds(5))
-L = pen/h**4 * inner(phi_ref,psi) * (ds(8)+ds(6)+ds(5)) 
-a += pen_disp + pen_term # + pen_rot
+#a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
+a = Gamma * p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), div(grad(psi))) * dx
 
 # Solving with Newton method
 #solve(a == 0, phi, solver_parameters={'snes_monitor': None})
 file = File('res.pvd')
 
 # Picard iteration
-tol = 1e-5 #1e-9
+tol = 1e-5
 maxiter = 50
 phi_old = Function(V) #for iterations
-#phi.project(phi_ref)
-#phi.project(as_vector((x[0], x[1], 0))) #works?
 for iter in range(maxiter):
   #linear solve
   A = assemble(a)
