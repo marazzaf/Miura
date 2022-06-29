@@ -12,9 +12,6 @@ def p(phi):
   aux = 4 / (4 - sq)
   truc = conditional(gt(sq, Constant(3)), Constant(4), aux)
   return truc
-  #pp = interpolate(truc, UU)
-  #PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
-  #return interpolate(truc, UU) #update maybe?
 
 def q(phi):
   sq = inner(phi.dx(1), phi.dx(1))
@@ -31,9 +28,9 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-mesh = Mesh('mesh_1.msh')
-#size_ref = 20 #degub: 5
-#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+#mesh = Mesh('mesh_1.msh')
+size_ref = 20 #degub: 5
+mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = VectorFunctionSpace(mesh, "BELL", 5, dim=3)
 VV = FunctionSpace(mesh, 'CG', 4)
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -50,18 +47,19 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 #initial guess
 #solve laplace equation on the domain
 phi = Function(V, name='solution')
+N = cross(phi.dx(0), phi.dx(1))
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
 
 #test
-n = FacetNormal(mesh)
+h = CellDiameter(mesh)
 pen = 10
-pen_term = pen * inner(phi_t, psi) * (ds(1) + ds(2))
-L = pen * inner(phi_ref, psi) * (ds(1) + ds(2))
+pen_term = pen/h**4 * inner(phi_t, psi) * (ds(1) + ds(2))
+L = pen/h**4 * inner(phi_ref, psi) * (ds(1) + ds(2))
 
 #solving
-A = assemble(laplace+pen_disp)
+A = assemble(laplace+pen_term)
 b = assemble(L)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
@@ -79,7 +77,9 @@ file.write(projected)
 #bilinear form for linearization
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
 #a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-a = Gamma * p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), div(grad(psi))) * dx
+a = Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(0))) * div(grad(psi[0])) * dx
+a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(1)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(1))) * div(grad(psi[1])) * dx
+a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), N) + q(phi)*dot(phi_t.dx(1).dx(1), N)) * div(grad(psi[2])) * dx
 
 # Solving with Newton method
 #solve(a == 0, phi, solver_parameters={'snes_monitor': None})
@@ -91,7 +91,7 @@ maxiter = 50
 phi_old = Function(V) #for iterations
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a)
+  A = assemble(a+pen_term)
   b = assemble(L)
   #pp = interpolate(p(phi), UU)
   #PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
