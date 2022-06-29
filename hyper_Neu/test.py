@@ -48,6 +48,8 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 #solve laplace equation on the domain
 phi = Function(V, name='solution')
 N = cross(phi.dx(0), phi.dx(1))
+u = inner(phi.dx(0), phi.dx(1))
+v = ln((1 - 0.25*inner(phi.dx(0),phi.dx(0))) * inner(phi.dx(1), phi.dx(1)))
 phi_t = TrialFunction(V)
 psi = TestFunction(V)
 laplace = inner(grad(phi_t), grad(psi)) * dx #laplace in weak form
@@ -77,13 +79,19 @@ file.write(projected)
 #bilinear form for linearization
 Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
 #a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-a = Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(0))) * div(grad(psi[0])) * dx
+a = Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), N) + q(phi)*dot(phi_t.dx(1).dx(1), N)) * div(grad(psi[2])) * dx
+a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(0))) * div(grad(psi[0])) * dx
+#a += p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(0))) * div(grad(psi[0])) * dx
 a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(1)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(1))) * div(grad(psi[1])) * dx
-a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), N) + q(phi)*dot(phi_t.dx(1).dx(1), N)) * div(grad(psi[2])) * dx
+#a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(1)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(1))) * div(grad(psi[1])) * dx
 
 # Solving with Newton method
-#solve(a == 0, phi, solver_parameters={'snes_monitor': None})
+solve(replace(a+pen_term, {phi_t:phi}) - L == 0, phi, solver_parameters={'snes_monitor': None})
 file = File('res.pvd')
+projected = Function(U, name='surface')
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+file.write(projected)
+sys.exit()
 
 # Picard iteration
 tol = 1e-5
@@ -93,10 +101,6 @@ for iter in range(maxiter):
   #linear solve
   A = assemble(a+pen_term)
   b = assemble(L)
-  #pp = interpolate(p(phi), UU)
-  #PETSc.Sys.Print('Min of p: %.3e' % pp.vector().array().min())
-  #qq = interpolate(q(phi), UU)
-  #PETSc.Sys.Print('Min of q: %.3e' % qq.vector().array().min())
   solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
