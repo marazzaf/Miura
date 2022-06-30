@@ -30,15 +30,16 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 W = VectorFunctionSpace(mesh, "CG", 3, dim=3)
 phi = Function(W, name='solution')
 phi_t = TrialFunction(W)
-aux = inner(grad(phi_t), g_psi) * dx
-L = inner(grad(phi_ref), g_psi) * dx
+psi = TestFunction(W)
+aux = inner(grad(phi_t), grad(psi)) * dx #g_psi in another space?
+L = inner(grad(phi_ref), grad(psi)) * dx
 
 #BC for now. Make zero average later
 bcs_test = [DirichletBC(W, phi_ref, 1), DirichletBC(W, phi_ref, 2)]
 
 #solving
-A = assemble(A) #, bcs=bcs_test)
-b = assemble(L) #, bcs=bcs_test)
+A = assemble(aux, bcs=bcs_test)
+b = assemble(L, bcs=bcs_test)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 
 #Write 3d results
