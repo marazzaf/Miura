@@ -70,15 +70,18 @@ file.write(ref)
 
 #Writing our problem now
 #bilinear form for linearization
-a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  g_psi[:,0]) * dx
-a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,1]) * dx
+a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
+a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 
 # Solving with Newton method
 solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
 
 #Computing the error
-err = sqrt(assemble(inner(grad(phi-phi_ref), grad(phi-phi_ref))*dx))
+err = sqrt(assemble(inner(g_phi - grad(phi_ref), g_phi - grad(phi_ref)) * dx))
 PETSc.Sys.Print('Error: %.3e' % err)
+
+file = File('res.pvd')
+file.write(g_phi)
 sys.exit()
 
 #file = File('res.pvd')
