@@ -7,14 +7,14 @@ import sys
 import numpy as np
 
 # the coefficient functions
-def p(phi):
-  sq = inner(phi.dx(0), phi.dx(0))
+def p(g_phi):
+  sq = inner(g_phi[:,0], g_phi[:,0])
   aux = 4 / (4 - sq)
   truc = conditional(gt(sq, Constant(3)), Constant(4), aux)
   return truc
 
-def q(phi):
-  sq = inner(phi.dx(1), phi.dx(1))
+def q(g_phi):
+  sq = inner(g_phi[:,1], g_phi[:,1])
   aux = 4 / sq
   truc = conditional(lt(sq, Constant(1)), Constant(4), aux)
   truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
@@ -67,26 +67,14 @@ file = File('ref.pvd')
 ref = Function(V, name='grad ref')
 ref.interpolate(grad(phi_ref))
 file.write(ref)
-sys.exit()
 
 #Writing our problem now
 #bilinear form for linearization
-Gamma = (p(phi) + q(phi)) / (p(phi)*p(phi) + q(phi)*q(phi)) 
-#a = Gamma * inner(p(phi) * phi_t.dx(0).dx(0) + q(phi)*phi_t.dx(1).dx(1), div(grad(psi))) * dx
-
-#New bilinear forms
-a = Gamma * (p(phi) * dot(phi.dx(0).dx(0), N) + q(phi)*dot(phi.dx(1).dx(1), N)) * div(grad(psi[2])) * dx
-#a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(0)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(0))) * div(grad(psi[0])) * dx
-a += (p(phi) * u.dx(0) + 2*v.dx(1)) * psi[0] * dx
-#a += Gamma * (p(phi) * dot(phi_t.dx(0).dx(0), phi.dx(1)) + q(phi)*dot(phi_t.dx(1).dx(1), phi.dx(1))) * div(grad(psi[1])) * dx
-a += (p(phi) * u.dx(1) - 2*v.dx(0)) * psi[1] * dx
-
-#New pen term?
-pen_term = pen/h**4 * inner(phi, psi) * (ds(1) + ds(2))
-L = pen/h**4 * inner(phi_ref, psi) * (ds(1) + ds(2))
+a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  g_psi[:,0]) * dx
+a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,1]) * dx
 
 # Solving with Newton method
-solve(a+pen_term - L == 0, phi, solver_parameters={'snes_monitor': None})
+solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
 
 #Computing the error
 err = sqrt(assemble(inner(div(grad(phi-phi_ref)), div(grad(phi-phi_ref)))*dx))
