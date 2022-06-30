@@ -38,12 +38,12 @@ L = inner(grad(phi_ref), grad(psi)) * dx
 bcs_test = [DirichletBC(W, phi_ref, 1), DirichletBC(W, phi_ref, 2)]
 
 #solving
-A = assemble(aux, bcs=bcs_test)
-b = assemble(L, bcs=bcs_test)
+A = assemble(aux) #, bcs=bcs_test)
+b = assemble(L) #, bcs=bcs_test)
 solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 
 #Write 3d results
-file = File('laplacian.pvd')
+file = File('reconstruction.pvd')
 projected = Function(W, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
