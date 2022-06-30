@@ -74,18 +74,23 @@ a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  g_psi[:,0]
 a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,1]) * dx
 
 # Solving with Newton method
-solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
+#solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
 
-#Computing the error
-err = sqrt(assemble(inner(div(grad(phi-phi_ref)), div(grad(phi-phi_ref)))*dx))
-PETSc.Sys.Print('Error: %.3e' % err)
-sys.exit()
+##Computing the error
+#err = sqrt(assemble(inner(div(grad(phi-phi_ref)), div(grad(phi-phi_ref)))*dx))
+#PETSc.Sys.Print('Error: %.3e' % err)
+#sys.exit()
 
-file = File('res.pvd')
-projected = Function(U, name='surface')
-projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file.write(projected)
-sys.exit()
+#file = File('res.pvd')
+#projected = Function(U, name='surface')
+#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+#file.write(projected)
+#sys.exit()
+
+#bilinear form for linearization
+a = inner(p(g_phi) * g_phi_t[:,0].dx(0) + q(g_phi) * g_phi_t[:,1].dx(1),  g_psi[:,0]) * dx
+a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,1]) * dx
+L = Constant(0) * g_psi[0,0] * dx
 
 # Picard iteration
 tol = 1e-5
@@ -93,19 +98,16 @@ maxiter = 50
 phi_old = Function(V) #for iterations
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a+pen_term)
-  b = assemble(L)
-  solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+  A = assemble(a, bcs=bcs)
+  b = assemble(L, bcs=bcs)
+  solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
-  eps = sqrt(assemble(inner(div(grad(phi-phi_old)), div(grad(phi-phi_old)))*dx)) # check increment size as convergence test
+  eps = sqrt(assemble(inner(grad(g_phi-phi_old), grad(g_phi-phi_old))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
-  projected = Function(U, name='surface')
-  projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-  file.write(projected)
 
   if eps < tol:
     break
-  phi_old.assign(phi)
+  phi_old.assign(g_phi)
 
 if eps > tol:
   PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
