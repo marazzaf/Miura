@@ -74,12 +74,12 @@ a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  g_psi[:,0]
 a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,1]) * dx
 
 # Solving with Newton method
-#solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
+solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
 
-##Computing the error
-#err = sqrt(assemble(inner(div(grad(phi-phi_ref)), div(grad(phi-phi_ref)))*dx))
-#PETSc.Sys.Print('Error: %.3e' % err)
-#sys.exit()
+#Computing the error
+err = sqrt(assemble(inner(grad(phi-phi_ref), grad(phi-phi_ref))*dx))
+PETSc.Sys.Print('Error: %.3e' % err)
+sys.exit()
 
 #file = File('res.pvd')
 #projected = Function(U, name='surface')
