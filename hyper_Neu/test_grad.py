@@ -73,27 +73,39 @@ file.write(ref)
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
 a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 
+#Neumann-type BC
+h = CellDiameter(mesh)
+pen = 1e1
+N = cross(g_phi[:,0], g_phi[:,1])
+pen_term = pen/h**2 * inner(g_phi[:,0], g_phi[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds + pen/h**2 * inner(g_phi[:,0], g_phi[:,1]) * inner(g_phi[:,1], g_psi[:,0]) * ds
+pen_term += pen/h**2 * dot(g_phi[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(g_phi[:,1], N) * dot(g_psi[:,1], N) * ds 
+pen_term += pen/h**2 * inner(g_phi[:,0], g_phi[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
+L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+
+#Dirichlet BC
+pen_term = pen/h**2 * inner(g_phi, g_psi) * (ds(1) + ds(2))
+L = pen/h**2 * inner(grad(phi_ref), g_psi) * (ds(1) + ds(2))
+
 # Solving with Newton method
-solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
+#solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
+#solve(a - L == 0, g_phi, solver_parameters={'snes_monitor': None})
 
-#Computing the error
-err = sqrt(assemble(inner(g_phi - grad(phi_ref), g_phi - grad(phi_ref)) * dx))
-PETSc.Sys.Print('Error: %.3e' % err)
-
-file = File('res.pvd')
-file.write(g_phi)
-sys.exit()
-
+##Computing the error
+#err = sqrt(assemble(inner(g_phi - grad(phi_ref), g_phi - grad(phi_ref)) * dx))
+#PETSc.Sys.Print('Error: %.3e' % err)
+#
 #file = File('res.pvd')
-#projected = Function(U, name='surface')
-#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-#file.write(projected)
+#file.write(g_phi)
 #sys.exit()
 
 #bilinear form for linearization
-a = inner(p(g_phi) * g_phi_t[:,0].dx(0) + q(g_phi) * g_phi_t[:,1].dx(1),  g_psi[:,0]) * dx
-a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,1]) * dx
-L = Constant(0) * g_psi[0,0] * dx
+a = inner(p(g_phi) * g_phi_t[:,0].dx(0) + q(g_phi) * g_phi_t[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
+a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
+
+#Dirichlet BC
+pen_term = pen/h**2 * inner(g_phi_t, g_psi) * (ds(1) + ds(2))
+L = pen/h**2 * inner(grad(phi_ref), g_psi) * (ds(1) + ds(2))
 
 # Picard iteration
 tol = 1e-5
@@ -101,8 +113,8 @@ maxiter = 50
 phi_old = Function(V) #for iterations
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a, bcs=bcs)
-  b = assemble(L, bcs=bcs)
+  A = assemble(a + pen_term) #, bcs=bcs)
+  b = assemble(L) #, bcs=bcs)
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
     
   eps = sqrt(assemble(inner(grad(g_phi-phi_old), grad(g_phi-phi_old))*dx)) # check increment size as convergence test
@@ -117,10 +129,6 @@ if eps > tol:
 else:
   PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
 
-#Computing error
-X = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
-projected = interpolate(div(grad(phi)), X)
-ref = interpolate(div(grad(phi_ref)), X)
-err = sqrt(assemble(inner(div(grad(phi-phi_ref)), div(grad(phi-phi_ref)))*dx))
+  
+err = sqrt(assemble(inner(g_phi - grad(phi_ref), g_phi - grad(phi_ref)) * dx))
 PETSc.Sys.Print('Error: %.3e' % err)
-
