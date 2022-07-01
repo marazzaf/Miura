@@ -107,6 +107,16 @@ a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1
 pen_term = pen/h**2 * inner(g_phi_t, g_psi) * (ds(1) + ds(2))
 L = pen/h**2 * inner(grad(phi_ref), g_psi) * (ds(1) + ds(2))
 
+#Neumann-type BC
+h = CellDiameter(mesh)
+pen = 1e1
+N = cross(g_phi[:,0], g_phi[:,1])
+pen_term = pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds
+pen_term += pen/h**2 * dot(g_phi_t[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(g_phi_t[:,1], N) * dot(g_psi[:,1], N) * ds 
+pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
+L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+
 # Picard iteration
 tol = 1e-5
 maxiter = 50
