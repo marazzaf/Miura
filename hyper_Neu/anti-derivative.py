@@ -27,7 +27,6 @@ z = 2*sin(theta/2) * (x[0]-L/2)
 phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 #Reconstructing phi
-W = VectorFunctionSpace(mesh, "CG", 3, dim=3)
 phi = Function(W, name='solution')
 phi_t = TrialFunction(W)
 psi = TestFunction(W)
