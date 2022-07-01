@@ -5,6 +5,7 @@ from firedrake import *
 from firedrake.petsc import PETSc
 import sys
 import numpy as np
+from comp_phi import comp_phi
 
 # the coefficient functions
 def p(g_phi):
@@ -29,7 +30,7 @@ l = sin(theta/2)*L
 
 #Creating mesh
 #mesh = Mesh('mesh_1.msh')
-size_ref = 20 #degub: 5
+size_ref = 40 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -83,9 +84,12 @@ pen_term += pen/h**2 * inner(g_phi[:,0], g_phi[:,0]) * inner(g_phi[:,0], g_psi[:
 L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
 L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 
+##Dirichlet BC
+#pen_term = pen/h**2 * inner(g_phi, g_psi) * ds
+#L = pen/h**2 * inner(grad(phi_ref), g_psi) * ds
+
 #Dirichlet BC
-pen_term = pen/h**2 * inner(g_phi, g_psi) * (ds(1) + ds(2))
-L = pen/h**2 * inner(grad(phi_ref), g_psi) * (ds(1) + ds(2))
+bcs = [DirichletBC(V, grad(phi_ref), 1)]
 
 # Solving with Newton method
 #solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
@@ -126,6 +130,9 @@ for iter in range(maxiter):
   A = assemble(a + pen_term) #, bcs=bcs)
   b = assemble(L) #, bcs=bcs)
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+
+  #Compute phi
+  comp_phi(mesh, g_phi)
     
   eps = sqrt(assemble(inner(grad(g_phi-phi_old), grad(g_phi-phi_old))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))

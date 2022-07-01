@@ -7,7 +7,6 @@ import sys
 
 def comp_phi(mesh, Grad):
     W = VectorFunctionSpace(mesh, "CG", 3, dim=3)
-    PETSc.Sys.Print('Nb dof: %i' % W.dim())
 
     #Reconstructing phi
     phi = Function(W, name='solution')
@@ -49,4 +48,4 @@ def test():
     #Reconstruction
     comp_phi(mesh, grad(phi_ref))
 
-test()
+#test()
