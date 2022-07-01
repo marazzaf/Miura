@@ -45,7 +45,7 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 #solve laplace equation on the domain
 g_phi = Function(V, name='grad solution')
 phi = as_vector((x[0], x[1], 0))
-g_phi.interpolate(grad(phi))
+g_phi.interpolate(grad(phi_ref))
 g_phi_t = TrialFunction(V)
 g_psi = TestFunction(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
@@ -64,7 +64,7 @@ L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 *
 L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
+bcs = [DirichletBC(V, grad(phi_ref), 6), DirichletBC(V, grad(phi_ref), 8)]
 #bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4)]
 #bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2)]
 
@@ -105,7 +105,7 @@ a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx
 #L = pen/h**2 * inner(grad(phi_ref), g_psi) * ds
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
+bcs = [DirichletBC(V, grad(phi_ref), 6), DirichletBC(V, grad(phi_ref), 8)]
 
 # Solving with Newton method
 #solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
@@ -136,10 +136,15 @@ pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi
 L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
 L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 
+#For output of phi
+W = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+
 # Picard iteration
 tol = 1e-5
 maxiter = 50
 phi_old = Function(V) #for iterations
+file = File('res.pvd')
+projected = Function(W, name='surface')
 for iter in range(maxiter):
   #linear solve
   A = assemble(a + pen_term, bcs=bcs)
@@ -147,7 +152,9 @@ for iter in range(maxiter):
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   #Compute phi
-  comp_phi(mesh, g_phi)
+  phi = comp_phi(mesh, g_phi)
+  projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+  file.write(projected)
     
   eps = sqrt(assemble(inner(grad(g_phi-phi_old), grad(g_phi-phi_old))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))

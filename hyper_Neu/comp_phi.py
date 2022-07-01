@@ -20,12 +20,7 @@ def comp_phi(mesh, Grad):
     b = assemble(L) #, bcs=bcs_test)
     solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 
-    #Write 3d results
-    file = File('reconstruction.pvd')
-    projected = Function(W, name='surface')
-    x = SpatialCoordinate(mesh)
-    projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-    file.write(projected)
+    return phi
 
 #Testing now
 def test():
@@ -46,6 +41,12 @@ def test():
     phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
     #Reconstruction
-    comp_phi(mesh, grad(phi_ref))
+    phi = comp_phi(mesh, grad(phi_ref))
+    #Write 3d results
+    file = File('reconstruction_test.pvd')
+    Z = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+    projected = Function(Z, name='surface')
+    projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+    file.write(projected)
 
 #test()
