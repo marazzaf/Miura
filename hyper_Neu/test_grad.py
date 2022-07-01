@@ -29,9 +29,9 @@ H = 2*pi/alpha #height of rectangle
 l = sin(theta/2)*L
 
 #Creating mesh
-#mesh = Mesh('mesh_1.msh')
+mesh = Mesh('mesh_2.msh')
 size_ref = 40 #degub: 5
-mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -51,23 +51,26 @@ g_psi = TestFunction(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
 L = Constant(0) * g_psi[0,0] * dx
 
-#Neumann-type BC
+#Dirichlet BC other form
 h = CellDiameter(mesh)
 pen = 1e1
 N = cross(g_phi[:,0], g_phi[:,1])
+#bilinear
 pen_term = pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds
 pen_term += pen/h**2 * dot(g_phi_t[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(g_phi_t[:,1], N) * dot(g_psi[:,1], N) * ds 
 pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+#linear
 L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
 L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2)]
+bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
+#bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4)]
 #bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2)]
 
 #solving
-A = assemble(laplace+pen_term) #, bcs=bcs)
-b = assemble(L) #, bcs=bcs)
+A = assemble(laplace+pen_term, bcs=bcs)
+b = assemble(L, bcs=bcs)
 solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
@@ -102,7 +105,7 @@ a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx
 #L = pen/h**2 * inner(grad(phi_ref), g_psi) * ds
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 1)]
+bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
 
 # Solving with Newton method
 #solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
@@ -124,10 +127,7 @@ a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1
 pen_term = pen/h**2 * inner(g_phi_t, g_psi) * (ds(1) + ds(2))
 L = pen/h**2 * inner(grad(phi_ref), g_psi) * (ds(1) + ds(2))
 
-#Neumann-type BC
-h = CellDiameter(mesh)
-pen = 1e1
-N = cross(g_phi[:,0], g_phi[:,1])
+#Dirichlet BC other form
 #bilinear
 pen_term = pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds
 pen_term += pen/h**2 * dot(g_phi_t[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(g_phi_t[:,1], N) * dot(g_psi[:,1], N) * ds 
@@ -142,15 +142,15 @@ maxiter = 50
 phi_old = Function(V) #for iterations
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a + pen_term) #, bcs=bcs)
-  b = assemble(L) #, bcs=bcs)
+  A = assemble(a + pen_term, bcs=bcs)
+  b = assemble(L, bcs=bcs)
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   #Compute phi
   comp_phi(mesh, g_phi)
     
   eps = sqrt(assemble(inner(grad(g_phi-phi_old), grad(g_phi-phi_old))*dx)) # check increment size as convergence test
-  PETSc.Sys.Print('iteration{:3d}  H2 seminorm of delta: {:10.2e}'.format(iter+1, eps))
+  PETSc.Sys.Print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
 
   if eps < tol:
     break
