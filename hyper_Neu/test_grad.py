@@ -57,41 +57,27 @@ pen = 1e1
 N = cross(g_phi[:,0], g_phi[:,1])
 n = FacetNormal(mesh)
 t = as_vector((-n[1],n[0]))
+
+#Dirichlet BC
+pen_term = pen/h**2 * inner(g_phi_t[:,0], g_psi[:,0]) * ds
+L = pen/h**2 * inner(grad(phi_ref)[:,0], g_psi[:,0]) * ds
+
+
 #bilinear
-pen_term = pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds# + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds
-#pen_term += pen/h**2 * dot(g_phi_t[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(g_phi_t[:,1], N) * dot(g_psi[:,1], N) * ds
-#pen_term = pen/h**2 * inner(dot(g_phi_t, n), dot(g_psi, n)) * ds
-#pen_term += pen/h**2 * inner(dot(g_phi_t, t), dot(g_psi, t)) * ds
-pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-pen_term += pen * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen * dot(g_phi_t[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen * dot(g_phi_t[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
+#pen_term =  pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds #pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
+#pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+pen_term += pen/h**2 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
+
 #linear
 #L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
 #L = pen/h**2 * inner(dot(grad(phi_ref), n), dot(g_psi, n)) * ds
 #L += pen/h**2 * inner(dot(grad(phi_ref), t), dot(g_psi, t)) * ds
-L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-L += pen * dot(grad(phi_ref)[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen * dot(grad(phi_ref)[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen * dot(grad(phi_ref)[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
-
-#Dirichlet BC
-pen_term = pen/h**2 * inner(g_phi_t, g_psi) * ds
-L = pen/h**2 * inner(grad(phi_ref), g_psi) * ds
-
-#test Dirichlet
-pen_term = pen/h**2 * inner(g_phi_t[0,0], g_psi[0,0]) * ds
-pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds
-#pen_term += pen/h**2 * inner(g_phi_t[1,0], g_psi[1,0]) * ds
-pen_term += pen/h**2 * inner(g_phi_t[2,0], g_psi[2,0]) * ds
-pen_term += pen/h**2 * inner(g_phi_t[:,1], g_psi[:,1]) * ds
-L = pen/h**2 * inner(grad(phi_ref)[0,0], g_psi[0,0]) * ds
-L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds
-#L = pen/h**2 * inner(grad(phi_ref)[1,0], g_psi[1,0]) * ds
-L += pen/h**2 * inner(grad(phi_ref)[2,0], g_psi[2,0]) * ds
-L += pen/h**2 * inner(grad(phi_ref)[:,1], g_psi[:,1]) * ds
+#L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+L += pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
 
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
-#bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4)]
-#bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2)]
+#bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
 
 #solving
 A = assemble(laplace+pen_term) #, bcs=bcs)
@@ -114,89 +100,35 @@ file.write(projected)
 #ref.interpolate(grad(phi_ref))
 #file.write(ref)
 
-#Writing our problem now
-#bilinear form for linearization
-a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
-a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
-
-##Neumann-type BC
-#h = CellDiameter(mesh)
-#pen = 1e1
-#N = cross(g_phi[:,0], g_phi[:,1])
-#pen_term = pen/h**2 * inner(g_phi[:,0], g_phi[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds + pen/h**2 * inner(g_phi[:,0], g_phi[:,1]) * inner(g_phi[:,1], g_psi[:,0]) * ds
-#pen_term += pen/h**2 * dot(g_phi[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(g_phi[:,1], N) * dot(g_psi[:,1], N) * ds 
-#pen_term += pen/h**2 * inner(g_phi[:,0], g_phi[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-#L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
-#L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-
-##Dirichlet BC
-#pen_term = pen/h**2 * inner(g_phi, g_psi) * ds
-#L = pen/h**2 * inner(grad(phi_ref), g_psi) * ds
-
-#Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
-
 # Solving with Newton method
 #solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
 #solve(a - L == 0, g_phi, solver_parameters={'snes_monitor': None})
-
-##Computing the error
-#err = sqrt(assemble(inner(g_phi - grad(phi_ref), g_phi - grad(phi_ref)) * dx))
-#PETSc.Sys.Print('Error: %.3e' % err)
-#
-#file = File('res.pvd')
-#file.write(g_phi)
-#sys.exit()
 
 #bilinear form for linearization
 a = inner(p(g_phi) * g_phi_t[:,0].dx(0) + q(g_phi) * g_phi_t[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
 a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 
+#Dirichlet BC
+pen_term = pen/h**4 * inner(g_phi_t[:,0], g_psi[:,0]) * ds
+L = pen/h**4 * inner(grad(phi_ref)[:,0], g_psi[:,0]) * ds
+
 #Dirichlet BC other form
 #bilinear
-pen_term = pen/h**4 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds# + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds
-#pen_term += pen/h**2 * dot(g_phi_t[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(g_phi_t[:,1], N) * dot(g_psi[:,1], N) * ds
-#pen_term += pen/h**4 * inner(dot(g_phi_t, n), dot(g_psi, n)) * ds
-pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-#pen_term += pen/h**2 * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen/h**2 * dot(g_phi_t[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen/h**2 * dot(g_phi_t[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
+#pen_term =  pen/h**4 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds #pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
+#pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+pen_term += pen/h**4 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
 
 #linear
 #L = pen/h**4 * inner(dot(grad(phi_ref), n), dot(g_psi, n)) * ds
 #L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
-L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-L += pen/h**2 * dot(grad(phi_ref)[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen/h**2 * dot(grad(phi_ref)[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
-
-#Dirichlet BC
-pen_term = pen/h**4 * inner(g_phi_t, g_psi) * ds
-L = pen/h**4 * inner(grad(phi_ref), g_psi) * ds
-
-#test Dirichlet
-pen_term = pen/h**4 * inner(g_phi_t[0,0], g_psi[0,0]) * ds
-pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds
-#pen_term += pen/h**4 * inner(g_phi_t[1,0], g_psi[1,0]) * ds
-pen_term += pen/h**4 * inner(g_phi_t[2,0], g_psi[2,0]) * ds
-pen_term += pen/h**4 * inner(g_phi_t[:,1], g_psi[:,1]) * ds
-L = pen/h**4 * inner(grad(phi_ref)[0,0], g_psi[0,0]) * ds
-L += pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds
-#L = pen/h**4 * inner(grad(phi_ref)[1,0], g_psi[1,0]) * ds
-L += pen/h**4 * inner(grad(phi_ref)[2,0], g_psi[2,0]) * ds
-L += pen/h**4 * inner(grad(phi_ref)[:,1], g_psi[:,1]) * ds
-
-#Test
-#pen_term = pen/h**2 * inner(dot(g_phi_t, n), dot(g_psi, n)) * ds
-#pen_term += pen/h**2 * inner(dot(g_phi_t, t), dot(g_psi, t)) * ds
-#L = pen/h**2 * inner(dot(grad(phi_ref), n), dot(g_psi, n)) * ds
-#L += pen/h**2 * inner(dot(grad(phi_ref), t), dot(g_psi, t)) * ds
-
-#For output of phi
-W = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+#L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+L += pen/h**4 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
 
 # Picard iteration
 tol = 1e-5
 maxiter = 50
 phi_old = Function(V) #for iterations
 file = File('res.pvd')
-projected = Function(W, name='surface')
 for iter in range(maxiter):
   #linear solve
   A = assemble(a + pen_term) #, bcs=bcs)
