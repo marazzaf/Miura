@@ -71,9 +71,22 @@ pen_term += pen * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + p
 L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 L += pen * dot(grad(phi_ref)[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen * dot(grad(phi_ref)[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen * dot(grad(phi_ref)[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
 
-##Dirichlet BC
-#pen_term = pen/h**2 * inner(g_phi_t, g_psi) * ds
-#L = pen/h**2 * inner(grad(phi_ref), g_psi) * ds
+#Dirichlet BC
+pen_term = pen/h**2 * inner(g_phi_t, g_psi) * ds
+L = pen/h**2 * inner(grad(phi_ref), g_psi) * ds
+
+#test Dirichlet
+pen_term = pen/h**2 * inner(g_phi_t[0,0], g_psi[0,0]) * ds
+pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds
+#pen_term += pen/h**2 * inner(g_phi_t[1,0], g_psi[1,0]) * ds
+pen_term += pen/h**2 * inner(g_phi_t[2,0], g_psi[2,0]) * ds
+pen_term += pen/h**2 * inner(g_phi_t[:,1], g_psi[:,1]) * ds
+L = pen/h**2 * inner(grad(phi_ref)[0,0], g_psi[0,0]) * ds
+L += pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds
+#L = pen/h**2 * inner(grad(phi_ref)[1,0], g_psi[1,0]) * ds
+L += pen/h**2 * inner(grad(phi_ref)[2,0], g_psi[2,0]) * ds
+L += pen/h**2 * inner(grad(phi_ref)[:,1], g_psi[:,1]) * ds
+
 
 #Dirichlet BC
 bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
@@ -145,7 +158,7 @@ pen_term = pen/h**4 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[
 #pen_term += pen/h**2 * dot(g_phi_t[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(g_phi_t[:,1], N) * dot(g_psi[:,1], N) * ds
 #pen_term += pen/h**4 * inner(dot(g_phi_t, n), dot(g_psi, n)) * ds
 pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-pen_term += pen/h**2 * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen/h**2 * dot(g_phi_t[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen/h**2 * dot(g_phi_t[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
+#pen_term += pen/h**2 * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen/h**2 * dot(g_phi_t[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen/h**2 * dot(g_phi_t[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
 
 #linear
 #L = pen/h**4 * inner(dot(grad(phi_ref), n), dot(g_psi, n)) * ds
@@ -153,9 +166,21 @@ pen_term += pen/h**2 * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * d
 L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 L += pen/h**2 * dot(grad(phi_ref)[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen/h**2 * dot(grad(phi_ref)[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
 
-##Dirichlet BC
-#pen_term = pen/h**4 * inner(g_phi_t, g_psi) * ds
-#L = pen/h**4 * inner(grad(phi_ref), g_psi) * ds
+#Dirichlet BC
+pen_term = pen/h**4 * inner(g_phi_t, g_psi) * ds
+L = pen/h**4 * inner(grad(phi_ref), g_psi) * ds
+
+#test Dirichlet
+pen_term = pen/h**4 * inner(g_phi_t[0,0], g_psi[0,0]) * ds
+pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds
+#pen_term += pen/h**4 * inner(g_phi_t[1,0], g_psi[1,0]) * ds
+pen_term += pen/h**4 * inner(g_phi_t[2,0], g_psi[2,0]) * ds
+pen_term += pen/h**4 * inner(g_phi_t[:,1], g_psi[:,1]) * ds
+L = pen/h**4 * inner(grad(phi_ref)[0,0], g_psi[0,0]) * ds
+L += pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds
+#L = pen/h**4 * inner(grad(phi_ref)[1,0], g_psi[1,0]) * ds
+L += pen/h**4 * inner(grad(phi_ref)[2,0], g_psi[2,0]) * ds
+L += pen/h**4 * inner(grad(phi_ref)[:,1], g_psi[:,1]) * ds
 
 #Test
 #pen_term = pen/h**2 * inner(dot(g_phi_t, n), dot(g_psi, n)) * ds
