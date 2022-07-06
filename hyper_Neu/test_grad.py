@@ -29,7 +29,7 @@ H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
 #mesh = Mesh('mesh_2.msh')
-size_ref = 40 #degub: 5
+size_ref = 30 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -65,23 +65,24 @@ t = as_vector((-n[1],n[0]))
 
 #bilinear
 pen_term = 0.5*pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
-pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds #+ pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 pen_term += 0.5*pen/h**2 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**2 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 #linear
 #L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
 #L = pen/h**2 * inner(dot(grad(phi_ref), n), dot(g_psi, n)) * ds
 #L += pen/h**2 * inner(dot(grad(phi_ref), t), dot(g_psi, t)) * ds
-L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 L += 0.5*pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**2 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4), DirichletBC(V, grad(phi_ref), 7), DirichletBC(V, grad(phi_ref), 5)]
+#bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4), DirichletBC(V, grad(phi_ref), 7), DirichletBC(V, grad(phi_ref), 5)]
+bcs = [DirichletBC(V.sub(5), grad(phi_ref)[2,1], 1), DirichletBC(V.sub(5), grad(phi_ref)[2,1], 2)] #, DirichletBC(V.sub(2), grad(phi_ref)[1,0], 1), DirichletBC(V.sub(1), grad(phi_ref)[1,0], 2)]
 
 #solving
-A = assemble(laplace+pen_term) #, bcs=bcs)
-b = assemble(L) #, bcs=bcs)
+A = assemble(laplace+pen_term, bcs=bcs)
+b = assemble(L, bcs=bcs)
 solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
@@ -115,24 +116,24 @@ a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1
 #Dirichlet BC other form
 #bilinear
 pen_term = 0.5*pen/h**4 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**4 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
-pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**4 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 pen_term += 0.5*pen/h**4 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**4 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 #linear
 #L = pen/h**4 * inner(dot(grad(phi_ref), n), dot(g_psi, n)) * ds
 #L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
-L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**4 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 L += 0.5*pen/h**4 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**4 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 # Picard iteration
 tol = 1e-5
-maxiter = 50
-phi_old = Function(V) #for iterations
+maxiter = 100
+g_phi_old = Function(V) #for iterations
 file = File('res.pvd')
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a + pen_term) #, bcs=bcs)
-  b = assemble(L) #, bcs=bcs)
+  A = assemble(a + pen_term, bcs=bcs)
+  b = assemble(L, bcs=bcs)
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   #Compute phi
@@ -140,12 +141,12 @@ for iter in range(maxiter):
   projected.interpolate(phi - as_vector((x[0], x[1], 0)))
   file.write(projected)
     
-  eps = sqrt(assemble(inner(grad(g_phi-phi_old), grad(g_phi-phi_old))*dx)) # check increment size as convergence test
+  eps = sqrt(assemble(inner(grad(g_phi-g_phi_old), grad(g_phi-g_phi_old))*dx)) # check increment size as convergence test
   PETSc.Sys.Print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
 
   if eps < tol:
     break
-  phi_old.assign(g_phi)
+  g_phi_old.assign(g_phi)
 
 if eps > tol:
   PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
