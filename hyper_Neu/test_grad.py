@@ -62,7 +62,6 @@ n = FacetNormal(mesh)
 #pen_term = pen/h**2 * inner(g_phi_t[1,0], g_psi[1,0]) * ds + pen/h**2 * inner(g_phi_t[2,0], g_psi[2,0]) * ds + pen/h**2 * inner(g_phi_t[0,0], g_psi[0,0]) * ds 
 #L = pen/h**2 * inner(grad(phi_ref)[1,0], g_psi[1,0]) * ds + pen/h**2 * inner(grad(phi_ref)[2,0], g_psi[2,0]) * ds + pen/h**2 * inner(grad(phi_ref)[0,0], g_psi[0,0]) * ds
 
-
 #bilinear
 #pen_term = 0.5*pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
 pen_term = pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
@@ -79,12 +78,16 @@ pen_term += pen * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + p
 L += pen * dot(grad(phi_ref)[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen * dot(grad(phi_ref)[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen * dot(grad(phi_ref)[:,1].dx(0), N) * dot(g_psi[:,1].dx(0), N) * ds
 
 #Dirichlet BC
-#bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4), DirichletBC(V, grad(phi_ref), 7), DirichletBC(V, grad(phi_ref), 5)]
-bcs = [DirichletBC(V.sub(5), grad(phi_ref)[2,1], 1), DirichletBC(V.sub(5), grad(phi_ref)[2,1], 2)] #, DirichletBC(V.sub(2), grad(phi_ref)[1,0], 1), DirichletBC(V.sub(1), grad(phi_ref)[1,0], 2)]
+bcs = [DirichletBC(V, grad(phi_ref), 1)] #, DirichletBC(V, grad(phi_ref), 2)] #, DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4), DirichletBC(V, grad(phi_ref), 7), DirichletBC(V, grad(phi_ref), 5)]
+#bcs = [DirichletBC(V.sub(5), grad(phi_ref)[2,1], 1), DirichletBC(V.sub(5), grad(phi_ref)[2,1], 2)] #, DirichletBC(V.sub(2), grad(phi_ref)[1,0], 1), DirichletBC(V.sub(1), grad(phi_ref)[1,0], 2)]
+
+#test Neumann
+pen_term = pen/h**2 * inner(dot(grad(g_phi_t), n), dot(grad(g_psi), n)) * ds
+L = pen/h**2 * inner(dot(grad(grad(phi_ref)), n), dot(grad(g_psi), n)) * ds
 
 #solving
-A = assemble(laplace+pen_term, bcs=bcs)
-b = assemble(L, bcs=bcs)
+A = assemble(laplace+pen_term) #, bcs=bcs)
+b = assemble(L) #, bcs=bcs)
 solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
@@ -118,7 +121,7 @@ a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1
 #Dirichlet BC other form
 #bilinear
 #pen_term = 0.5*pen/h**4 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**4 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
-pen_term + pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+pen_term = pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 pen_term += 0.5*pen/h**4 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**4 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 #linear
@@ -128,8 +131,12 @@ L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0],
 #L += 0.5*pen/h**4 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**4 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 #test
-pen_term += pen/h**2 * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds
-L += pen/h**2 * dot(grad(phi_ref)[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds
+pen_term += pen/h**2 * dot(g_phi_t[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen/h**2 * dot(g_phi_t[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen/h**2 * dot(g_phi_t[:,1].dx(0), N) * dot(g_psi[:,1].dx(0), N) * ds + pen/h**2 * dot(g_phi_t[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
+L += pen/h**2 * dot(grad(phi_ref)[:,0].dx(0), N) * dot(g_psi[:,0].dx(0), N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1].dx(0), N) * dot(g_psi[:,1].dx(0), N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1].dx(1), N) * dot(g_psi[:,1].dx(1), N) * ds + pen/h**2 * dot(grad(phi_ref)[:,0].dx(1), N) * dot(g_psi[:,0].dx(1), N) * ds
+
+#test Neumann
+pen_term = pen/h**2 * inner(dot(grad(g_phi_t), n), dot(grad(g_psi), n)) * ds
+L = pen/h**2 * inner(dot(grad(grad(phi_ref)), n), dot(grad(g_psi), n)) * ds
 
 # Picard iteration
 tol = 1e-5
@@ -138,8 +145,8 @@ g_phi_old = Function(V) #for iterations
 file = File('res.pvd')
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a + pen_term, bcs=bcs)
-  b = assemble(L, bcs=bcs)
+  A = assemble(a + pen_term) #, bcs=bcs)
+  b = assemble(L) #, bcs=bcs)
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   #Compute phi
