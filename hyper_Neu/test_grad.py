@@ -77,11 +77,11 @@ L += 0.5*pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0
 
 
 #Dirichlet BC
-#bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
+bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4), DirichletBC(V, grad(phi_ref), 7), DirichletBC(V, grad(phi_ref), 5)]
 
 #solving
-A = assemble(laplace+pen_term) #, bcs=bcs)
-b = assemble(L) #, bcs=bcs)
+A = assemble(laplace+pen_term, bcs=bcs)
+b = assemble(L, bcs=bcs)
 solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
@@ -131,8 +131,8 @@ phi_old = Function(V) #for iterations
 file = File('res.pvd')
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a + pen_term) #, bcs=bcs)
-  b = assemble(L) #, bcs=bcs)
+  A = assemble(a + pen_term, bcs=bcs)
+  b = assemble(L, bcs=bcs)
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   #Compute phi
