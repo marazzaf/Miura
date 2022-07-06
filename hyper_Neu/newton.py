@@ -69,19 +69,17 @@ pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi
 pen_term += 0.5*pen/h**2 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**2 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 #linear
-#L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
-#L = pen/h**2 * inner(dot(grad(phi_ref), n), dot(g_psi, n)) * ds
-#L += pen/h**2 * inner(dot(grad(phi_ref), t), dot(g_psi, t)) * ds
 L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 L += 0.5*pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**2 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 
 #Dirichlet BC
-#bcs = [DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
+bcs = [DirichletBC(V, grad(phi_ref), 6), DirichletBC(V, grad(phi_ref), 8), DirichletBC(V, grad(phi_ref), 5), DirichletBC(V, grad(phi_ref), 7)]
+bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4)]
 
 #solving
-A = assemble(laplace+pen_term) #, bcs=bcs)
-b = assemble(L) #, bcs=bcs)
+A = assemble(laplace+pen_term, bcs=bcs)
+b = assemble(L, bcs=bcs)
 solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
@@ -94,64 +92,33 @@ projected = Function(W, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
-##ref
-#file = File('ref.pvd')
-#ref = Function(V, name='grad ref')
-#ref.interpolate(grad(phi_ref))
-#file.write(ref)
-
-# Solving with Newton method
-#solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
-#solve(a - L == 0, g_phi, solver_parameters={'snes_monitor': None})
-
 #bilinear form for linearization
-a = inner(p(g_phi) * g_phi_t[:,0].dx(0) + q(g_phi) * g_phi_t[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
-a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
+a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
+a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 
 ##Dirichlet BC
-#pen_term = pen/h**4 * inner(g_phi_t[1,0], g_psi[1,0]) * ds# + pen/h**4 * inner(g_phi_t[2,0], g_psi[2,0]) * ds #+ pen/h**4 * inner(g_phi_t[0,0], g_psi[0,0]) * ds 
-#L = pen/h**4 * inner(grad(phi_ref)[1,0], g_psi[1,0]) * ds# + pen/h**4 * inner(grad(phi_ref)[2,0], g_psi[2,0]) * ds #+ pen/h**4 * inner(grad(phi_ref)[0,0], g_psi[0,0]) * ds
+#pen_term = pen/h**4 * inner(g_phi_t[1,0], g_psi[1,0]) * ds + pen/h**2 * inner(g_phi_t[2,0], g_psi[2,0]) * ds + pen/h**4 * inner(g_phi_t[0,0], g_psi[0,0]) * ds 
+#L = pen/h**4 * inner(grad(phi_ref)[1,0], g_psi[1,0]) * ds + pen/h**2 * inner(grad(phi_ref)[2,0], g_psi[2,0]) * ds + pen/h**4 * inner(grad(phi_ref)[0,0], g_psi[0,0]) * ds
 
 #Dirichlet BC other form
 #bilinear
-pen_term = 0.5*pen/h**4 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**4 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
-pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-pen_term += 0.5*pen/h**4 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**4 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
+pen_term = 0.5*pen/h**4 * inner(g_phi[:,1], g_phi[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**4 * inner(g_phi[:,0], g_phi[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
+pen_term += pen/h**4 * inner(g_phi[:,0], g_phi[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(g_phi[:,1], g_phi[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+pen_term += 0.5*pen/h**4 * inner(cross(g_phi[:,0], g_phi[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**4 * inner(cross(g_phi[:,1], g_phi[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
 #linear
-#L = pen/h**4 * inner(dot(grad(phi_ref), n), dot(g_psi, n)) * ds
-#L = pen/h**2 * dot(grad(phi_ref)[:,0], N) * dot(g_psi[:,0], N) * ds + pen/h**2 * dot(grad(phi_ref)[:,1], N) * dot(g_psi[:,1], N) * ds
 L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
 L += 0.5*pen/h**4 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**4 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
 
-# Picard iteration
-tol = 1e-5
-maxiter = 50
-phi_old = Function(V) #for iterations
-file = File('res.pvd')
-for iter in range(maxiter):
-  #linear solve
-  A = assemble(a + pen_term) #, bcs=bcs)
-  b = assemble(L) #, bcs=bcs)
-  solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
+# Solving with Newton method
+try:
+  solve(a - L == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
 
+except ConvergenceError:
   #Compute phi
   phi = comp_phi(mesh, g_phi)
   projected.interpolate(phi - as_vector((x[0], x[1], 0)))
   file.write(projected)
-    
-  eps = sqrt(assemble(inner(grad(g_phi-phi_old), grad(g_phi-phi_old))*dx)) # check increment size as convergence test
-  PETSc.Sys.Print('iteration{:3d}  H1 seminorm of delta: {:10.2e}'.format(iter+1, eps))
-
-  if eps < tol:
-    break
-  phi_old.assign(g_phi)
-
-if eps > tol:
-  PETSc.Sys.Print('no convergence after {} Picard iterations'.format(iter+1))
-else:
-  PETSc.Sys.Print('convergence after {} Picard iterations'.format(iter+1))
-
   
-err = sqrt(assemble(inner(g_phi - grad(phi_ref), g_phi - grad(phi_ref)) * dx))
-PETSc.Sys.Print('Error: %.3e' % err)
+  err = sqrt(assemble(inner(g_phi - grad(phi_ref), g_phi - grad(phi_ref)) * dx))
+  PETSc.Sys.Print('Error: %.3e' % err)
