@@ -28,9 +28,9 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-mesh = Mesh('mesh_2.msh')
+#mesh = Mesh('mesh_2.msh')
 size_ref = 40 #degub: 5
-#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -80,8 +80,8 @@ L += 0.5*pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0
 bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4), DirichletBC(V, grad(phi_ref), 7), DirichletBC(V, grad(phi_ref), 5)]
 
 #solving
-A = assemble(laplace+pen_term, bcs=bcs)
-b = assemble(L, bcs=bcs)
+A = assemble(laplace+pen_term) #, bcs=bcs)
+b = assemble(L) #, bcs=bcs)
 solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
@@ -131,8 +131,8 @@ phi_old = Function(V) #for iterations
 file = File('res.pvd')
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a + pen_term, bcs=bcs)
-  b = assemble(L, bcs=bcs)
+  A = assemble(a + pen_term) #, bcs=bcs)
+  b = assemble(L) #, bcs=bcs)
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 
   #Compute phi
