@@ -28,9 +28,9 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-#mesh = Mesh('mesh_2.msh')
-size_ref = 30 #degub: 5
-mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+mesh = Mesh('mesh_2.msh')
+#size_ref = 30 #degub: 5
+#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -48,7 +48,6 @@ g_phi.interpolate(grad(phi))
 g_phi_t = TrialFunction(V)
 g_psi = TestFunction(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
-#laplace += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC other form
@@ -57,21 +56,32 @@ pen = 1e1
 N = cross(g_phi[:,0], g_phi[:,1])
 n = FacetNormal(mesh)
 
+##bilinear
+#pen_term = 0.5*pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
+#pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+#pen_term += 0.5*pen/h**2 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**2 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
+#
+##linear
+#L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
+#L += 0.5*pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**2 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
+#L += 0.5*pen/h**2 * inner(g_phi[:,1], grad(phi_ref)[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**2 * inner(g_phi[:,0], grad(phi_ref)[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
+
+#Dirichlet BC other form
 #bilinear
-pen_term = 0.5*pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
-pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-pen_term += 0.5*pen/h**2 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**2 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
+pen_term = pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds  #scalar product
+pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds #magnitudes
+pen_term += pen/h**2 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds + pen/h**2 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
 
 #linear
-L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds
-L += 0.5*pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds + 0.5*pen/h**2 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
-L += 0.5*pen/h**2 * inner(g_phi[:,1], grad(phi_ref)[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + 0.5*pen/h**2 * inner(g_phi[:,0], grad(phi_ref)[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds
+L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds #magnitudes
+L += norm(cross(grad(phi_ref)[:,0], grad(phi_ref)[:,1])) / norm(cross(g_phi[:,0], grad(phi_ref)[:,1])) * pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
+L += norm(cross(grad(phi_ref)[:,1], grad(phi_ref)[:,0])) / norm(cross(g_phi[:,1], grad(phi_ref)[:,0]))  * pen/h**2 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
+L += pen/h**2 * inner(g_phi[:,1], grad(phi_ref)[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,0], grad(phi_ref)[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds #scalar product
 
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 1)] #, DirichletBC(V, grad(phi_ref), 2)] #, DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4), DirichletBC(V, grad(phi_ref), 7), DirichletBC(V, grad(phi_ref), 5)]
-#bcs = [DirichletBC(V.sub(5), grad(phi_ref)[2,1], 1), DirichletBC(V.sub(5), grad(phi_ref)[2,1], 2)] #, DirichletBC(V.sub(2), grad(phi_ref)[1,0], 1), DirichletBC(V.sub(1), grad(phi_ref)[1,0], 2)]
-
+#bcs = [DirichletBC(V, grad(phi_ref), 1)]
+bcs = [DirichletBC(V, grad(phi_ref), 8), DirichletBC(V, grad(phi_ref), 6), DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4)]
 #solving
 A = assemble(laplace+pen_term, bcs=bcs)
 b = assemble(L, bcs=bcs)
@@ -111,7 +121,7 @@ pen_term += pen/h**4 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], 
 L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds + pen/h**4 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds #magnitudes
 L += norm(cross(grad(phi_ref)[:,0], grad(phi_ref)[:,1])) / norm(cross(g_phi[:,0], grad(phi_ref)[:,1])) * pen/h**4 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
 L += norm(cross(grad(phi_ref)[:,1], grad(phi_ref)[:,0])) / norm(cross(g_phi[:,1], grad(phi_ref)[:,0]))  * pen/h**4 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
-#L += pen/h**4 * inner(g_phi[:,1], grad(phi_ref)[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + pen/h**4 * inner(g_phi[:,0], grad(phi_ref)[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds #scalar product
+L += pen/h**4 * inner(g_phi[:,1], grad(phi_ref)[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + pen/h**4 * inner(g_phi[:,0], grad(phi_ref)[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds #scalar product
 
 
 # Picard iteration
