@@ -29,9 +29,9 @@ H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
 #mesh = Mesh('mesh_2.msh')
-size_ref = 15 #degub: 5
+size_ref = 25 #degub: 5
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
-V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
+V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
@@ -43,42 +43,16 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 #initial guess
 #solve laplace equation on the domain
 g_phi = Function(V, name='grad solution')
-phi = as_vector((x[0], x[1], 0))
-g_phi.interpolate(grad(phi))
 g_phi_t = TrialFunction(V)
 g_psi = TestFunction(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
 L = Constant(0) * g_psi[0,0] * dx
 
-#Dirichlet BC other form
-h = CellDiameter(mesh)
-pen = 1e1
-N = cross(g_phi[:,0], g_phi[:,1])
-n = FacetNormal(mesh)
-
-#Dirichlet BC other form
-#bilinear
-pen_term = pen/h**2 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds  #scalar product
-pen_term += pen/h**2 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**2 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds #magnitudes
-pen_term += pen/h**2 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds - pen/h**2 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
-pen_term += pen/h**2 * g_phi_t[0,1] / norm(grad(phi_ref)[:,1]) * g_psi[0,1] * ds
-
-
-#linear
-L = pen/h**2 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**2 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds #magnitudes
-#L += norm(cross(grad(phi_ref)[:,0], grad(phi_ref)[:,1])) / norm(cross(g_phi[:,0], grad(phi_ref)[:,1])) * pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
-#L += norm(cross(grad(phi_ref)[:,1], grad(phi_ref)[:,0])) / norm(cross(g_phi[:,1], grad(phi_ref)[:,0]))  * pen/h**2 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
-L += pen/h**2 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds - pen/h**2 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
-L += pen/h**2 * inner(g_phi[:,1], grad(phi_ref)[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds + pen/h**2 * inner(g_phi[:,0], grad(phi_ref)[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds #scalar product
-L+= pen/h**2 * grad(phi_ref)[0,1] / norm(grad(phi_ref)[:,1]) * g_psi[0,1] * ds
-
-
-
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 1)] #, DirichletBC(V, grad(phi_ref), 2)]
-#bcs = [DirichletBC(V, grad(phi_ref), 8), DirichletBC(V, grad(phi_ref), 6), DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2), DirichletBC(V, grad(phi_ref), 3), DirichletBC(V, grad(phi_ref), 4)]
+bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2)]
+
 #solving
-A = assemble(laplace+pen_term, bcs=bcs)
+A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
 solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
@@ -92,36 +66,9 @@ projected = Function(W, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
-##ref
-#file = File('ref.pvd')
-#ref = Function(V, name='grad ref')
-#ref.interpolate(grad(phi_ref))
-#file.write(ref)
-
-# Solving with Newton method
-#solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None})
-#solve(a - L == 0, g_phi, solver_parameters={'snes_monitor': None})
-
 #bilinear form for linearization
 a = inner(p(g_phi) * g_phi_t[:,0].dx(0) + q(g_phi) * g_phi_t[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
 a += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
-
-#Dirichlet BC other form
-#bilinear
-#pen_term = pen/h**4 * inner(g_phi[:,1], g_phi_t[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds
-pen_term = pen/h**4 * inner(g_phi[:,0], g_phi_t[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds  #scalar product
-pen_term += pen/h**4 * inner(g_phi[:,0], g_phi_t[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**4 * inner(g_phi[:,1], g_phi_t[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds #magnitudes
-pen_term += pen/h**4 * inner(cross(g_phi[:,1], g_phi_t[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds# - pen/h**4 * inner(cross(g_phi[:,0], g_phi_t[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
-pen_term += pen/h**4 * g_phi_t[0,1] / norm(grad(phi_ref)[:,1]) * g_psi[0,1] * ds + pen/h**4 * g_phi_t[1,1] / norm(grad(phi_ref)[:,1]) * g_psi[1,1] * ds
-
-#linear
-L = pen/h**4 * inner(grad(phi_ref)[:,0], grad(phi_ref)[:,0]) * inner(g_phi[:,0], g_psi[:,0]) * ds# + pen/h**4 * inner(grad(phi_ref)[:,1], grad(phi_ref)[:,1]) * inner(g_phi[:,1], g_psi[:,1]) * ds #magnitudes
-L += pen/h**4 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds# - pen/h**4 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
-#L += norm(cross(grad(phi_ref)[:,0], grad(phi_ref)[:,1])) / norm(cross(g_phi[:,0], grad(phi_ref)[:,1])) * pen/h**4 * inner(cross(g_phi[:,0], grad(phi_ref)[:,1]), cross(g_phi[:,0], g_psi[:,1])) * ds
-#L += norm(cross(grad(phi_ref)[:,1], grad(phi_ref)[:,0])) / norm(cross(g_phi[:,1], grad(phi_ref)[:,0]))  * pen/h**4 * inner(cross(g_phi[:,1], grad(phi_ref)[:,0]), cross(g_phi[:,1], g_psi[:,0])) * ds
-#L += pen/h**4 * inner(g_phi[:,1], grad(phi_ref)[:,0]) * inner(g_phi[:,1], g_psi[:,0]) * ds
-L += pen/h**4 * inner(g_phi[:,0], grad(phi_ref)[:,1]) * inner(g_phi[:,0], g_psi[:,1]) * ds #scalar product
-L+= pen/h**4 * grad(phi_ref)[0,1] / norm(grad(phi_ref)[:,1]) * g_psi[0,1] * ds + pen/h**4 * grad(phi_ref)[1,1] / norm(grad(phi_ref)[:,1]) * g_psi[1,1] * ds
 
 # Picard iteration
 tol = 1e-5
@@ -130,7 +77,7 @@ g_phi_old = Function(V) #for iterations
 file = File('res.pvd')
 for iter in range(maxiter):
   #linear solve
-  A = assemble(a + pen_term, bcs=bcs)
+  A = assemble(a, bcs=bcs)
   b = assemble(L, bcs=bcs)
   solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'}) # compute next Picard iterate
 

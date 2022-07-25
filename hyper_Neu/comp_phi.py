@@ -6,7 +6,7 @@ from firedrake.petsc import PETSc
 import sys
 
 def comp_phi(mesh, Grad):
-    W = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+    W = VectorFunctionSpace(mesh, "CG", 1, dim=3)
 
     #Reconstructing phi
     phi = Function(W, name='solution')
@@ -55,4 +55,4 @@ def test():
     projected.interpolate(phi - as_vector((x[0], x[1], 0)))
     file.write(projected)
 
-test()
+#test()

@@ -29,8 +29,8 @@ H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
 mesh = Mesh('mesh_2.msh')
-size_ref = 40 #degub: 5
-#mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+size_ref = 15 #degub: 5
+mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -48,7 +48,6 @@ g_phi.interpolate(grad(phi))
 g_phi_t = TrialFunction(V)
 g_psi = TestFunction(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
-#laplace += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC other form
