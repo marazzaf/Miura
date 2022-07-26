@@ -28,7 +28,7 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-size_ref = 200 #25, 50, 100, 200
+size_ref = 25 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
@@ -106,3 +106,12 @@ file = File('v.pvd')
 file.write(v)
 err = errornorm(Constant(0), v, 'l2')
 PETSc.Sys.Print('L2 error: %.3e' % err)
+
+x = Function(WW, name='phi_x')
+x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
+file = File('phi_x.pvd')
+file.write(x)
+y = Function(WW, name='phi_y')
+y.interpolate(inner(g_phi[:,1], g_phi[:,1]))
+file = File('phi_y.pvd')
+file.write(y)
