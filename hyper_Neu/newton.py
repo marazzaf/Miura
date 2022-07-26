@@ -28,9 +28,10 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-#mesh = Mesh('mesh_2.msh')
-size_ref = 25 #degub: 5
+size_ref = 200 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+h = max(L/size_ref, H/size_ref)
+PETSc.Sys.Print('Mesh size: %.5e' % h)
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
@@ -61,7 +62,7 @@ PETSc.Sys.Print('Laplace equation ok')
 #Write 3d results
 file = File('laplacian.pvd')
 phi = comp_phi(mesh, g_phi)
-W = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+W = VectorFunctionSpace(mesh, "CG", 1, dim=3)
 projected = Function(W, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
@@ -79,5 +80,29 @@ projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file = File('res_newton.pvd')
 file.write(projected)
   
-err = sqrt(assemble(inner(g_phi - grad(phi_ref), g_phi - grad(phi_ref)) * dx))
-PETSc.Sys.Print('Error: %.3e' % err)
+err = errornorm(grad(phi_ref), g_phi, 'l2')
+PETSc.Sys.Print('H1 error: %.3e' % err)
+
+vol = assemble(Constant(1) * dx(mesh))
+mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
+
+phi_mean = Function(W)
+phi_mean.interpolate(phi - mean)
+err = errornorm(phi_ref, phi_mean, 'l2')
+PETSc.Sys.Print('L2 error: %.3e' % err)
+
+WW = FunctionSpace(mesh, 'CG', 1)
+u = Function(WW, name='u')
+u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
+file = File('u.pvd')
+file.write(u)
+err = errornorm(Constant(0), u, 'l2')
+PETSc.Sys.Print('L2 error: %.3e' % err)
+
+v = Function(WW, name='v')
+aux = 1 - 0.25 * inner(g_phi[:,0], g_phi[:,0])
+v.interpolate(ln(aux * inner(g_phi[:,1], g_phi[:,1])))
+file = File('v.pvd')
+file.write(v)
+err = errornorm(Constant(0), v, 'l2')
+PETSc.Sys.Print('L2 error: %.3e' % err)

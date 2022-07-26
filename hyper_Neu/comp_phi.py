@@ -15,14 +15,8 @@ def comp_phi(mesh, Grad):
     aux = inner(grad(phi_t), grad(psi)) * dx #g_psi in another space?
     L = inner(Grad, grad(psi)) * dx
 
-    #pen terms
-    pen = 10
-    n = FacetNormal(mesh)
-    pen_term = pen * inner(dot(grad(phi_t), n) , dot(grad(psi), n)) * ds
-    L += pen * inner(dot(Grad, n) , dot(grad(psi), n)) * ds
-
     #solving
-    A = assemble(aux+pen_term) #, bcs=bcs_test)
+    A = assemble(aux) #+pen_term) #, bcs=bcs_test)
     b = assemble(L) #, bcs=bcs_test)
     solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
 
@@ -50,7 +44,7 @@ def test():
     phi = comp_phi(mesh, grad(phi_ref))
     #Write 3d results
     file = File('reconstruction_test.pvd')
-    Z = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+    Z = VectorFunctionSpace(mesh, "CG", 1, dim=3)
     projected = Function(Z, name='surface')
     projected.interpolate(phi - as_vector((x[0], x[1], 0)))
     file.write(projected)
