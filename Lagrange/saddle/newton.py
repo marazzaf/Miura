@@ -56,7 +56,7 @@ phi_ref = (OBp - OC - as_vector((0, H, 0))) *  x[0]*x[1]/L/H + as_vector((x[0], 
 # Boundary conditions
 phi_x = phi_ref.dx(0)
 phi_y = phi_ref.dx(1)
-N = cross(phi_x, phi_y) / norm(cross(phi_x, phi_y))
+N = cross(phi_x, phi_y) / sqrt(inner(cross(phi_x, phi_y), cross(phi_x, phi_y)))
 r = sqrt(x[0]**2 + x[1]**2)
 theta = atan(x[1]/(x[0]+.0001))
 e_r = as_vector((cos(theta), sin(theta), 0))
@@ -64,7 +64,8 @@ e_r = as_vector((cos(theta), sin(theta), 0))
 n_G_x = r/2
 n_G_y = 4/(4-n_G_x**2)
 G_x = n_G_x * e_r
-G_y = n_G_y * cross(N, e_r)
+e_y = cross(N, e_r) / sqrt(inner(cross(N, e_r), cross(N, e_r)))
+G_y = n_G_y * e_y
 G = as_tensor((G_x, G_y)).T
 
 #test
@@ -72,9 +73,9 @@ aux = Function(W)
 file = File('test_phi_x.pvd')
 aux.interpolate(G_x)
 file.write(aux)
-aux = Function(WW)
+aux = Function(W)
 file = File('test_phi_y.pvd')
-aux.interpolate(norm(cross(N, e_r)))
+aux.interpolate(G_y)
 file.write(aux)
 sys.exit()
 
