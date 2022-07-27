@@ -28,21 +28,20 @@ H = 1 #height of rectangle #1.2 works #1.3 no
 size_ref = 1 #50
 #mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
 mesh = Mesh('mesh_%i.msh' % size_ref)
+#Try to get a unit disk mesh?
 
 # Define function space
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 W = VectorFunctionSpace(mesh, "CG", 1, dim=3)
 projected = Function(W, name='surface')
+WW = FunctionSpace(mesh, 'CG', 1)
 
-# Boundary conditions
-beta = 1 #0.1
+#Ref solution
 x = SpatialCoordinate(mesh)
-phi_D1 = beta*as_vector((x[0], x[1], 0))
 
-#modify this one to be the right BC
+#previous ref
 alpha = pi/2 #pi/4
-#modify the rest of the BC because it does not give the expected result...
 l = H*L / sqrt(L*L + H*H)
 sin_gamma = H / sqrt(L*L+H*H)
 cos_gamma = L / sqrt(L*L+H*H)
@@ -51,21 +50,32 @@ DBp = l*sin(alpha)*Constant((0,0,1)) + cos(alpha) * DB
 OC = as_vector((L, 0, 0))
 CD = Constant((-sin_gamma*l,H-cos_gamma*l,0))
 OBp = OC + CD + DBp
-BpC = -DBp - CD
-BpA = BpC + Constant((-L, H, 0))
-phi_D2 = (1-x[0]/L)*BpA + (1-x[1]/H)*BpC + OBp
-phi_D2 *= beta
 
-#Ref solution
 phi_ref = (OBp - OC - as_vector((0, H, 0))) *  x[0]*x[1]/L/H + as_vector((x[0], 0, 0)) + as_vector((0, x[1], 0))
 
+# Boundary conditions
+phi_x = phi_ref.dx(0)
+phi_y = phi_ref.dx(1)
+N = cross(phi_x, phi_y) / norm(cross(phi_x, phi_y))
+r = sqrt(x[0]**2 + x[1]**2)
+theta = atan(x[1]/(x[0]+.0001))
+e_r = as_vector((cos(theta), sin(theta), 0))
+#e_theta = as_vector((-sin(theta), cos(theta), 0))
+n_G_x = r/2
+n_G_y = 4/(4-n_G_x**2)
+G_x = n_G_x * e_r
+G_y = n_G_y * cross(N, e_r)
+G = as_tensor((G_x, G_y)).T
+
 #test
-file = File('test.pvd')
-projected.interpolate(phi_ref - as_vector((x[0], x[1], 0)))
-file.write(projected)
+aux = Function(W)
 file = File('test_phi_x.pvd')
-projected.interpolate(phi_ref.dx(0))
-file.write(projected)
+aux.interpolate(G_x)
+file.write(aux)
+aux = Function(WW)
+file = File('test_phi_y.pvd')
+aux.interpolate(norm(cross(N, e_r)))
+file.write(aux)
 sys.exit()
 
 #initial guess
@@ -77,7 +87,7 @@ laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2)]
+bcs = [DirichletBC(V, G, 1), DirichletBC(V, G, 2), DirichletBC(V, G, 3), DirichletBC(V, G, 4)]
 
 #solving
 A = assemble(laplace, bcs=bcs)
@@ -116,7 +126,6 @@ file.write(projected)
 #err = errornorm(phi_ref, phi_mean, 'l2')
 #PETSc.Sys.Print('L2 error: %.3e' % err)
 
-WW = FunctionSpace(mesh, 'CG', 1)
 u = Function(WW, name='u')
 u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
 file = File('u.pvd')
