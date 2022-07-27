@@ -66,18 +66,23 @@ n_G_y = 4/(4-n_G_x**2)
 G_x = n_G_x * e_r
 e_y = cross(N, e_r) / sqrt(inner(cross(N, e_r), cross(N, e_r)))
 G_y = n_G_y * e_y
+e_x = -cross(N, e_y) / sqrt(inner(cross(N, e_y), cross(N, e_y)))
+G_X = n_G_x * e_x
 G = as_tensor((G_x, G_y)).T
 
-#test
-aux = Function(W)
-file = File('test_phi_x.pvd')
-aux.interpolate(G_x)
-file.write(aux)
-aux = Function(W)
-file = File('test_phi_y.pvd')
-aux.interpolate(G_y)
-file.write(aux)
-sys.exit()
+##test
+#aux = Function(W)
+#file = File('test_phi_x.pvd')
+#aux.interpolate(G_x)
+#file.write(aux)
+#file = File('test_phi_y.pvd')
+#aux.interpolate(G_y)
+#file.write(aux)
+#aux = Function(WW)
+#file = File('test_prod.pvd')
+#aux.interpolate(inner(G_X,G_y))
+#file.write(aux)
+#sys.exit()
 
 #initial guess
 #solve laplace equation on the domain
