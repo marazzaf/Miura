@@ -5,6 +5,7 @@ from firedrake import *
 from firedrake.petsc import PETSc
 import sys
 import numpy as np
+sys.path.append('..')
 from comp_phi import comp_phi
 
 # the coefficient functions

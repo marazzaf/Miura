@@ -5,6 +5,7 @@ from firedrake import *
 from firedrake.petsc import PETSc
 import sys
 import numpy as np
+sys.path.append('..')
 from comp_phi import comp_phi
 
 # the coefficient functions
@@ -21,25 +22,51 @@ def q(g_phi):
   truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
   return truc2
 
-# Size for the domain
-theta = pi/2 #pi/2
-L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
-alpha = sqrt(1 / (1 - sin(theta/2)**2))
-H = 2*pi/alpha #height of rectangle
+# Create mesh
+L = 2 #length of rectangle
+H = 1 #height of rectangle #1.2 works #1.3 no
+size_ref = 1 #50
+#mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+mesh = Mesh('mesh_%i.msh' % size_ref)
 
-#Creating mesh
-size_ref = 25 #25, 50, 100, 200
-mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
-h = max(L/size_ref, H/size_ref)
-PETSc.Sys.Print('Mesh size: %.5e' % h)
+# Define function space
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
+W = VectorFunctionSpace(mesh, "CG", 1, dim=3)
+projected = Function(W, name='surface')
 
-#  Ref solution
+# Boundary conditions
+beta = 1 #0.1
 x = SpatialCoordinate(mesh)
-rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
-z = 2*sin(theta/2) * (x[0]-L/2)
-phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+phi_D1 = beta*as_vector((x[0], x[1], 0))
+
+#modify this one to be the right BC
+alpha = pi/2 #pi/4
+#modify the rest of the BC because it does not give the expected result...
+l = H*L / sqrt(L*L + H*H)
+sin_gamma = H / sqrt(L*L+H*H)
+cos_gamma = L / sqrt(L*L+H*H)
+DB = l*as_vector((sin_gamma,cos_gamma,0))
+DBp = l*sin(alpha)*Constant((0,0,1)) + cos(alpha) * DB
+OC = as_vector((L, 0, 0))
+CD = Constant((-sin_gamma*l,H-cos_gamma*l,0))
+OBp = OC + CD + DBp
+BpC = -DBp - CD
+BpA = BpC + Constant((-L, H, 0))
+phi_D2 = (1-x[0]/L)*BpA + (1-x[1]/H)*BpC + OBp
+phi_D2 *= beta
+
+#Ref solution
+phi_ref = (OBp - OC - as_vector((0, H, 0))) *  x[0]*x[1]/L/H + as_vector((x[0], 0, 0)) + as_vector((0, x[1], 0))
+
+#test
+file = File('test.pvd')
+projected.interpolate(phi_ref - as_vector((x[0], x[1], 0)))
+file.write(projected)
+file = File('test_phi_x.pvd')
+projected.interpolate(phi_ref.dx(0))
+file.write(projected)
+sys.exit()
 
 #initial guess
 #solve laplace equation on the domain
@@ -59,13 +86,11 @@ solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
 
-#Write 3d results
-file = File('laplacian.pvd')
-phi = comp_phi(mesh, g_phi)
-W = VectorFunctionSpace(mesh, "CG", 1, dim=3)
-projected = Function(W, name='surface')
-projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file.write(projected)
+##Write 3d results
+#file = File('laplacian.pvd')
+#phi = comp_phi(mesh, g_phi)
+#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+#file.write(projected)
 
 #bilinear form for linearization
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
@@ -80,16 +105,16 @@ projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file = File('res_newton.pvd')
 file.write(projected)
   
-err = errornorm(grad(phi_ref), g_phi, 'l2')
-PETSc.Sys.Print('H1 error: %.3e' % err)
-
-vol = assemble(Constant(1) * dx(mesh))
-mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
-
-phi_mean = Function(W)
-phi_mean.interpolate(phi - mean)
-err = errornorm(phi_ref, phi_mean, 'l2')
-PETSc.Sys.Print('L2 error: %.3e' % err)
+#err = errornorm(grad(phi_ref), g_phi, 'l2')
+#PETSc.Sys.Print('H1 error: %.3e' % err)
+#
+#vol = assemble(Constant(1) * dx(mesh))
+#mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
+#
+#phi_mean = Function(W)
+#phi_mean.interpolate(phi - mean)
+#err = errornorm(phi_ref, phi_mean, 'l2')
+#PETSc.Sys.Print('L2 error: %.3e' % err)
 
 WW = FunctionSpace(mesh, 'CG', 1)
 u = Function(WW, name='u')
