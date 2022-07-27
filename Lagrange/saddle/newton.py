@@ -7,6 +7,7 @@ import sys
 import numpy as np
 sys.path.append('..')
 from comp_phi import comp_phi
+from ufl import sign
 
 # the coefficient functions
 def p(g_phi):
@@ -23,12 +24,8 @@ def q(g_phi):
   return truc2
 
 # Create mesh
-L = 2 #length of rectangle
-H = 1 #height of rectangle #1.2 works #1.3 no
-size_ref = 1 #50
-#mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+size_ref = 2
 mesh = Mesh('mesh_%i.msh' % size_ref)
-#Try to get a unit disk mesh?
 
 # Define function space
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
@@ -40,47 +37,29 @@ WW = FunctionSpace(mesh, 'CG', 1)
 #Ref solution
 x = SpatialCoordinate(mesh)
 
-#previous ref
-alpha = pi/2 #pi/4
-l = H*L / sqrt(L*L + H*H)
-sin_gamma = H / sqrt(L*L+H*H)
-cos_gamma = L / sqrt(L*L+H*H)
-DB = l*as_vector((sin_gamma,cos_gamma,0))
-DBp = l*sin(alpha)*Constant((0,0,1)) + cos(alpha) * DB
-OC = as_vector((L, 0, 0))
-CD = Constant((-sin_gamma*l,H-cos_gamma*l,0))
-OBp = OC + CD + DBp
-
-phi_ref = (OBp - OC - as_vector((0, H, 0))) *  x[0]*x[1]/L/H + as_vector((x[0], 0, 0)) + as_vector((0, x[1], 0))
-
 # Boundary conditions
-phi_x = phi_ref.dx(0)
-phi_y = phi_ref.dx(1)
-N = cross(phi_x, phi_y) / sqrt(inner(cross(phi_x, phi_y), cross(phi_x, phi_y)))
 r = sqrt(x[0]**2 + x[1]**2)
 theta = atan(x[1]/(x[0]+.0001))
-e_r = as_vector((cos(theta), sin(theta), 0))
-#e_theta = as_vector((-sin(theta), cos(theta), 0))
-n_G_x = r/2
+e_r = as_vector((cos(theta), sin(theta), 0)) * sign(x[0])
+e_theta = as_vector((-sin(theta), cos(theta), 0)) * sign(x[0])
+n_G_x = r
 n_G_y = 4/(4-n_G_x**2)
-G_x = n_G_x * e_r
-e_y = cross(N, e_r) / sqrt(inner(cross(N, e_r), cross(N, e_r)))
-G_y = n_G_y * e_y
-e_x = -cross(N, e_y) / sqrt(inner(cross(N, e_y), cross(N, e_y)))
-G_X = n_G_x * e_x
+G_x = n_G_x * as_vector((0, 0, -1))
+G_y = n_G_y * e_theta
 G = as_tensor((G_x, G_y)).T
 
 ##test
 #aux = Function(W)
 #file = File('test_phi_x.pvd')
-#aux.interpolate(G_x)
+#aux.interpolate(e_r)
 #file.write(aux)
+#aux = Function(W)
 #file = File('test_phi_y.pvd')
-#aux.interpolate(G_y)
+#aux.interpolate(e_theta)
 #file.write(aux)
 #aux = Function(WW)
 #file = File('test_prod.pvd')
-#aux.interpolate(inner(G_X,G_y))
+#aux.interpolate(inner(G_x,G_y))
 #file.write(aux)
 #sys.exit()
 
@@ -93,7 +72,7 @@ laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V, G, 1), DirichletBC(V, G, 2), DirichletBC(V, G, 3), DirichletBC(V, G, 4)]
+bcs = [DirichletBC(V, G, 1)] #, DirichletBC(V, G, 2), DirichletBC(V, G, 3), DirichletBC(V, G, 4)]
 
 #solving
 A = assemble(laplace, bcs=bcs)
@@ -118,7 +97,7 @@ solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max
 #Compute phi
 phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file = File('res_newton.pvd')
+file = File('phi.pvd')
 file.write(projected)
   
 #err = errornorm(grad(phi_ref), g_phi, 'l2')
@@ -137,15 +116,15 @@ u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
 file = File('u.pvd')
 file.write(u)
 err = errornorm(Constant(0), u, 'l2')
-PETSc.Sys.Print('L2 error: %.3e' % err)
+PETSc.Sys.Print('L2 error in u: %.3e' % err)
 
 v = Function(WW, name='v')
 aux = 1 - 0.25 * inner(g_phi[:,0], g_phi[:,0])
-v.interpolate(ln(aux * inner(g_phi[:,1], g_phi[:,1])))
+v.interpolate(aux * inner(g_phi[:,1], g_phi[:,1]))
 file = File('v.pvd')
 file.write(v)
-err = errornorm(Constant(0), v, 'l2')
-PETSc.Sys.Print('L2 error: %.3e' % err)
+err = errornorm(Constant(1), v, 'l2')
+PETSc.Sys.Print('L2 error in v: %.3e' % err)
 
 x = Function(WW, name='phi_x')
 x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
