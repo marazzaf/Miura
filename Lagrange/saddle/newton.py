@@ -26,6 +26,7 @@ def q(g_phi):
 # Create mesh
 size_ref = 2
 mesh = Mesh('mesh_%i.msh' % size_ref)
+mesh = Mesh('test.msh')
 
 # Define function space
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
@@ -39,16 +40,28 @@ x = SpatialCoordinate(mesh)
 
 # Boundary conditions
 r = sqrt(x[0]**2 + x[1]**2)
-theta = atan(x[1]/(x[0]+.0001))
-e_r = as_vector((cos(theta), sin(theta), 0)) * sign(x[0])
-e_theta = as_vector((-sin(theta), cos(theta), 0)) * sign(x[0])
+theta_1 = atan(x[1]/(x[0]+.0001))
+theta_2 = pi + atan(x[1]/(x[0]+.0001))
+theta = conditional(lt(x[0], Constant(0)), theta_2, theta_1)
+#e_r = as_vector((cos(theta), sin(theta), 0))
+#e_theta = as_vector((-sin(theta), cos(theta), 0))
 n_G_x = r
-n_G_y = 4/(4-n_G_x**2)
-G_x = n_G_x * as_vector((0, 0, -1))
-G_y = n_G_y * e_theta
+n_G_y = sqrt(4/(4-n_G_x**2))
+#G_x = n_G_x * e_theta
+#G_y = n_G_y * Constant((0, 0, 1))
+theta_s = pi/2
+e_r = as_vector((cos(theta)*sin(theta_s), sin(theta)*sin(theta_s), cos(theta_s)))
+e_theta = as_vector((cos(theta)*cos(theta_s), sin(theta)*cos(theta_s), -sin(theta_s)))
+e_phi = as_vector((-sin(theta), cos(theta), 0))
+G_x = n_G_x * e_theta
+G_y = n_G_y * e_phi
 G = as_tensor((G_x, G_y)).T
 
 ##test
+#aux = Function(WW)
+#file = File('theta.pvd')
+#aux.interpolate(theta)
+#file.write(aux)
 #aux = Function(W)
 #file = File('test_phi_x.pvd')
 #aux.interpolate(e_r)
@@ -72,7 +85,7 @@ laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V, G, 1)] #, DirichletBC(V, G, 2), DirichletBC(V, G, 3), DirichletBC(V, G, 4)]
+bcs = [DirichletBC(V, G, 1)]
 
 #solving
 A = assemble(laplace, bcs=bcs)
@@ -97,8 +110,9 @@ solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max
 #Compute phi
 phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file = File('phi.pvd')
+file = File('phi_aux.pvd')
 file.write(projected)
+#sys.exit()
   
 #err = errornorm(grad(phi_ref), g_phi, 'l2')
 #PETSc.Sys.Print('H1 error: %.3e' % err)
@@ -125,6 +139,18 @@ file = File('v.pvd')
 file.write(v)
 err = errornorm(Constant(1), v, 'l2')
 PETSc.Sys.Print('L2 error in v: %.3e' % err)
+
+aux = Function(W)
+aux.interpolate(g_phi[:,0])
+file = File('phi_x.pvd')
+file.write(aux)
+file = File('phi_y.pvd')
+aux.interpolate(g_phi[:,1])
+file.write(aux)
+file = File('normal.pvd')
+aux.interpolate(cross(g_phi[:,0], g_phi[:,1]))
+file.write(aux)
+sys.exit()
 
 x = Function(WW, name='phi_x')
 x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
