@@ -19,14 +19,16 @@ def p(g_phi):
 def q(g_phi):
   sq = inner(g_phi[:,1], g_phi[:,1])
   aux = 4 / sq
-  truc = conditional(lt(sq, Constant(1)), Constant(4), aux)
+  truc = conditional(lt(sq, Constant(0.5)), Constant(8), aux)
   truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
   return truc2
 
 # Create mesh
-size_ref = 2
-mesh = Mesh('mesh_%i.msh' % size_ref)
-mesh = Mesh('test.msh')
+L = 1
+H = 2*pi
+size_ref = 50
+mesh = RectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed')
+mesh = PeriodicRectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed', direction='y')
 
 # Define function space
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
@@ -37,25 +39,34 @@ WW = FunctionSpace(mesh, 'CG', 1)
 
 #Ref solution
 x = SpatialCoordinate(mesh)
+n = FacetNormal(mesh)
 
-# Boundary conditions
-r = sqrt(x[0]**2 + x[1]**2)
-theta_1 = atan(x[1]/(x[0]+.0001))
-theta_2 = pi + atan(x[1]/(x[0]+.0001))
-theta = conditional(lt(x[0], Constant(0)), theta_2, theta_1)
-#e_r = as_vector((cos(theta), sin(theta), 0))
-#e_theta = as_vector((-sin(theta), cos(theta), 0))
-n_G_x = r
+## Boundary conditions
+#r = sqrt(x[0]**2 + x[1]**2)
+#theta_1 = atan(x[1]/(x[0]+.0001))
+#theta_2 = pi + atan(x[1]/(x[0]+.0001))
+#theta = conditional(lt(x[0], Constant(0)), theta_2, theta_1)
+##e_r = as_vector((cos(theta), sin(theta), 0))
+##e_theta = as_vector((-sin(theta), cos(theta), 0))
+#n_G_x = r
+#n_G_y = sqrt(4/(4-n_G_x**2))
+##G_x = n_G_x * e_theta
+##G_y = n_G_y * Constant((0, 0, 1))
+theta_s = pi/4
+e_r = as_vector((cos(x[1])*sin(theta_s), sin(x[1])*sin(theta_s), cos(theta_s)))
+e_theta = as_vector((cos(x[1])*cos(theta_s), sin(x[1])*cos(theta_s), -sin(theta_s)))
+e_phi = as_vector((-sin(x[1]), cos(x[1]), 0))
+G_x = e_phi
+n_G_x = inner(G_x, G_x)
 n_G_y = sqrt(4/(4-n_G_x**2))
-#G_x = n_G_x * e_theta
-#G_y = n_G_y * Constant((0, 0, 1))
-theta_s = pi/2
-e_r = as_vector((cos(theta)*sin(theta_s), sin(theta)*sin(theta_s), cos(theta_s)))
-e_theta = as_vector((cos(theta)*cos(theta_s), sin(theta)*cos(theta_s), -sin(theta_s)))
-e_phi = as_vector((-sin(theta), cos(theta), 0))
-G_x = n_G_x * e_theta
-G_y = n_G_y * e_phi
+G_y = -n_G_y * e_theta
 G = as_tensor((G_x, G_y)).T
+
+##other BC
+#G_y = sqrt(4/3) * as_vector((n[0], n[1], 0))
+#T = as_vector((-n[1], n[0], 0))
+#G_x = -cross(as_vector((n[0], n[1], 0)), T)
+#G = as_tensor((G_x, G_y)).T
 
 ##test
 #aux = Function(WW)
@@ -85,7 +96,7 @@ laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V, G, 1)]
+bcs = [DirichletBC(V, G, 1), DirichletBC(V, G, 2)] #, DirichletBC(V, G, 3), DirichletBC(V, G, 4)]
 
 #solving
 A = assemble(laplace, bcs=bcs)
@@ -110,7 +121,7 @@ solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max
 #Compute phi
 phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file = File('phi_aux.pvd')
+file = File('phi.pvd')
 file.write(projected)
 #sys.exit()
   
