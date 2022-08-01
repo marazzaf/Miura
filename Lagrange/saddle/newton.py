@@ -19,7 +19,7 @@ def p(g_phi):
 def q(g_phi):
   sq = inner(g_phi[:,1], g_phi[:,1])
   aux = 4 / sq
-  truc = conditional(lt(sq, Constant(0.5)), Constant(8), aux)
+  truc = conditional(lt(sq, Constant(1)), Constant(4), aux)
   truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
   return truc2
 
@@ -27,7 +27,7 @@ def q(g_phi):
 L = 1
 H = 2*pi
 size_ref = 50
-mesh = RectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed')
+#mesh = RectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed')
 mesh = PeriodicRectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed', direction='y')
 
 # Define function space
@@ -52,14 +52,14 @@ n = FacetNormal(mesh)
 #n_G_y = sqrt(4/(4-n_G_x**2))
 ##G_x = n_G_x * e_theta
 ##G_y = n_G_y * Constant((0, 0, 1))
-theta_s = pi/4
+theta_s = pi/2
 e_r = as_vector((cos(x[1])*sin(theta_s), sin(x[1])*sin(theta_s), cos(theta_s)))
 e_theta = as_vector((cos(x[1])*cos(theta_s), sin(x[1])*cos(theta_s), -sin(theta_s)))
 e_phi = as_vector((-sin(x[1]), cos(x[1]), 0))
-G_x = e_phi
+G_x = e_r
 n_G_x = inner(G_x, G_x)
 n_G_y = sqrt(4/(4-n_G_x**2))
-G_y = -n_G_y * e_theta
+G_y = n_G_y * e_phi
 G = as_tensor((G_x, G_y)).T
 
 ##other BC
@@ -105,25 +105,27 @@ solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
 
-##Write 3d results
-#file = File('laplacian.pvd')
-#phi = comp_phi(mesh, g_phi)
-#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-#file.write(projected)
+#Write 3d results
+file = File('laplacian.pvd')
+phi = comp_phi(mesh, g_phi)
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+file.write(projected)
 
 #bilinear form for linearization
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
 a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 
 # Solving with Newton method
-solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
+try:
+  solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 2}) #25})
 
 #Compute phi
-phi = comp_phi(mesh, g_phi)
-projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file = File('phi.pvd')
-file.write(projected)
-#sys.exit()
+except exceptions.ConvergenceError:
+  phi = comp_phi(mesh, g_phi)
+  projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+  file = File('phi.pvd')
+  file.write(projected)
+  sys.exit()
   
 #err = errornorm(grad(phi_ref), g_phi, 'l2')
 #PETSc.Sys.Print('H1 error: %.3e' % err)
