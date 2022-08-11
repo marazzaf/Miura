@@ -19,7 +19,8 @@ def p(g_phi):
 def q(g_phi):
   sq = inner(g_phi[:,1], g_phi[:,1])
   aux = 4 / sq
-  truc = conditional(lt(sq, Constant(1)), Constant(4), aux)
+  val = 1.75
+  truc = conditional(lt(sq, Constant(val)), Constant(4/val), aux)
   truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
   return truc2
 
@@ -83,7 +84,9 @@ file.write(aux)
 g_phi = Function(V, name='grad solution')
 g_phi_t = TrialFunction(V)
 g_psi = TestFunction(V)
-laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
+laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #weak laplace
+#laplace = inner(g_phi_t[:,0].dx(0) + 2*g_phi_t[:,1].dx(1),  g_psi[:,0].dx(0) + 2*g_psi[:,1].dx(1)) * dx #test
+#laplace += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
