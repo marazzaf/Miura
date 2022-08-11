@@ -24,7 +24,7 @@ def q(g_phi):
   return truc2
 
 # Create mesh
-L = 1
+L = 0.75
 H = 2*pi
 size_ref = 50
 #mesh = RectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed')
@@ -56,31 +56,22 @@ theta_s = pi/2
 e_r = as_vector((cos(x[1])*sin(theta_s), sin(x[1])*sin(theta_s), cos(theta_s)))
 e_theta = as_vector((cos(x[1])*cos(theta_s), sin(x[1])*cos(theta_s), -sin(theta_s)))
 e_phi = as_vector((-sin(x[1]), cos(x[1]), 0))
-G_x = e_r
-n_G_x = inner(G_x, G_x)
-n_G_y = sqrt(4/(4-n_G_x**2))
+rho_m = sqrt(4/3)
+G_x = ((2*sqrt(1 - 0.5/rho_m)-1)/L * x[0] + 1) * e_r
+n_G_x_2 = inner(G_x, G_x)
+n_G_y = sqrt(4/(4-n_G_x_2))
 G_y = n_G_y * e_phi
 G = as_tensor((G_x, G_y)).T
 
-##other BC
-#G_y = sqrt(4/3) * as_vector((n[0], n[1], 0))
-#T = as_vector((-n[1], n[0], 0))
-#G_x = -cross(as_vector((n[0], n[1], 0)), T)
-#G = as_tensor((G_x, G_y)).T
-
-##test
-#aux = Function(WW)
-#file = File('theta.pvd')
-#aux.interpolate(theta)
-#file.write(aux)
-#aux = Function(W)
-#file = File('test_phi_x.pvd')
-#aux.interpolate(e_r)
-#file.write(aux)
-#aux = Function(W)
-#file = File('test_phi_y.pvd')
-#aux.interpolate(e_theta)
-#file.write(aux)
+#test
+aux = Function(W)
+file = File('test_phi_x.pvd')
+aux.interpolate(G_x)
+file.write(aux)
+aux = Function(W)
+file = File('test_phi_y.pvd')
+aux.interpolate(G_y)
+file.write(aux)
 #aux = Function(WW)
 #file = File('test_prod.pvd')
 #aux.interpolate(inner(G_x,G_y))
@@ -110,6 +101,7 @@ file = File('laplacian.pvd')
 phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
+#sys.exit()
 
 #bilinear form for linearization
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
@@ -117,7 +109,7 @@ a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx
 
 # Solving with Newton method
 try:
-  solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 2}) #25})
+  solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #25})
 
 #Compute phi
 except exceptions.ConvergenceError:
@@ -125,6 +117,14 @@ except exceptions.ConvergenceError:
   projected.interpolate(phi - as_vector((x[0], x[1], 0)))
   file = File('phi.pvd')
   file.write(projected)
+
+  ##test radius of Miura ring.
+  #phi_mean = Function(W)
+  #vol = assemble(Constant(1) * dx(mesh))
+  #mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
+  #phi_mean.interpolate(phi - mean)
+  #dist = interpolate(sqrt(inner(phi_mean, phi_mean)), WW)
+  #print(dist.vector().max())
   sys.exit()
   
 #err = errornorm(grad(phi_ref), g_phi, 'l2')
@@ -163,13 +163,14 @@ file.write(aux)
 file = File('normal.pvd')
 aux.interpolate(cross(g_phi[:,0], g_phi[:,1]))
 file.write(aux)
-sys.exit()
+#sys.exit()
 
 x = Function(WW, name='phi_x')
 x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
-file = File('phi_x.pvd')
-file.write(x)
+#file = File('phi_x.pvd')
+#file.write(x)
 y = Function(WW, name='phi_y')
 y.interpolate(inner(g_phi[:,1], g_phi[:,1]))
-file = File('phi_y.pvd')
-file.write(y)
+PETSc.Sys.Print('Min norm of phi_y squared: %.5e' % min(y.vector().array()))
+#file = File('phi_y.pvd')
+#file.write(y)
