@@ -19,7 +19,7 @@ def p(g_phi):
 def q(g_phi):
   sq = inner(g_phi[:,1], g_phi[:,1])
   aux = 4 / sq
-  val = 1.75
+  val = 1
   truc = conditional(lt(sq, Constant(val)), Constant(4/val), aux)
   truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
   return truc2
@@ -140,6 +140,9 @@ except exceptions.ConvergenceError:
 #phi_mean.interpolate(phi - mean)
 #err = errornorm(phi_ref, phi_mean, 'l2')
 #PETSc.Sys.Print('L2 error: %.3e' % err)
+
+#Try to restrict phi in another output to Omega'.
+#This way, we'll only have what can be constructed.
 
 u = Function(WW, name='u')
 u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
