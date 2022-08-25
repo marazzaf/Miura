@@ -26,9 +26,9 @@ def q(g_phi):
 # Create mesh
 L = 2
 H = 2
-size_ref = 50
-mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-mesh = Mesh('mesh.msh')
+#size_ref = 100
+#mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+mesh = Mesh('mesh_2.msh')
 
 # Define function space
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
@@ -52,7 +52,7 @@ n_G_y = sqrt(4/(4-n_G_x_2))
 #aux.interpolate(n_G_y)
 #file = File('test.pvd')
 #file.write(aux)
-G_y = n_G_y * phi_ref.dx(1) / sqrt(inner(phi_ref.dx(1), phi_ref.dx(1)))
+G_y = n_G_y * (phi_ref.dx(1) / sqrt(inner(phi_ref.dx(1), phi_ref.dx(1))) - inner(phi_ref.dx(0), phi_ref.dx(1)) /sqrt(inner(phi_ref.dx(1), phi_ref.dx(1))) / n_G_x_2  * G_x)
 G = as_tensor((G_x, G_y)).T
 
 #initial guess
@@ -98,6 +98,10 @@ file.write(projected)
   
 #Try to restrict phi in another output to Omega'.
 #This way, we'll only have what can be constructed.
+aux = Function(WW)
+aux.interpolate(sign(inner(g_phi[:,1], g_phi[:,1]) - 1))
+file = File('test.pvd')
+file.write(aux)
 
 u = Function(WW, name='u')
 u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
