@@ -87,14 +87,14 @@ g_psi = TestFunction(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #weak laplace
 #laplace = inner(g_phi_t[:,0].dx(0) + 2*g_phi_t[:,1].dx(1),  g_psi[:,0].dx(0) + 2*g_psi[:,1].dx(1)) * dx #test
 #laplace += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
-L = Constant(0) * g_psi[0,0] * dx
+zero = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
 bcs = [DirichletBC(V, G, 1), DirichletBC(V, G, 2)] #, DirichletBC(V, G, 3), DirichletBC(V, G, 4)]
 
 #solving
 A = assemble(laplace, bcs=bcs)
-b = assemble(L, bcs=bcs)
+b = assemble(zero, bcs=bcs)
 solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
@@ -111,24 +111,15 @@ a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) *
 a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
 
 # Solving with Newton method
-try:
-  solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #25})
+#try:
+solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #25})
 
 #Compute phi
-except exceptions.ConvergenceError:
-  phi = comp_phi(mesh, g_phi)
-  projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-  file = File('phi.pvd')
-  file.write(projected)
-
-  ##test radius of Miura ring.
-  #phi_mean = Function(W)
-  #vol = assemble(Constant(1) * dx(mesh))
-  #mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
-  #phi_mean.interpolate(phi - mean)
-  #dist = interpolate(sqrt(inner(phi_mean, phi_mean)), WW)
-  #print(dist.vector().max())
-  sys.exit()
+#except exceptions.ConvergenceError:
+phi = comp_phi(mesh, g_phi)
+projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+file = File('phi.pvd')
+file.write(projected)
   
 #err = errornorm(grad(phi_ref), g_phi, 'l2')
 #PETSc.Sys.Print('H1 error: %.3e' % err)
@@ -143,6 +134,10 @@ except exceptions.ConvergenceError:
 
 #Try to restrict phi in another output to Omega'.
 #This way, we'll only have what can be constructed.
+aux = Function(WW)
+aux.interpolate(sign(inner(g_phi[:,1], g_phi[:,1]) - 1))
+file = File('test.pvd')
+file.write(aux)
 
 u = Function(WW, name='u')
 u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
@@ -197,3 +192,27 @@ test_2 = q(g_phi)*u.dx(1) - 2*v.dx(0)
 aux.interpolate(test_2)
 file = File('test_2.pvd')
 file.write(aux)
+
+#Write 3d results
+mesh = RectangleMesh(size_ref, 6*size_ref, L*0.999, H*0.999, diagonal='crossed')
+W = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
+X = interpolate(mesh.coordinates, VectorFunctionSpace(mesh, 'CG', 1))
+
+#gives values from phi
+def func(data):
+  res = np.zeros((len(data),3))
+  for i,dat in enumerate(data):
+    res[i,:] = phi(dat)
+  return res
+
+# Use the external data function to interpolate the values of f.
+phi_bis = Function(W)
+phi_bis.dat.data[:] = func(X.dat.data_ro)
+
+#interpolation on new mesh
+projected = Function(W, name='surface')
+file = File('new.pvd')
+x = SpatialCoordinate(mesh)
+#projected.interpolate(as_vector((x[0], x[1], 0)))
+projected.interpolate(phi_bis - as_vector((x[0], x[1], 0)))
+file.write(projected)

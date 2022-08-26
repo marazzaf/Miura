@@ -19,8 +19,8 @@ def p(g_phi):
 def q(g_phi):
   sq = inner(g_phi[:,1], g_phi[:,1])
   aux = 4 / sq
-  truc = conditional(lt(sq, Constant(1)), Constant(4), aux)
-  truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
+  truc = conditional(gt(sq, Constant(4)), Constant(1), aux)
+  truc2 = conditional(lt(sq, Constant(1)), Constant(4), truc)
   return truc2
 
 # Create mesh
@@ -28,7 +28,7 @@ L = 2
 H = 2
 #size_ref = 100
 #mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-mesh = Mesh('mesh_2.msh')
+mesh = Mesh('mesh_3.msh')
 
 # Define function space
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
@@ -52,7 +52,9 @@ n_G_y = sqrt(4/(4-n_G_x_2))
 #aux.interpolate(n_G_y)
 #file = File('test.pvd')
 #file.write(aux)
-G_y = n_G_y * (phi_ref.dx(1) / sqrt(inner(phi_ref.dx(1), phi_ref.dx(1))) - inner(phi_ref.dx(0), phi_ref.dx(1)) /sqrt(inner(phi_ref.dx(1), phi_ref.dx(1))) / n_G_x_2  * G_x)
+aux = phi_ref.dx(1) - inner(G_x, phi_ref.dx(1)) * G_x / inner(G_x, G_x)
+G_y = n_G_y * aux / sqrt(inner(aux, aux))
+#(phi_ref.dx(1) / sqrt(inner(phi_ref.dx(1), phi_ref.dx(1))) - inner(phi_ref.dx(0), phi_ref.dx(1)) /sqrt(inner(phi_ref.dx(1), phi_ref.dx(1))) / n_G_x_2  * G_x)
 G = as_tensor((G_x, G_y)).T
 
 #initial guess
@@ -121,10 +123,11 @@ file.write(v)
 err = errornorm(Constant(1), v, 'l2')
 PETSc.Sys.Print('L2 error in v: %.3e' % err)
 
-aux = Function(W)
+aux = Function(W, name='phi_x')
 aux.interpolate(g_phi[:,0])
 file = File('phi_x.pvd')
 file.write(aux)
+aux = Function(W, name='phi_y')
 file = File('phi_y.pvd')
 aux.interpolate(g_phi[:,1])
 file.write(aux)
@@ -134,3 +137,15 @@ x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
 y = Function(WW, name='phi_y')
 y.interpolate(inner(g_phi[:,1], g_phi[:,1]))
 PETSc.Sys.Print('Min norm of phi_y squared: %.5e' % min(y.vector().array()))
+
+#Verif aux eq
+WW = FunctionSpace(mesh, 'DG', 0)
+test_1 = p(g_phi)*u.dx(0) + 2*v.dx(1)
+aux = Function(WW)
+aux.interpolate(test_1)
+file = File('test_1.pvd')
+file.write(aux)
+test_2 = q(g_phi)*u.dx(1) - 2*v.dx(0)
+aux.interpolate(test_2)
+file = File('test_2.pvd')
+file.write(aux)
