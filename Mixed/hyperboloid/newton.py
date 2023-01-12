@@ -29,7 +29,7 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-size_ref = 25 #25, 50, 100, 200
+size_ref = 200 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
@@ -52,7 +52,6 @@ v = Function(V, name='grad solution')
 g_phi_t,q_t = TrialFunctions(V)
 g_psi,r = TestFunctions(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + 10 * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
-#Add somthing for the constraint...
 laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
@@ -65,7 +64,6 @@ A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
 solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
 g_phi,qq = v.split()
-#solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
 
 #Write 3d results
@@ -79,10 +77,7 @@ file.write(projected)
 #bilinear form for linearization
 v = Function(V, name='grad solution')
 g_phi,qq = split(v)
-#qq = as_vector((v[6], v[7], v[8]))
-#gg_phi = as_tensor(((v[0], v[1]), (v[2], v[3]), (v[4], v[5])))
 
-#a = inner(p(gg_phi) * gg_phi[:,0].dx(0) + q(gg_phi) * gg_phi[:,1].dx(1), g_psi[:,0]) * dx
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
 a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
 a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
