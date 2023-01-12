@@ -49,7 +49,6 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 #initial guess
 #solve laplace equation on the domain
 v = Function(V, name='grad solution')
-g_phi,q = v.split()
 g_phi_t,q_t = TrialFunctions(V)
 g_psi,r = TestFunctions(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + 10 * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
@@ -65,7 +64,7 @@ bcs = [DirichletBC(V.sub(0), grad(phi_ref), 1), DirichletBC(V.sub(0), grad(phi_r
 A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
 solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
-g_phi,q = v.split()
+g_phi,qq = v.split()
 #solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
 PETSc.Sys.Print('Laplace equation ok')
 
@@ -77,14 +76,20 @@ projected = Function(W, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
-sys.exit()
-
 #bilinear form for linearization
+v = Function(V, name='grad solution')
+g_phi,qq = split(v)
+#qq = as_vector((v[6], v[7], v[8]))
+#gg_phi = as_tensor(((v[0], v[1]), (v[2], v[3]), (v[4], v[5])))
+
+#a = inner(p(gg_phi) * gg_phi[:,0].dx(0) + q(gg_phi) * gg_phi[:,1].dx(1), g_psi[:,0]) * dx
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
-a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
+a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
+a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
-solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
+solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
+g_phi,qq = v.split()
 
 #Compute phi
 phi = comp_phi(mesh, g_phi)
