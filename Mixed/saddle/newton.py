@@ -28,12 +28,13 @@ L = 2
 H = 2
 #size_ref = 100
 #mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-mesh = Mesh('mesh_2.msh')
+mesh = Mesh('mesh_1.msh')
 
 # Define function space
-W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
-Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
-V = W * Q
+#W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
+#Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
+#V = W * Q
+V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #Ref solution
@@ -53,23 +54,28 @@ G = as_tensor((G_x, G_y)).T
 
 #initial guess
 #solve laplace equation on the domain
-g_phi_t,q_t = TrialFunctions(V)
-g_psi,r = TestFunctions(V)
-pen = 1
-laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + pen * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
-laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
+#g_phi_t,q_t = TrialFunctions(V)
+#g_psi,r = TestFunctions(V)
+g_phi_t = TrialFunction(V)
+g_psi = TestFunction(V)
+pen = 1e1
+laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #+ pen * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
+#laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V.sub(0), G, 2)]
-#bcs = [DirichletBC(V.sub(0), G, 1), DirichletBC(V.sub(0), G, 2), DirichletBC(V.sub(0), G, 3), DirichletBC(V.sub(0), G, 4)]
+#bcs = [DirichletBC(V.sub(0), G, 2)]
+bcs = [DirichletBC(V, G, 2)]
+
 
 #solving
 A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
-v = Function(V, name='grad solution')
-solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
-g_phi,qq = v.split()
+#v = Function(V, name='grad solution')
+g_phi = Function(V, name='grad solution')
+#solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
+solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
+#g_phi,qq = v.split()
 PETSc.Sys.Print('Laplace equation ok')
 
 #Write 3d results
