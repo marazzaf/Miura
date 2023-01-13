@@ -77,15 +77,19 @@ WW = VectorFunctionSpace(mesh, "CG", 3, dim=3)
 projected = Function(WW, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
-sys.exit()
 
 #bilinear form for linearization
+v = Function(V, name='grad solution')
+g_phi,qq = split(v)
+
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
-a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
+a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
+a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
 #try:
-solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #25})
+solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #25})
+g_phi,qq = v.split()
 
 #Compute phi
 #except exceptions.ConvergenceError:
@@ -93,21 +97,14 @@ phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file = File('phi.pvd')
 file.write(projected)
-sys.exit()
 
 #Check if curl of the solution inside is zero
-WW = FunctionSpace(mesh, 'CG', 2)
-  
-#err = errornorm(grad(phi_ref), g_phi, 'l2')
-#PETSc.Sys.Print('H1 error: %.3e' % err)
-#
-#vol = assemble(Constant(1) * dx(mesh))
-#mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
-#
-#phi_mean = Function(W)
-#phi_mean.interpolate(phi - mean)
-#err = errornorm(phi_ref, phi_mean, 'l2')
-#PETSc.Sys.Print('L2 error: %.3e' % err)
+WW = FunctionSpace(mesh, 'CG', 1)
+truc = g_phi[:,1].dx(0) - g_phi[:,0].dx(1) 
+aux = Function(WW)
+aux.interpolate(inner(truc, truc))
+file = File('curl.pvd')
+file.write(aux)
 
 #Try to restrict phi in another output to Omega'.
 #This way, we'll only have what can be constructed.
@@ -115,46 +112,48 @@ aux = Function(WW)
 aux.interpolate(sign(inner(g_phi[:,1], g_phi[:,1]) - 1))
 file = File('test.pvd')
 file.write(aux)
-
-u = Function(WW, name='u')
-u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
-file = File('u.pvd')
-file.write(u)
-err = errornorm(Constant(0), u, 'l2')
-PETSc.Sys.Print('L2 error in u: %.3e' % err)
-
-v = Function(WW, name='v')
-aux = 1 - 0.25 * inner(g_phi[:,0], g_phi[:,0])
-v.interpolate(ln(aux * inner(g_phi[:,1], g_phi[:,1])))
-#aux = v * ds(2)
-#print(assemble(aux))
 #sys.exit()
-file = File('v.pvd')
-file.write(v)
-err = errornorm(Constant(1), v, 'l2')
-PETSc.Sys.Print('L2 error in v: %.3e' % err)
-
-aux = Function(W)
-aux.interpolate(g_phi[:,0])
-file = File('phi_x.pvd')
-file.write(aux)
-file = File('phi_y.pvd')
-aux.interpolate(g_phi[:,1])
-file.write(aux)
-file = File('normal.pvd')
-aux.interpolate(cross(g_phi[:,0], g_phi[:,1]))
-file.write(aux)
-#sys.exit()
+#
+#u = Function(WW, name='u')
+#u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
+#file = File('u.pvd')
+#file.write(u)
+#err = errornorm(Constant(0), u, 'l2')
+#PETSc.Sys.Print('L2 error in u: %.3e' % err)
+#
+#v = Function(WW, name='v')
+#aux = 1 - 0.25 * inner(g_phi[:,0], g_phi[:,0])
+#v.interpolate(ln(aux * inner(g_phi[:,1], g_phi[:,1])))
+##aux = v * ds(2)
+##print(assemble(aux))
+##sys.exit()
+#file = File('v.pvd')
+#file.write(v)
+#err = errornorm(Constant(1), v, 'l2')
+#PETSc.Sys.Print('L2 error in v: %.3e' % err)
+#
+#aux = Function(W)
+#aux.interpolate(g_phi[:,0])
+#file = File('phi_x.pvd')
+#file.write(aux)
+#file = File('phi_y.pvd')
+#aux.interpolate(g_phi[:,1])
+#file.write(aux)
+#file = File('normal.pvd')
+#aux.interpolate(cross(g_phi[:,0], g_phi[:,1]))
+#file.write(aux)
+##sys.exit()
 
 x = Function(WW, name='phi_x')
 x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
-#file = File('phi_x.pvd')
-#file.write(x)
+file = File('phi_x.pvd')
+file.write(x)
 y = Function(WW, name='phi_y')
 y.interpolate(inner(g_phi[:,1], g_phi[:,1]))
 PETSc.Sys.Print('Min norm of phi_y squared: %.5e' % min(y.vector().array()))
-#file = File('phi_y.pvd')
-#file.write(y)
+file = File('phi_y.pvd')
+file.write(y)
+sys.exit()
 
 #Verif aux eq
 WW = FunctionSpace(mesh, 'DG', 0)
