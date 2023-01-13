@@ -69,8 +69,8 @@ PETSc.Sys.Print('Laplace equation ok')
 #Write 3d results
 file = File('laplacian.pvd')
 phi = comp_phi(mesh, g_phi)
-W = VectorFunctionSpace(mesh, "CG", 1, dim=3)
-projected = Function(W, name='surface')
+WW = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+projected = Function(WW, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 

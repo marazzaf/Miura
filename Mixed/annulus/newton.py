@@ -19,40 +19,27 @@ def p(g_phi):
 def q(g_phi):
   sq = inner(g_phi[:,1], g_phi[:,1])
   aux = 4 / sq
-  val = 1
-  truc = conditional(lt(sq, Constant(val)), Constant(4/val), aux)
+  truc = conditional(lt(sq, Constant(1)), Constant(4), aux)
   truc2 = conditional(gt(sq, Constant(4)), Constant(1), truc)
   return truc2
 
 # Create mesh
 L = 0.75
 H = 2*pi
-size_ref = 50
-#mesh = RectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed')
+size_ref = 25 #50
 mesh = PeriodicRectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed', direction='y')
 
 # Define function space
-V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
+W = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
+Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
+V = W * Q
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
-W = VectorFunctionSpace(mesh, "CG", 1, dim=3)
-projected = Function(W, name='surface')
-WW = FunctionSpace(mesh, 'CG', 2)
 
 #Ref solution
 x = SpatialCoordinate(mesh)
 n = FacetNormal(mesh)
 
 ## Boundary conditions
-#r = sqrt(x[0]**2 + x[1]**2)
-#theta_1 = atan(x[1]/(x[0]+.0001))
-#theta_2 = pi + atan(x[1]/(x[0]+.0001))
-#theta = conditional(lt(x[0], Constant(0)), theta_2, theta_1)
-##e_r = as_vector((cos(theta), sin(theta), 0))
-##e_theta = as_vector((-sin(theta), cos(theta), 0))
-#n_G_x = r
-#n_G_y = sqrt(4/(4-n_G_x**2))
-##G_x = n_G_x * e_theta
-##G_y = n_G_y * Constant((0, 0, 1))
 theta_s = pi/2
 e_r = as_vector((cos(x[1])*sin(theta_s), sin(x[1])*sin(theta_s), cos(theta_s)))
 e_theta = as_vector((cos(x[1])*cos(theta_s), sin(x[1])*cos(theta_s), -sin(theta_s)))
@@ -64,47 +51,33 @@ n_G_y = sqrt(4/(4-n_G_x_2))
 G_y = n_G_y * e_phi
 G = as_tensor((G_x, G_y)).T
 
-#test
-aux = Function(W)
-file = File('test_phi_x.pvd')
-aux.interpolate(G_x)
-file.write(aux)
-aux = Function(W)
-file = File('test_phi_y.pvd')
-aux.interpolate(G_y)
-file.write(aux)
-#aux = Function(WW)
-#file = File('test_prod.pvd')
-#aux.interpolate(inner(G_x,G_y))
-#file.write(aux)
-#sys.exit()
-
 #initial guess
 #solve laplace equation on the domain
-g_phi = Function(V, name='grad solution')
-g_phi_t = TrialFunction(V)
-g_psi = TestFunction(V)
-laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #weak laplace
-#laplace = inner(g_phi_t[:,0].dx(0) + 2*g_phi_t[:,1].dx(1),  g_psi[:,0].dx(0) + 2*g_psi[:,1].dx(1)) * dx #test
-#laplace += inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
+v = Function(V, name='grad solution')
+g_phi_t,q_t = TrialFunctions(V)
+g_psi,r = TestFunctions(V)
+laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + 10 * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
+laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
 zero = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V, G, 1), DirichletBC(V, G, 2)] #, DirichletBC(V, G, 3), DirichletBC(V, G, 4)]
+bcs = [DirichletBC(V.sub(0), G, 1), DirichletBC(V.sub(0), G, 2)] #, DirichletBC(V, G, 3), DirichletBC(V, G, 4)]
 
 #solving
 A = assemble(laplace, bcs=bcs)
 b = assemble(zero, bcs=bcs)
-solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
-#solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
+solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
+g_phi,qq = v.split()
 PETSc.Sys.Print('Laplace equation ok')
 
 #Write 3d results
 file = File('laplacian.pvd')
 phi = comp_phi(mesh, g_phi)
+WW = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+projected = Function(WW, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
-#sys.exit()
+sys.exit()
 
 #bilinear form for linearization
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
@@ -120,6 +93,10 @@ phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file = File('phi.pvd')
 file.write(projected)
+sys.exit()
+
+#Check if curl of the solution inside is zero
+WW = FunctionSpace(mesh, 'CG', 2)
   
 #err = errornorm(grad(phi_ref), g_phi, 'l2')
 #PETSc.Sys.Print('H1 error: %.3e' % err)
