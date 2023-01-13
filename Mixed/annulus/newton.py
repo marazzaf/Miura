@@ -30,7 +30,7 @@ size_ref = 25 #50 #25
 mesh = PeriodicRectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed', direction='y')
 
 # Define function space
-W = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
+W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
 V = W * Q
 PETSc.Sys.Print('Nb dof: %i' % V.dim())

@@ -35,7 +35,7 @@ h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
 
 #Function Space
-W = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
+W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
 V = W * Q
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
@@ -48,7 +48,6 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 #initial guess
 #solve laplace equation on the domain
-v = Function(V, name='grad solution')
 g_phi_t,q_t = TrialFunctions(V)
 g_psi,r = TestFunctions(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + 10 * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
@@ -62,6 +61,7 @@ bcs = [DirichletBC(V.sub(0), grad(phi_ref), 1), DirichletBC(V.sub(0), grad(phi_r
 #solving
 A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
+v = Function(V, name='grad solution')
 solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
 g_phi,qq = v.split()
 PETSc.Sys.Print('Laplace equation ok')
