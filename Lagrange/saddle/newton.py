@@ -28,7 +28,7 @@ L = 2
 H = 2
 #size_ref = 100
 #mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-mesh = Mesh('mesh_3.msh')
+mesh = Mesh('mesh.msh')
 
 # Define function space
 V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))

@@ -26,7 +26,7 @@ def q(g_phi):
 # Create mesh
 L = 0.75
 H = 2*pi
-size_ref = 25 #50
+size_ref = 25 #50 #25
 mesh = PeriodicRectangleMesh(size_ref, 6*size_ref, L, H, diagonal='crossed', direction='y')
 
 # Define function space
@@ -56,7 +56,8 @@ G = as_tensor((G_x, G_y)).T
 v = Function(V, name='grad solution')
 g_phi_t,q_t = TrialFunctions(V)
 g_psi,r = TestFunctions(V)
-laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + 10 * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
+pen = 1e1
+laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + pen * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
 laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
 zero = Constant(0) * g_psi[0,0] * dx
 
@@ -83,12 +84,12 @@ v = Function(V, name='grad solution')
 g_phi,qq = split(v)
 
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
-a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
+a += pen * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
 a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
 #try:
-solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #25})
+solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #, 'snes_rtol': 1e-10})
 g_phi,qq = v.split()
 
 #Compute phi
@@ -108,30 +109,33 @@ file.write(aux)
 
 #Try to restrict phi in another output to Omega'.
 #This way, we'll only have what can be constructed.
+WW = FunctionSpace(mesh, 'CG', 4)
 aux = Function(WW)
 aux.interpolate(sign(inner(g_phi[:,1], g_phi[:,1]) - 1))
 file = File('test.pvd')
 file.write(aux)
 #sys.exit()
-#
-#u = Function(WW, name='u')
-#u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
-#file = File('u.pvd')
-#file.write(u)
-#err = errornorm(Constant(0), u, 'l2')
-#PETSc.Sys.Print('L2 error in u: %.3e' % err)
-#
-#v = Function(WW, name='v')
-#aux = 1 - 0.25 * inner(g_phi[:,0], g_phi[:,0])
-#v.interpolate(ln(aux * inner(g_phi[:,1], g_phi[:,1])))
-##aux = v * ds(2)
-##print(assemble(aux))
-##sys.exit()
-#file = File('v.pvd')
-#file.write(v)
-#err = errornorm(Constant(1), v, 'l2')
-#PETSc.Sys.Print('L2 error in v: %.3e' % err)
-#
+
+u = Function(WW, name='u')
+u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
+res = assemble( inner(g_phi[:,0], g_phi[:,1]) * dx)
+PETSc.Sys.Print('res in u: %.3e' % res)
+file = File('u.pvd')
+file.write(u)
+err = errornorm(Constant(0), u, 'l2')
+PETSc.Sys.Print('L2 error in u: %.3e' % err)
+
+v = Function(WW, name='v')
+aux = 1 - 0.25 * inner(g_phi[:,0], g_phi[:,0])
+v.interpolate(ln(aux * inner(g_phi[:,1], g_phi[:,1])))
+res = assemble( ln(aux * inner(g_phi[:,1], g_phi[:,1])) * dx)
+PETSc.Sys.Print('res in v: %.3e' % res)
+sys.exit()
+file = File('v.pvd')
+file.write(v)
+err = errornorm(Constant(1), v, 'l2')
+PETSc.Sys.Print('L2 error in v: %.3e' % err)
+
 #aux = Function(W)
 #aux.interpolate(g_phi[:,0])
 #file = File('phi_x.pvd')
@@ -155,19 +159,19 @@ file = File('phi_y.pvd')
 file.write(y)
 sys.exit()
 
-#Verif aux eq
-WW = FunctionSpace(mesh, 'DG', 0)
-test_1 = p(g_phi)*u.dx(0) + 2*v.dx(1)
-#test_1 = 2*p(g_phi)*u.dx(0) + v.dx(1)
-aux = Function(WW)
-aux.interpolate(test_1)
-file = File('test_1.pvd')
-file.write(aux)
-test_2 = q(g_phi)*u.dx(1) - 2*v.dx(0)
-#test_2 = 2*p(g_phi)*u.dx(1) - v.dx(0)
-aux.interpolate(test_2)
-file = File('test_2.pvd')
-file.write(aux)
+##Verif aux eq
+#WW = FunctionSpace(mesh, 'DG', 0)
+#test_1 = p(g_phi)*u.dx(0) + 2*v.dx(1)
+##test_1 = 2*p(g_phi)*u.dx(0) + v.dx(1)
+#aux = Function(WW)
+#aux.interpolate(test_1)
+#file = File('test_1.pvd')
+#file.write(aux)
+#test_2 = q(g_phi)*u.dx(1) - 2*v.dx(0)
+##test_2 = 2*p(g_phi)*u.dx(1) - v.dx(0)
+#aux.interpolate(test_2)
+#file = File('test_2.pvd')
+#file.write(aux)
 
 #Write 3d results
 mesh = RectangleMesh(size_ref, 6*size_ref, L*0.999, H*0.999, diagonal='crossed')
