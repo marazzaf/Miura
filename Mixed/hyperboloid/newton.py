@@ -29,7 +29,7 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-size_ref = 200 #25, 50, 100, 200
+size_ref = 25 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
