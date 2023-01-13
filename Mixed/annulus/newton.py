@@ -111,10 +111,10 @@ file.write(aux)
 #This way, we'll only have what can be constructed.
 WW = FunctionSpace(mesh, 'CG', 4)
 aux = Function(WW)
-aux.interpolate(sign(inner(g_phi[:,1], g_phi[:,1]) - 1))
+aux.interpolate(sign(inner(g_phi[:,0], g_phi[:,0]) - 1e-1))
 file = File('test.pvd')
 file.write(aux)
-#sys.exit()
+sys.exit()
 
 u = Function(WW, name='u')
 u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
