@@ -1,13 +1,7 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
-
-#def exponential_decay(t, y): return -0.5 * y
-#
-#sol = solve_ivp(exponential_decay, [0, 10], [2, 4, 8])
-#
-#print(sol.t)
-#print(sol.y)
+import sys
 
 alpha = 1
 
@@ -17,7 +11,7 @@ def rhs(t, y):
 
 N = 10
 L = 2*np.pi/alpha
-H = 10
+H = 1.3
 
 beta_0 = np.pi/3
 theta_0 = np.pi/2
@@ -27,6 +21,7 @@ rho = solve_ivp(rhs, [0, H], [rho_0, rho_p_0], max_step=H/N)
 
 plt.plot(rho.t, rho.y[0], '*-')
 plt.show()
+#sys.exit()
 
 M = len(rho.y[0])
 print(M)
