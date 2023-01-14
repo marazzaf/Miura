@@ -15,7 +15,9 @@ def rhs(t, y):
     aux = 4*alpha*alpha * y[0] / (4 - alpha*alpha*y[0]*y[0])**2
     return [y[1], aux]
 
-sol = solve_ivp(rhs, [0, 10], [0, 0.5])
+rho = solve_ivp(rhs, [0, 10], [0, 0.5])
 
-plt.plot(sol.t, sol.y[0], '*-')
+plt.plot(rho.t, rho.y[0], '*-')
 plt.show()
+
+L = 2*np.pi/alpha
