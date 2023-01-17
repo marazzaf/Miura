@@ -3,7 +3,7 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 import sys
 
-alpha = 1
+alpha = 1 #np.sqrt(3) / 2
 
 def rhs(t, y):
     aux = 4*alpha*alpha * y[0] / (4 - alpha*alpha*y[0]*y[0])**2
@@ -11,11 +11,11 @@ def rhs(t, y):
 
 N = 50
 L = 2*np.pi/alpha
-H = 2 #1.3
+H = 4 #1.3
 
-beta_0 = np.pi/3.5
-theta_0 = np.pi/2
-rho_0 = 0 #0
+beta_0 = 0
+theta_0 = np.pi/4
+rho_0 = 0.1 #0
 rho_p_0 = 2*np.sin(beta_0)*np.cos(theta_0/2)
 rho = solve_ivp(rhs, [0, H], [rho_0, rho_p_0], max_step=H/N)
 

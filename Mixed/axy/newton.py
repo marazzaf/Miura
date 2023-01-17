@@ -25,25 +25,25 @@ def q(g_phi):
   return truc2
 
 # Size for the domain
-alpha = 1
+alpha = 1 #np.sqrt(3) / 2
 
 def rhs(t, y):
     aux = 4*alpha*alpha * y[0] / (4 - alpha*alpha*y[0]*y[0])**2
     return [y[1], aux]
 
-N = 1e3
+N = 1e2
 L = 2*np.pi/alpha
-H = 1.3
+H = 4 #1.3
 
-beta_0 = np.pi/3 #0 #np.pi/3
-theta_0 = np.pi / 2 #np.pi / 4 #np.pi/2
-rho_0 = 0 #0.1
+beta_0 = 0 #0 #np.pi/3
+theta_0 = np.pi / 4 #np.pi / 4 #np.pi/2
+rho_0 = 0.1 #0.1
 rho_p_0 = 2*np.sin(beta_0)*np.cos(theta_0/2)
 rho_aux = solve_ivp(rhs, [0, H], [rho_0, rho_p_0], max_step=H/N)
 rho = interpolate.interp1d(rho_aux.t, rho_aux.y[0])
 
 #Creating mesh
-size_ref = 50 #25, 50, 100, 200
+size_ref = 100 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='x', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
@@ -156,7 +156,6 @@ file = File('v.pvd')
 file.write(v)
 err = errornorm(Constant(0), v, 'l2')
 PETSc.Sys.Print('L2 error: %.3e' % err)
-sys.exit()
 
 x = Function(WW, name='phi_x')
 x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
