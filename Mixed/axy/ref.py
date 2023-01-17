@@ -19,8 +19,8 @@ rho_0 = 0
 rho_p_0 = 2*np.sin(beta_0)*np.cos(theta_0/2)
 rho = solve_ivp(rhs, [0, H], [rho_0, rho_p_0], max_step=H/N)
 
-plt.plot(rho.t, rho.y[0], '*-')
-plt.show()
+#plt.plot(rho.t, rho.y[0], '*-')
+#plt.show()
 #sys.exit()
 
 M = len(rho.y[0])

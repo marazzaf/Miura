@@ -7,6 +7,8 @@ import sys
 import numpy as np
 sys.path.append('..')
 from comp_phi import comp_phi
+from scipy.integrate import solve_ivp
+from scipy import interpolate
 
 # the coefficient functions
 def p(g_phi):
@@ -23,14 +25,28 @@ def q(g_phi):
   return truc2
 
 # Size for the domain
-theta = pi/2 #pi/2
-L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
-alpha = sqrt(1 / (1 - sin(theta/2)**2))
-H = 2*pi/alpha #height of rectangle
+alpha = 1
+
+def rhs(t, y):
+    aux = 4*alpha*alpha * y[0] / (4 - alpha*alpha*y[0]*y[0])**2
+    return [y[1], aux]
+
+N = 10
+L = 2*np.pi/alpha
+H = 1.3
+
+beta_0 = np.pi/3
+theta_0 = np.pi/2
+rho_0 = 0
+rho_p_0 = 2*np.sin(beta_0)*np.cos(theta_0/2)
+rho_aux = solve_ivp(rhs, [0, H], [rho_0, rho_p_0], max_step=H/N)
+rho = interpolate.interp1d(rho_aux.t, rho_aux.y[0])
+#print(rho(.4))
+#sys.exit()
 
 #Creating mesh
-size_ref = 50 #25, 50, 100, 200
-mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+size_ref = 10 #25, 50, 100, 200
+mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='x', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
 
@@ -42,9 +58,23 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
 x = SpatialCoordinate(mesh)
-rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
-z = 2*sin(theta/2) * (x[0]-L/2)
-phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+Rho = x[1]
+
+WW = FunctionSpace(mesh, 'CG', 1)
+test = Function(W)
+test = project(x[1], WW)
+aux = test.vector().array()
+aux = np.absolute(aux)
+aux = np.around(aux, 3)
+
+Rho = Function(WW)
+Rho.vector()[:] = rho(aux)
+
+z = cos(beta_0)/cos(theta_0/2) * x[1]
+phi_ref = as_vector((Rho*cos(alpha*x[0]), Rho*sin(alpha*x[0]), z))
+
+bc = DirichletBC(V.sub(0), grad(phi_ref), 1)
+sys.exit()
 
 #initial guess
 #solve laplace equation on the domain
