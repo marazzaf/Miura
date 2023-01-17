@@ -9,19 +9,19 @@ def rhs(t, y):
     aux = 4*alpha*alpha * y[0] / (4 - alpha*alpha*y[0]*y[0])**2
     return [y[1], aux]
 
-N = 10
+N = 50
 L = 2*np.pi/alpha
-H = 1.3
+H = 2 #1.3
 
-beta_0 = np.pi/3
+beta_0 = np.pi/3.5
 theta_0 = np.pi/2
-rho_0 = 0
+rho_0 = 0 #0
 rho_p_0 = 2*np.sin(beta_0)*np.cos(theta_0/2)
 rho = solve_ivp(rhs, [0, H], [rho_0, rho_p_0], max_step=H/N)
 
-#plt.plot(rho.t, rho.y[0], '*-')
-#plt.show()
-#sys.exit()
+plt.plot(rho.t, rho.y[0], '*-')
+plt.show()
+sys.exit()
 
 M = len(rho.y[0])
 print(M)
