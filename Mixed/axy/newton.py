@@ -35,9 +35,9 @@ N = 1e3
 L = 2*np.pi/alpha
 H = 1.3
 
-beta_0 = 0 #np.pi/3.5
-theta_0 = np.pi / 4 #np.pi/2
-rho_0 = 0.1
+beta_0 = np.pi/3 #0 #np.pi/3
+theta_0 = np.pi / 2 #np.pi / 4 #np.pi/2
+rho_0 = 0 #0.1
 rho_p_0 = 2*np.sin(beta_0)*np.cos(theta_0/2)
 rho_aux = solve_ivp(rhs, [0, H], [rho_0, rho_p_0], max_step=H/N)
 rho = interpolate.interp1d(rho_aux.t, rho_aux.y[0])
@@ -110,9 +110,15 @@ a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) *
 a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
 a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
+#Add a pen term to impose weakly the BC
+pen = 10
+h = CellDiameter(mesh)
+a += pen / h / h * inner(g_phi - grad(phi_ref), g_psi) * ds
+
 # Solving with Newton method
 #try:
-solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 10}) #25})
+#solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #25})
+solve(a == 0, v, solver_parameters={'snes_monitor': None, 'snes_max_it': 25}) #25})
 #except firedrake.exceptions.ConvergenceError:
 g_phi,qq = v.split()
 
