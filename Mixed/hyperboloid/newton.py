@@ -29,7 +29,7 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-size_ref = 50 #25, 50, 100, 200
+size_ref = 25 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
@@ -63,6 +63,7 @@ A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
 v = Function(V, name='grad solution')
 solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
+#solve(A, v, b, solver_parameters={'ksp_type': 'cg','pc_type': 'gamg', 'ksp_rtol': 1e-5})
 g_phi,qq = v.split()
 PETSc.Sys.Print('Laplace equation ok')
 
@@ -93,9 +94,12 @@ file = File('res_newton.pvd')
 file.write(projected)
   
 err = errornorm(grad(phi_ref), g_phi, 'l2')
-PETSc.Sys.Print('H1 error: %.3e' % err)
+PETSc.Sys.Print('L2 error grad: %.3e' % err)
 
-#sys.exit()
+err = errornorm(grad(phi_ref), g_phi, 'h1')
+PETSc.Sys.Print('H1 error grad: %.3e' % err)
+
+sys.exit()
 #
 #vol = assemble(Constant(1) * dx(mesh))
 #mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
