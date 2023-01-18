@@ -28,13 +28,13 @@ L = 2
 H = 2
 #size_ref = 100
 #mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-mesh = Mesh('mesh_1.msh')
+mesh = Mesh('mesh.msh')
 
 # Define function space
 #W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 #Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
 #V = W * Q
-V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
+V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #Ref solution
