@@ -33,7 +33,11 @@ size_ref = 25 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
-V = TensorFunctionSpace(mesh, "CG", 1, shape=(3,2))
+
+#Function Space
+W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
+Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
+V = W * Q
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
@@ -44,36 +48,43 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 #initial guess
 #solve laplace equation on the domain
-g_phi = Function(V, name='grad solution')
-g_phi_t = TrialFunction(V)
-g_psi = TestFunction(V)
-laplace = inner(grad(g_phi_t), grad(g_psi)) * dx #laplace in weak form
+g_phi_t,q_t = TrialFunctions(V)
+g_psi,r = TestFunctions(V)
+laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + 10 * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
+laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2)]
+bcs = [DirichletBC(V.sub(0), grad(phi_ref), 1), DirichletBC(V.sub(0), grad(phi_ref), 2)]
+#How to impose zero average for the Lagrange multiplier
 
 #solving
 A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
-solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
-#solve(A, phi, b, solver_parameters={'ksp_type': 'cg','pc_type': 'bjacobi', 'ksp_rtol': 1e-5})
+v = Function(V, name='grad solution')
+solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
+g_phi,qq = v.split()
 PETSc.Sys.Print('Laplace equation ok')
 
 #Write 3d results
 file = File('laplacian.pvd')
 phi = comp_phi(mesh, g_phi)
-W = VectorFunctionSpace(mesh, "CG", 1, dim=3)
-projected = Function(W, name='surface')
+WW = VectorFunctionSpace(mesh, "CG", 3, dim=3)
+projected = Function(WW, name='surface')
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
 #bilinear form for linearization
+v = Function(V, name='grad solution')
+g_phi,qq = split(v)
+
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
-a += inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx
+a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
+a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
-solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
+solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
+g_phi,qq = v.split()
 
 #Compute phi
 phi = comp_phi(mesh, g_phi)
@@ -84,15 +95,17 @@ file.write(projected)
 err = errornorm(grad(phi_ref), g_phi, 'l2')
 PETSc.Sys.Print('H1 error: %.3e' % err)
 
-vol = assemble(Constant(1) * dx(mesh))
-mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
+#sys.exit()
+#
+#vol = assemble(Constant(1) * dx(mesh))
+#mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
+#
+#phi_mean = Function(W)
+#phi_mean.interpolate(phi - mean)
+#err = errornorm(phi_ref, phi_mean, 'l2')
+#PETSc.Sys.Print('L2 error: %.3e' % err)
 
-phi_mean = Function(W)
-phi_mean.interpolate(phi - mean)
-err = errornorm(phi_ref, phi_mean, 'l2')
-PETSc.Sys.Print('L2 error: %.3e' % err)
-
-WW = FunctionSpace(mesh, 'CG', 1)
+WW = FunctionSpace(mesh, 'CG', 2)
 u = Function(WW, name='u')
 u.interpolate(inner(g_phi[:,0], g_phi[:,1]))
 file = File('u.pvd')
@@ -107,6 +120,7 @@ file = File('v.pvd')
 file.write(v)
 err = errornorm(Constant(0), v, 'l2')
 PETSc.Sys.Print('L2 error: %.3e' % err)
+sys.exit()
 
 x = Function(WW, name='phi_x')
 x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
