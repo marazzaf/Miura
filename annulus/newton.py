@@ -107,6 +107,41 @@ aux.interpolate(inner(truc, truc))
 file = File('curl.pvd')
 file.write(aux)
 
+x = Function(WW, name='phi_x')
+x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
+file = File('phi_x.pvd')
+file.write(x)
+y = Function(WW, name='phi_y')
+y.interpolate(inner(g_phi[:,1], g_phi[:,1]))
+PETSc.Sys.Print('Min norm of phi_y squared: %.5e' % min(y.vector().array()))
+file = File('phi_y.pvd')
+file.write(y)
+sys.exit()
+
+#Write 3d results
+mesh = RectangleMesh(size_ref, 6*size_ref, L*0.999, H*0.999, diagonal='crossed')
+W = VectorFunctionSpace(mesh, 'CG', 2, dim=3)
+X = interpolate(mesh.coordinates, VectorFunctionSpace(mesh, 'CG', 2))
+
+#gives values from phi
+def func(data):
+  res = np.zeros((len(data),3))
+  for i,dat in enumerate(data):
+    res[i,:] = phi(dat)
+  return res
+
+# Use the external data function to interpolate the values of f.
+phi_bis = Function(W)
+phi_bis.dat.data[:] = func(X.dat.data_ro)
+
+#interpolation on new mesh
+projected = Function(W, name='surface')
+file = File('new.pvd')
+x = SpatialCoordinate(mesh)
+#projected.interpolate(as_vector((x[0], x[1], 0)))
+projected.interpolate(phi_bis - as_vector((x[0], x[1], 0)))
+file.write(projected)
+
 #Try to restrict phi in another output to Omega'.
 #This way, we'll only have what can be constructed.
 WW = FunctionSpace(mesh, 'CG', 4)
@@ -114,6 +149,7 @@ aux = Function(WW)
 aux.interpolate(sign(inner(g_phi[:,0], g_phi[:,0]) - 1e-1))
 file = File('test.pvd')
 file.write(aux)
+
 sys.exit()
 
 u = Function(WW, name='u')
@@ -148,17 +184,6 @@ PETSc.Sys.Print('L2 error in v: %.3e' % err)
 #file.write(aux)
 ##sys.exit()
 
-x = Function(WW, name='phi_x')
-x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
-file = File('phi_x.pvd')
-file.write(x)
-y = Function(WW, name='phi_y')
-y.interpolate(inner(g_phi[:,1], g_phi[:,1]))
-PETSc.Sys.Print('Min norm of phi_y squared: %.5e' % min(y.vector().array()))
-file = File('phi_y.pvd')
-file.write(y)
-sys.exit()
-
 ##Verif aux eq
 #WW = FunctionSpace(mesh, 'DG', 0)
 #test_1 = p(g_phi)*u.dx(0) + 2*v.dx(1)
@@ -172,27 +197,3 @@ sys.exit()
 #aux.interpolate(test_2)
 #file = File('test_2.pvd')
 #file.write(aux)
-
-#Write 3d results
-mesh = RectangleMesh(size_ref, 6*size_ref, L*0.999, H*0.999, diagonal='crossed')
-W = VectorFunctionSpace(mesh, 'CG', 1, dim=3)
-X = interpolate(mesh.coordinates, VectorFunctionSpace(mesh, 'CG', 1))
-
-#gives values from phi
-def func(data):
-  res = np.zeros((len(data),3))
-  for i,dat in enumerate(data):
-    res[i,:] = phi(dat)
-  return res
-
-# Use the external data function to interpolate the values of f.
-phi_bis = Function(W)
-phi_bis.dat.data[:] = func(X.dat.data_ro)
-
-#interpolation on new mesh
-projected = Function(W, name='surface')
-file = File('new.pvd')
-x = SpatialCoordinate(mesh)
-#projected.interpolate(as_vector((x[0], x[1], 0)))
-projected.interpolate(phi_bis - as_vector((x[0], x[1], 0)))
-file.write(projected)
