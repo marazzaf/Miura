@@ -24,13 +24,14 @@ def q(g_phi):
 
 # Size for the domain
 L = 2 #length of rectangle
-H = 1 #height of rectangle
+H = 2 #height of rectangle
 
 #Creating mesh
-size_ref = 50 #25, 50, 100, 200
-mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-h = max(L/size_ref, H/size_ref)
-PETSc.Sys.Print('Mesh size: %.5e' % h)
+#size_ref = 25 #25, 50, 100, 200
+#mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+mesh = Mesh('mesh.msh')
+#h = max(L/size_ref, H/size_ref)
+#PETSc.Sys.Print('Mesh size: %.5e' % h)
 
 #Function Space
 W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
@@ -40,11 +41,24 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
 x = SpatialCoordinate(mesh)
-u = Constant((1, 0, 0))
-v = Constant((0, 1, 0))
-f = sqrt(x[0]*x[0]*x[0] / 8 * 3)
-g = 
-G_ref = as_tensor(((f * u[0], g * v[0]), (f * u[1], g * v[1]), (f * u[2], g * v[2])))
+G1 = as_tensor(((1, 0), (0, 0), (0, sqrt(4/3))))
+alpha = pi/2
+G2 = as_tensor(((cos(alpha), 0), (sin(alpha), 0), (0, sqrt(4/3))))
+
+##Check BC
+#file = File('BC1.pvd')
+#phi = comp_phi(mesh, G1)
+#WW = VectorFunctionSpace(mesh, "CG", 1, dim=3)
+#projected = Function(WW, name='surface')
+#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+#file.write(projected)
+#file = File('BC2.pvd')
+#phi = comp_phi(mesh, G2)
+#WW = VectorFunctionSpace(mesh, "CG", 1, dim=3)
+#projected = Function(WW, name='surface')
+#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
+#file.write(projected)
+##sys.exit()
 
 #initial guess
 #solve laplace equation on the domain
@@ -55,7 +69,7 @@ laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V.sub(0), G_ref, 1), DirichletBC(V.sub(0), G_ref, 2), DirichletBC(V.sub(0), G_ref, 3), DirichletBC(V.sub(0), G_ref, 4)]
+bcs = [DirichletBC(V.sub(0), G1, 1), DirichletBC(V.sub(0), G2, 2)]
 #How to impose zero average for the Lagrange multiplier
 
 #solving

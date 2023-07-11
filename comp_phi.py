@@ -16,9 +16,10 @@ def comp_phi(mesh, Grad):
     L = inner(Grad, grad(psi)) * dx
 
     #solving
-    A = assemble(aux) #+pen_term) #, bcs=bcs_test)
-    b = assemble(L) #, bcs=bcs_test)
-    solve(A, phi, b, solver_parameters={'direct_solver': 'mumps'})
+    A = assemble(aux)
+    b = assemble(L)
+    nullspace = VectorSpaceBasis(constant=True)
+    solve(A, phi, b, nullspace=nullspace, solver_parameters={'direct_solver': 'mumps'})
 
     return phi
 
