@@ -64,7 +64,9 @@ b = assemble(L, bcs=bcs)
 v = Function(V, name='grad solution')
 solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, v, b, solver_parameters={'ksp_type': 'cg','pc_type': 'gamg', 'ksp_rtol': 1e-5})
-g_phi,qq = v.split()
+#g_phi = v.sub(0)
+#qq = v.sub(1)
+g_phi,qq = split(v)
 PETSc.Sys.Print('Laplace equation ok')
 
 #Write 3d results

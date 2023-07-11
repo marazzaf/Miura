@@ -41,9 +41,9 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
 x = SpatialCoordinate(mesh)
-G1 = as_tensor(((1, 0), (0, 0), (0, sqrt(4/3))))
-alpha = pi/2
-G2 = as_tensor(((cos(alpha), 0), (sin(alpha), 0), (0, sqrt(4/3))))
+G1 = as_tensor(((sqrt(3), 0), (0, 0), (0, 2)))
+alpha = 0
+G2 = as_tensor(((sqrt(3)*cos(alpha), 0), (sqrt(3)*sin(alpha), 0), (0, 2)))
 
 ##Check BC
 #file = File('BC1.pvd')
@@ -62,7 +62,7 @@ G2 = as_tensor(((cos(alpha), 0), (sin(alpha), 0), (0, sqrt(4/3))))
 
 #initial guess
 #solve laplace equation on the domain
-pen = 1e0
+pen = 1e1
 g_phi_t,q_t = TrialFunctions(V)
 g_psi,r = TestFunctions(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + pen * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
@@ -79,7 +79,8 @@ b = assemble(L, bcs=bcs)
 v = Function(V, name='grad solution')
 solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, v, b, solver_parameters={'ksp_type': 'cg','pc_type': 'gamg', 'ksp_rtol': 1e-5})
-g_phi,qq = v.split()
+g_phi = v.sub(0)
+qq = v.sub(1)
 PETSc.Sys.Print('Laplace equation ok')
 
 #Write 3d results
