@@ -23,8 +23,8 @@ def q(g_phi):
   return truc2
 
 # Size for the domain
-L = 10 #length of rectangle
-H = 10 #height of rectangle
+L = 2 #length of rectangle
+H = 2 #height of rectangle
 
 #Creating mesh
 #size_ref = 50 #25, 50, 100, 200
@@ -41,11 +41,14 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
 x = SpatialCoordinate(mesh)
-X = 1
+X = 0.5
 Y = sqrt(4/(4-X*X))
-G1 = as_tensor(((X, 0), (0, 0), (0, Y)))
-alpha = pi/50
-G2 = as_tensor(((X*cos(alpha), 0), (X*sin(alpha), 0), (0, Y)))
+#G1 = as_tensor(((X, 0), (0, 0), (0, Y)))
+G1 = as_tensor(((X, 0), (0, Y), (0, 0)))
+alpha = pi/100
+#G2 = as_tensor(((X*cos(alpha), 0), (X*sin(alpha), 0), (0, Y)))
+G2 = as_tensor(((X, 0), (0, Y*cos(alpha)), (0, Y*sin(alpha))))
+
 
 ##Check BC
 #file = File('BC1.pvd')

@@ -2,14 +2,16 @@ L = 2;
 W = 2;
 h = 0.025; //0.0125;
 
+val = 6;
+
 Point(1) = {-L/2, -W/2, 0, h};
 Point(2) = {-L/2, W/2, 0, h};
 Point(4) = {L/2, -W/2, 0, h};
 Point(3) = {L/2, W/2, 0, h};
-Point(5) = {L/10, -W/2, 0, h};
-Point(6) = {-L/10, W/2, 0, h};
-Point(7) = {L/10, W/2, 0, h};
-Point(8) = {-L/10, -W/2, 0, h};
+Point(5) = {L/val, -W/2, 0, h};
+Point(6) = {-L/val, W/2, 0, h};
+Point(7) = {L/val, W/2, 0, h};
+Point(8) = {-L/val, -W/2, 0, h};
 
 Line(1) = {1,2};
 Line(2) = {2,6};
