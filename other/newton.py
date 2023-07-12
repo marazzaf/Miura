@@ -23,11 +23,11 @@ def q(g_phi):
   return truc2
 
 # Size for the domain
-L = 2 #length of rectangle
-H = 2 #height of rectangle
+L = 10 #length of rectangle
+H = 10 #height of rectangle
 
 #Creating mesh
-#size_ref = 25 #25, 50, 100, 200
+#size_ref = 50 #25, 50, 100, 200
 #mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
 mesh = Mesh('mesh.msh')
 #h = max(L/size_ref, H/size_ref)
@@ -41,9 +41,11 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
 x = SpatialCoordinate(mesh)
-G1 = as_tensor(((sqrt(3), 0), (0, 0), (0, 2)))
-alpha = pi/20
-G2 = as_tensor(((sqrt(3)*cos(alpha), 0), (sqrt(3)*sin(alpha), 0), (0, 2)))
+X = 0.1
+Y = sqrt(4/(4-X*X))
+G1 = as_tensor(((X, 0), (0, 0), (0, Y)))
+alpha = pi/4
+G2 = as_tensor(((X*cos(alpha), 0), (X*sin(alpha), 0), (0, Y)))
 
 ##Check BC
 #file = File('BC1.pvd')
@@ -104,29 +106,12 @@ a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1
 solve(a == 0, vv, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
 g_phi = vv.sub(0)
 qq = vv.sub(1)
-sys.exit()
 
 #Compute phi
 phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file = File('res_newton.pvd')
 file.write(projected)
-  
-err = errornorm(grad(phi_ref), g_phi, 'l2')
-PETSc.Sys.Print('L2 error grad: %.3e' % err)
-
-err = errornorm(grad(phi_ref), g_phi, 'h1')
-PETSc.Sys.Print('H1 error grad: %.3e' % err)
-
-sys.exit()
-#
-#vol = assemble(Constant(1) * dx(mesh))
-#mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
-#
-#phi_mean = Function(W)
-#phi_mean.interpolate(phi - mean)
-#err = errornorm(phi_ref, phi_mean, 'l2')
-#PETSc.Sys.Print('L2 error: %.3e' % err)
 
 WW = FunctionSpace(mesh, 'CG', 2)
 u = Function(WW, name='u')
