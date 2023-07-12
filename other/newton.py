@@ -41,10 +41,10 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
 x = SpatialCoordinate(mesh)
-X = 0.1
+X = 1
 Y = sqrt(4/(4-X*X))
 G1 = as_tensor(((X, 0), (0, 0), (0, Y)))
-alpha = pi/4
+alpha = pi/50
 G2 = as_tensor(((X*cos(alpha), 0), (X*sin(alpha), 0), (0, Y)))
 
 ##Check BC
