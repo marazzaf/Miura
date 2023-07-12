@@ -42,7 +42,7 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 #  Ref solution
 x = SpatialCoordinate(mesh)
 G1 = as_tensor(((sqrt(3), 0), (0, 0), (0, 2)))
-alpha = 0
+alpha = pi/20
 G2 = as_tensor(((sqrt(3)*cos(alpha), 0), (sqrt(3)*sin(alpha), 0), (0, 2)))
 
 ##Check BC
@@ -79,8 +79,7 @@ b = assemble(L, bcs=bcs)
 v = Function(V, name='grad solution')
 solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, v, b, solver_parameters={'ksp_type': 'cg','pc_type': 'gamg', 'ksp_rtol': 1e-5})
-g_phi = v.sub(0)
-qq = v.sub(1)
+g_phi,qq = split(v)
 PETSc.Sys.Print('Laplace equation ok')
 
 #Write 3d results
@@ -92,16 +91,20 @@ projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
 #bilinear form for linearization
-v = Function(V, name='grad solution')
-g_phi,qq = split(v)
+vv = Function(V, name='grad solution')
+vv.sub(0).interpolate(g_phi)
+vv.sub(1).interpolate(qq)
+g_phi,qq = split(vv)
 
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
 a += pen * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
 a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
-solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
-g_phi,qq = v.split()
+solve(a == 0, vv, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
+g_phi = vv.sub(0)
+qq = vv.sub(1)
+sys.exit()
 
 #Compute phi
 phi = comp_phi(mesh, g_phi)

@@ -78,16 +78,19 @@ projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
 #bilinear form for linearization
-v = Function(V, name='grad solution')
-g_phi,qq = split(v)
+vv = Function(V, name='grad solution')
+vv.sub(0).interpolate(g_phi)
+vv.sub(1).interpolate(qq)
+g_phi,qq = split(vv)
 
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
 a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
 a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
-solve(a == 0, v, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
-g_phi,qq = v.split()
+solve(a == 0, vv, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
+g_phi = vv.sub(0)
+qq = vv.sub(1)
 
 #Compute phi
 phi = comp_phi(mesh, g_phi)
