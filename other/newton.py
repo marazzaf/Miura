@@ -23,15 +23,16 @@ def q(g_phi):
   return truc2
 
 # Size for the domain
-L = 2 #length of rectangle
-H = 2 #height of rectangle
+theta = pi/2 #pi/2
+L = 2*sin(0.5*acos(0.5/cos(0.5*theta))) #length of rectangle
+alpha = sqrt(1 / (1 - sin(theta/2)**2))
+H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-size_ref = 50 #25, 50, 100, 200
-mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-#mesh = Mesh('mesh_test.msh')
-#h = max(L/size_ref, H/size_ref)
-#PETSc.Sys.Print('Mesh size: %.5e' % h)
+size_ref = 25 #25, 50, 100, 200
+mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
+h = max(L/size_ref, H/size_ref)
+PETSc.Sys.Print('Mesh size: %.5e' % h)
 
 #Function Space
 W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
@@ -41,49 +42,25 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
 x = SpatialCoordinate(mesh)
-X = 1
-Y = sqrt(4/(4-X*X))
-#G1 = as_tensor(((X, 0), (0, 0), (0, Y)))
+rho = sqrt(4*cos(theta/2)**2*(x[0]-L/2)**2 + 1)
+z = 2*sin(theta/2) * (x[0]-L/2)
+phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
+G1 = grad(phi_ref)
+#How to rotate it on one side?
 alpha = 1e-1
-G1 = as_tensor(((X*cos(alpha), 0), (X*sin(alpha), 0), (0, Y)))
-G2 = as_tensor(((X*cos(-alpha), 0), (X*sin(-alpha), 0), (0, Y)))
-G3 = as_tensor(((X, 0), (0, Y*sin(-alpha)), (0, Y*cos(-alpha))))
-G4 = as_tensor(((X, 0), (0, Y*sin(alpha)), (0, Y*cos(alpha))))
-
-#Test ref
-u = as_vector((cos(x[0]), sin(x[0]), 0))
-v = cross(u, Constant((0, 0, 1)))
-phi = x[1] * u + v
-G = grad(phi)
-
-
-##Check BC
-#file = File('BC1.pvd')
-#phi = comp_phi(mesh, G1)
-#WW = VectorFunctionSpace(mesh, "CG", 1, dim=3)
-#projected = Function(WW, name='surface')
-#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-#file.write(projected)
-#file = File('BC2.pvd')
-#phi = comp_phi(mesh, G2)
-#WW = VectorFunctionSpace(mesh, "CG", 1, dim=3)
-#projected = Function(WW, name='surface')
-#projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-#file.write(projected)
-##sys.exit()
+rot = as_tensor(((1, 0, 0), (0, cos(alpha), -sin(alpha)), (0, sin(alpha), cos(alpha))))
+G2 = dot(rot, grad(phi_ref))
 
 #initial guess
 #solve laplace equation on the domain
-pen = 1e1
 g_phi_t,q_t = TrialFunctions(V)
 g_psi,r = TestFunctions(V)
-laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + pen * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
+laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + 10 * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
 laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-#bcs = [DirichletBC(V.sub(0), G1, 1), DirichletBC(V.sub(0), G2, 2), DirichletBC(V.sub(0), G3, 3), DirichletBC(V.sub(0), G4, 4)]
-bcs = [DirichletBC(V.sub(0), G, 1), DirichletBC(V.sub(0), G, 2), DirichletBC(V.sub(0), G, 3), DirichletBC(V.sub(0), G, 4)]
+bcs = [DirichletBC(V.sub(0), G1, 1), DirichletBC(V.sub(0), G2, 2)]
 #How to impose zero average for the Lagrange multiplier
 
 #solving
@@ -92,6 +69,8 @@ b = assemble(L, bcs=bcs)
 v = Function(V, name='grad solution')
 solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, v, b, solver_parameters={'ksp_type': 'cg','pc_type': 'gamg', 'ksp_rtol': 1e-5})
+#g_phi = v.sub(0)
+#qq = v.sub(1)
 g_phi,qq = split(v)
 PETSc.Sys.Print('Laplace equation ok')
 
@@ -110,7 +89,7 @@ vv.sub(1).interpolate(qq)
 g_phi,qq = split(vv)
 
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
-a += pen * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
+a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
 a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
@@ -123,6 +102,22 @@ phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file = File('res_newton.pvd')
 file.write(projected)
+  
+err = errornorm(grad(phi_ref), g_phi, 'l2')
+PETSc.Sys.Print('L2 error grad: %.3e' % err)
+
+err = errornorm(grad(phi_ref), g_phi, 'h1')
+PETSc.Sys.Print('H1 error grad: %.3e' % err)
+
+sys.exit()
+#
+#vol = assemble(Constant(1) * dx(mesh))
+#mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
+#
+#phi_mean = Function(W)
+#phi_mean.interpolate(phi - mean)
+#err = errornorm(phi_ref, phi_mean, 'l2')
+#PETSc.Sys.Print('L2 error: %.3e' % err)
 
 WW = FunctionSpace(mesh, 'CG', 2)
 u = Function(WW, name='u')
