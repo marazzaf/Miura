@@ -27,9 +27,9 @@ L = 2 #length of rectangle
 H = 2 #height of rectangle
 
 #Creating mesh
-#size_ref = 50 #25, 50, 100, 200
-#mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
-mesh = Mesh('mesh.msh')
+size_ref = 50 #25, 50, 100, 200
+mesh = RectangleMesh(size_ref, size_ref, L, H, diagonal='crossed')
+#mesh = Mesh('mesh_test.msh')
 #h = max(L/size_ref, H/size_ref)
 #PETSc.Sys.Print('Mesh size: %.5e' % h)
 
@@ -41,13 +41,20 @@ PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
 x = SpatialCoordinate(mesh)
-X = 0.5
+X = 1
 Y = sqrt(4/(4-X*X))
 #G1 = as_tensor(((X, 0), (0, 0), (0, Y)))
-G1 = as_tensor(((X, 0), (0, Y), (0, 0)))
-alpha = pi/100
-#G2 = as_tensor(((X*cos(alpha), 0), (X*sin(alpha), 0), (0, Y)))
-G2 = as_tensor(((X, 0), (0, Y*cos(alpha)), (0, Y*sin(alpha))))
+alpha = 1e-1
+G1 = as_tensor(((X*cos(alpha), 0), (X*sin(alpha), 0), (0, Y)))
+G2 = as_tensor(((X*cos(-alpha), 0), (X*sin(-alpha), 0), (0, Y)))
+G3 = as_tensor(((X, 0), (0, Y*sin(-alpha)), (0, Y*cos(-alpha))))
+G4 = as_tensor(((X, 0), (0, Y*sin(alpha)), (0, Y*cos(alpha))))
+
+#Test ref
+u = as_vector((cos(x[0]), sin(x[0]), 0))
+v = cross(u, Constant((0, 0, 1)))
+phi = x[1] * u + v
+G = grad(phi)
 
 
 ##Check BC
@@ -75,7 +82,8 @@ laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V.sub(0), G1, 1), DirichletBC(V.sub(0), G2, 2)]
+#bcs = [DirichletBC(V.sub(0), G1, 1), DirichletBC(V.sub(0), G2, 2), DirichletBC(V.sub(0), G3, 3), DirichletBC(V.sub(0), G4, 4)]
+bcs = [DirichletBC(V.sub(0), G, 1), DirichletBC(V.sub(0), G, 2), DirichletBC(V.sub(0), G, 3), DirichletBC(V.sub(0), G, 4)]
 #How to impose zero average for the Lagrange multiplier
 
 #solving
