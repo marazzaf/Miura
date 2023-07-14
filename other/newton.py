@@ -29,7 +29,7 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-size_ref = 25 #25, 50, 100, 200
+size_ref = 50 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
@@ -47,7 +47,7 @@ z = 2*sin(theta/2) * (x[0]-L/2)
 phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 G1 = grad(phi_ref)
 #How to rotate it on one side?
-alpha = 1e-1
+alpha = 1e-1 #pi/10
 rot = as_tensor(((1, 0, 0), (0, cos(alpha), -sin(alpha)), (0, sin(alpha), cos(alpha))))
 G2 = dot(rot, grad(phi_ref))
 
@@ -102,22 +102,6 @@ phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file = File('res_newton.pvd')
 file.write(projected)
-  
-err = errornorm(grad(phi_ref), g_phi, 'l2')
-PETSc.Sys.Print('L2 error grad: %.3e' % err)
-
-err = errornorm(grad(phi_ref), g_phi, 'h1')
-PETSc.Sys.Print('H1 error grad: %.3e' % err)
-
-sys.exit()
-#
-#vol = assemble(Constant(1) * dx(mesh))
-#mean = Constant((assemble(phi[0] / vol * dx), assemble(phi[1] / vol * dx), assemble(phi[2] / vol * dx)))
-#
-#phi_mean = Function(W)
-#phi_mean.interpolate(phi - mean)
-#err = errornorm(phi_ref, phi_mean, 'l2')
-#PETSc.Sys.Print('L2 error: %.3e' % err)
 
 WW = FunctionSpace(mesh, 'CG', 2)
 u = Function(WW, name='u')
@@ -134,12 +118,12 @@ file = File('v.pvd')
 file.write(v)
 err = errornorm(Constant(0), v, 'l2')
 PETSc.Sys.Print('L2 error: %.3e' % err)
-sys.exit()
 
 x = Function(WW, name='phi_x')
 x.interpolate(inner(g_phi[:,0], g_phi[:,0]))
 file = File('phi_x.pvd')
 file.write(x)
+
 y = Function(WW, name='phi_y')
 y.interpolate(inner(g_phi[:,1], g_phi[:,1]))
 file = File('phi_y.pvd')
