@@ -29,7 +29,7 @@ alpha = sqrt(1 / (1 - sin(theta/2)**2))
 H = 2*pi/alpha #height of rectangle
 
 #Creating mesh
-size_ref = 25 #25, 50, 100, 200
+size_ref = 50 #25, 50, 100, 200
 mesh = PeriodicRectangleMesh(size_ref, size_ref, L, H, direction='y', diagonal='crossed')
 h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
@@ -48,9 +48,10 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 #initial guess
 #solve laplace equation on the domain
+pen = 1e-5
 g_phi_t,q_t = TrialFunctions(V)
 g_psi,r = TestFunctions(V)
-laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + 10 * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
+laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + pen * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
 laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
@@ -84,7 +85,7 @@ vv.sub(1).interpolate(qq)
 g_phi,qq = split(vv)
 
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
-a += 10 * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
+a += pen * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
 a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
