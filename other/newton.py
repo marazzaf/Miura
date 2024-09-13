@@ -47,7 +47,7 @@ z = 2*sin(theta/2) * (x[0]-L/2)
 phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 G1 = grad(phi_ref)
 #How to rotate it on one side?
-alpha = 1e-1 #pi/10
+alpha = np.pi/6 #1e-1
 rot = as_tensor(((1, 0, 0), (0, cos(alpha), -sin(alpha)), (0, sin(alpha), cos(alpha))))
 G2 = dot(rot, grad(phi_ref))
 
@@ -128,3 +128,10 @@ y = Function(WW, name='phi_y')
 y.interpolate(inner(g_phi[:,1], g_phi[:,1]))
 file = File('phi_y.pvd')
 file.write(y)
+
+#Shows \Omega'
+WW = FunctionSpace(mesh, 'CG', 4)
+aux = Function(WW)
+aux.interpolate(sign(3 - inner(g_phi[:,0], g_phi[:,0])))# - 1e-1))
+file = File('test.pvd')
+file.write(aux)

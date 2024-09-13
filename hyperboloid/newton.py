@@ -1,10 +1,7 @@
-#coding: utf-8
-#source firedrake/bin/activate
-
 from firedrake import *
 from firedrake.petsc import PETSc
+from firedrake.output import VTKFile
 import sys
-import numpy as np
 sys.path.append('..')
 from comp_phi import comp_phi
 
@@ -35,9 +32,9 @@ h = max(L/size_ref, H/size_ref)
 PETSc.Sys.Print('Mesh size: %.5e' % h)
 
 #Function Space
-W = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
-Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
-V = W * Q
+V = TensorFunctionSpace(mesh, "CG", 2, shape=(3,2))
+#Q = VectorFunctionSpace(mesh, "CG", 1, dim=3)
+#V = W * Q
 PETSc.Sys.Print('Nb dof: %i' % V.dim())
 
 #  Ref solution
@@ -48,30 +45,27 @@ phi_ref = as_vector((rho*cos(alpha*x[1]), rho*sin(alpha*x[1]), z))
 
 #initial guess
 #solve laplace equation on the domain
-pen = 1e-5
-g_phi_t,q_t = TrialFunctions(V)
-g_psi,r = TestFunctions(V)
+pen = 1 #1e-5
+g_phi_t = TrialFunction(V)
+g_psi = TestFunction(V)
 laplace = inner(grad(g_phi_t), grad(g_psi)) * dx + pen * inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #laplace in weak form
-laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
+#laplace += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), q_t) * dx + inner(g_phi_t[:,0].dx(1) - g_phi_t[:,1].dx(0), r) * dx
 L = Constant(0) * g_psi[0,0] * dx
 
 #Dirichlet BC
-bcs = [DirichletBC(V.sub(0), grad(phi_ref), 1), DirichletBC(V.sub(0), grad(phi_ref), 2)]
-#How to impose zero average for the Lagrange multiplier
+bcs = [DirichletBC(V, grad(phi_ref), 1), DirichletBC(V, grad(phi_ref), 2)]
 
 #solving
 A = assemble(laplace, bcs=bcs)
 b = assemble(L, bcs=bcs)
-v = Function(V, name='grad solution')
-solve(A, v, b, solver_parameters={'direct_solver': 'mumps'})
+g_phi = Function(V, name='grad solution')
+solve(A, g_phi, b, solver_parameters={'direct_solver': 'mumps'})
 #solve(A, v, b, solver_parameters={'ksp_type': 'cg','pc_type': 'gamg', 'ksp_rtol': 1e-5})
-#g_phi = v.sub(0)
-#qq = v.sub(1)
-g_phi,qq = split(v)
+#g_phi,qq = split(v)
 PETSc.Sys.Print('Laplace equation ok')
 
 #Write 3d results
-file = File('laplacian.pvd')
+file = VTKFile('laplacian.pvd')
 phi = comp_phi(mesh, g_phi)
 WW = VectorFunctionSpace(mesh, "CG", 3, dim=3)
 projected = Function(WW, name='surface')
@@ -79,24 +73,24 @@ projected.interpolate(phi - as_vector((x[0], x[1], 0)))
 file.write(projected)
 
 #bilinear form for linearization
-vv = Function(V, name='grad solution')
-vv.sub(0).interpolate(g_phi)
-vv.sub(1).interpolate(qq)
-g_phi,qq = split(vv)
+g_phi = Function(V, name='grad solution')
+g_phi.interpolate(g_phi)
+#vv.sub(1).interpolate(qq)
+#g_phi,qq = split(vv)
 
 a = inner(p(g_phi) * g_phi[:,0].dx(0) + q(g_phi) * g_phi[:,1].dx(1),  p(g_phi) * g_psi[:,0].dx(0) + q(g_phi) * g_psi[:,1].dx(1)) * dx
 a += pen * inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), g_psi[:,0].dx(1) - g_psi[:,1].dx(0)) * dx #rot stabilization
-a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
+#a += inner(g_psi[:,0].dx(1) - g_psi[:,1].dx(0), qq) * dx + inner(g_phi[:,0].dx(1) - g_phi[:,1].dx(0), r) * dx #for mixed form
 
 # Solving with Newton method
-solve(a == 0, vv, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
-g_phi = vv.sub(0)
-qq = vv.sub(1)
+solve(a == 0, g_phi, bcs=bcs, solver_parameters={'snes_monitor': None, 'snes_max_it': 25})
+#g_phi = vv.sub(0)
+#qq = vv.sub(1)
 
 #Compute phi
 phi = comp_phi(mesh, g_phi)
 projected.interpolate(phi - as_vector((x[0], x[1], 0)))
-file = File('res_newton.pvd')
+file = VTKFile('res_newton.pvd')
 file.write(projected)
   
 err = errornorm(grad(phi_ref), g_phi, 'l2')
